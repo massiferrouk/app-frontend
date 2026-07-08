@@ -47,3 +47,6 @@ app.*.map.json
 # Fichiers générés par build_runner — régénérés par la CI
 lib/app/app.locator.dart
 lib/app/app.router.dart
+
+# Contexte Claude Code — fichier local, non versionné
+CLAUDE.md
