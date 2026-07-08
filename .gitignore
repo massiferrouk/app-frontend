@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Fichiers générés par build_runner — régénérés par la CI
+lib/app/app.locator.dart
+lib/app/app.router.dart

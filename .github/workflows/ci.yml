@@ -1,0 +1,42 @@
+# CI Frontend StudUp — lancé sur chaque PR et chaque push vers main.
+# Le job doit être vert avant tout merge.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Récupère le code de la branche
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Installe Flutter stable avec cache (accélère les runs suivants)
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Installe les dépendances du pubspec.yaml
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Régénère app.router.dart et app.locator.dart
+      # (les fichiers générés ne sont pas dans Git)
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Analyse statique — échoue à la moindre erreur
+      - name: Analyze
+        run: flutter analyze
+
+      # Tests unitaires et widgets
+      - name: Test
+        run: flutter test
