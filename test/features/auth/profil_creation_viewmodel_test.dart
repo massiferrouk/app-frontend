@@ -131,7 +131,7 @@ void main() {
             dateFin: DateTime(2027, 8, 31),
             rythme: RythmeAlternance.SEMAINE_1_1,
           )).called(1);
-      verify(() => nav.clearStackAndShow(Routes.homeView)).called(1);
+      verify(() => nav.clearStackAndShow(Routes.mainView)).called(1);
     });
 
     test('erreur backend : message affiché, pas de navigation', () async {

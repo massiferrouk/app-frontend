@@ -14,7 +14,7 @@ import 'package:studup_app/features/auth/login/login_view.dart' as _i3;
 import 'package:studup_app/features/auth/profil_creation/profil_creation_view.dart'
     as _i5;
 import 'package:studup_app/features/auth/register/register_view.dart' as _i4;
-import 'package:studup_app/features/home/home_view.dart' as _i6;
+import 'package:studup_app/features/main/main_view.dart' as _i6;
 import 'package:studup_app/features/startup/startup_view.dart' as _i2;
 
 class Routes {
@@ -26,14 +26,14 @@ class Routes {
 
   static const profilCreationView = '/profil-creation-view';
 
-  static const homeView = '/home-view';
+  static const mainView = '/main-view';
 
   static const all = <String>{
     startupView,
     loginView,
     registerView,
     profilCreationView,
-    homeView,
+    mainView,
   };
 }
 
@@ -43,7 +43,7 @@ class StackedRouter extends _i1.RouterBase {
     _i1.RouteDef(Routes.loginView, page: _i3.LoginView),
     _i1.RouteDef(Routes.registerView, page: _i4.RegisterView),
     _i1.RouteDef(Routes.profilCreationView, page: _i5.ProfilCreationView),
-    _i1.RouteDef(Routes.homeView, page: _i6.HomeView),
+    _i1.RouteDef(Routes.mainView, page: _i6.MainView),
   ];
 
   final _pagesMap = <Type, _i1.StackedRouteFactory>{
@@ -83,12 +83,12 @@ class StackedRouter extends _i1.RouterBase {
         settings: data,
       );
     },
-    _i6.HomeView: (data) {
-      final args = data.getArgs<HomeViewArguments>(
-        orElse: () => const HomeViewArguments(),
+    _i6.MainView: (data) {
+      final args = data.getArgs<MainViewArguments>(
+        orElse: () => const MainViewArguments(),
       );
       return _i7.MaterialPageRoute<dynamic>(
-        builder: (context) => _i6.HomeView(key: args.key),
+        builder: (context) => _i6.MainView(key: args.key),
         settings: data,
       );
     },
@@ -189,8 +189,8 @@ class ProfilCreationViewArguments {
   }
 }
 
-class HomeViewArguments {
-  const HomeViewArguments({this.key});
+class MainViewArguments {
+  const MainViewArguments({this.key});
 
   final _i7.Key? key;
 
@@ -200,7 +200,7 @@ class HomeViewArguments {
   }
 
   @override
-  bool operator ==(covariant HomeViewArguments other) {
+  bool operator ==(covariant MainViewArguments other) {
     if (identical(this, other)) return true;
     return other.key == key;
   }
@@ -284,7 +284,7 @@ extension NavigatorStateExtension on _i8.NavigationService {
     );
   }
 
-  Future<dynamic> navigateToHomeView({
+  Future<dynamic> navigateToMainView({
     _i7.Key? key,
     int? routerId,
     bool preventDuplicates = true,
@@ -293,8 +293,8 @@ extension NavigatorStateExtension on _i8.NavigationService {
     transition,
   }) async {
     return navigateTo<dynamic>(
-      Routes.homeView,
-      arguments: HomeViewArguments(key: key),
+      Routes.mainView,
+      arguments: MainViewArguments(key: key),
       id: routerId,
       preventDuplicates: preventDuplicates,
       parameters: parameters,
@@ -374,7 +374,7 @@ extension NavigatorStateExtension on _i8.NavigationService {
     );
   }
 
-  Future<dynamic> replaceWithHomeView({
+  Future<dynamic> replaceWithMainView({
     _i7.Key? key,
     int? routerId,
     bool preventDuplicates = true,
@@ -383,8 +383,8 @@ extension NavigatorStateExtension on _i8.NavigationService {
     transition,
   }) async {
     return replaceWith<dynamic>(
-      Routes.homeView,
-      arguments: HomeViewArguments(key: key),
+      Routes.mainView,
+      arguments: MainViewArguments(key: key),
       id: routerId,
       preventDuplicates: preventDuplicates,
       parameters: parameters,

@@ -70,7 +70,7 @@ void main() {
       expect(viewModel.errorMessage, isNull);
       verify(() => auth.login(
           email: 'alice@studup.fr', password: 'motdepasse123')).called(1);
-      verify(() => nav.clearStackAndShow(Routes.homeView)).called(1);
+      verify(() => nav.clearStackAndShow(Routes.mainView)).called(1);
     });
 
     test('alternant sans profil : redirection vers la création de profil',
@@ -89,7 +89,7 @@ void main() {
 
       verify(() => nav.clearStackAndShow(Routes.profilCreationView))
           .called(1);
-      verifyNever(() => nav.clearStackAndShow(Routes.homeView));
+      verifyNever(() => nav.clearStackAndShow(Routes.mainView));
     });
 
     test('401 : message "email ou mot de passe incorrect", pas de navigation',

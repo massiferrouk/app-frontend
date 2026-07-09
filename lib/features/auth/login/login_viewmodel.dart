@@ -52,7 +52,7 @@ class LoginViewModel extends BaseViewModel {
       if (await _profile.needsAlternantProfile()) {
         await _nav.clearStackAndShow(Routes.profilCreationView);
       } else {
-        await _nav.clearStackAndShow(Routes.homeView);
+        await _nav.clearStackAndShow(Routes.mainView);
       }
     } on ApiException catch (e) {
       // Le message backend est déjà en français et affichable
