@@ -96,7 +96,7 @@ class ProfilCreationViewModel extends BaseViewModel {
         rythme: selectedRythme,
       );
       // Profil créé (+ calendrier généré côté backend) → accueil
-      await _nav.clearStackAndShow(Routes.homeView);
+      await _nav.clearStackAndShow(Routes.mainView);
     } on ApiException catch (e) {
       errorMessage = e.message;
     } finally {

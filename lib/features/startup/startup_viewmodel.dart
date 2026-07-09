@@ -34,7 +34,7 @@ class StartupViewModel extends BaseViewModel {
       // Cas : app fermée après login mais avant la création du profil
       await _nav.clearStackAndShow(Routes.profilCreationView);
     } else {
-      await _nav.clearStackAndShow(Routes.homeView);
+      await _nav.clearStackAndShow(Routes.mainView);
     }
   }
 }

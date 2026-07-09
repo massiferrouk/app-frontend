@@ -39,7 +39,7 @@ void main() {
 
       await viewModel.runStartupLogic();
 
-      verify(() => nav.clearStackAndShow(Routes.homeView)).called(1);
+      verify(() => nav.clearStackAndShow(Routes.mainView)).called(1);
       verifyNever(() => nav.clearStackAndShow(Routes.loginView));
     });
 
@@ -49,7 +49,7 @@ void main() {
       await viewModel.runStartupLogic();
 
       verify(() => nav.clearStackAndShow(Routes.loginView)).called(1);
-      verifyNever(() => nav.clearStackAndShow(Routes.homeView));
+      verifyNever(() => nav.clearStackAndShow(Routes.mainView));
     });
 
     test('alternant sans profil : redirige vers la création de profil',
@@ -62,7 +62,7 @@ void main() {
 
       verify(() => nav.clearStackAndShow(Routes.profilCreationView))
           .called(1);
-      verifyNever(() => nav.clearStackAndShow(Routes.homeView));
+      verifyNever(() => nav.clearStackAndShow(Routes.mainView));
     });
   });
 }

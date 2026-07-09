@@ -5,7 +5,7 @@ import '../core/api/api_client.dart';
 import '../features/auth/login/login_view.dart';
 import '../features/auth/profil_creation/profil_creation_view.dart';
 import '../features/auth/register/register_view.dart';
-import '../features/home/home_view.dart';
+import '../features/main/main_view.dart';
 import '../features/startup/startup_view.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
@@ -23,7 +23,7 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: LoginView),
     MaterialRoute(page: RegisterView),
     MaterialRoute(page: ProfilCreationView),
-    MaterialRoute(page: HomeView),
+    MaterialRoute(page: MainView),
     // Les prochains écrans seront ajoutés ici
   ],
   dependencies: [
