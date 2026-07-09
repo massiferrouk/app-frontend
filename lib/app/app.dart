@@ -1,7 +1,9 @@
 import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
 
+import '../core/api/api_client.dart';
 import '../features/startup/startup_view.dart';
+import '../services/token_storage_service.dart';
 
 /// Point de vérité unique de l'application.
 /// Chaque écran (route) et chaque service (dependency) est déclaré ici,
@@ -19,7 +21,10 @@ import '../features/startup/startup_view.dart';
     LazySingleton(classType: NavigationService),
     LazySingleton(classType: DialogService),
     LazySingleton(classType: SnackbarService),
-    // Nos services métier seront ajoutés ici (AuthService, MatchingService...)
+    // Services StudUp
+    LazySingleton(classType: TokenStorageService),
+    LazySingleton(classType: ApiClient),
+    // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )
 class App {}

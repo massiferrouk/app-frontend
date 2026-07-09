@@ -47,6 +47,7 @@ dev_dependencies:
   stacked_generator: ^2.0.4
   build_runner: ^2.4.0
   mocktail: ^1.0.4
+  http_mock_adapter: ^0.6.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
