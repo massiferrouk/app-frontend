@@ -65,6 +65,20 @@ class ProfileService {
     return AlternantProfile.fromJson(data);
   }
 
+  /// true si l'utilisateur connecté est un ALTERNANT sans profil :
+  /// il doit alors passer par le formulaire de création.
+  /// En cas d'erreur réseau, false : on ne bloque jamais l'entrée
+  /// dans l'app pour ça.
+  Future<bool> needsAlternantProfile() async {
+    try {
+      final role = await currentRole();
+      if (role != UserRole.ALTERNANT) return false;
+      return await getMyAlternantProfile() == null;
+    } on ApiException {
+      return false;
+    }
+  }
+
   /// GET /profile/{userId} — null si le profil n'existe pas encore (404).
   /// Utilisé après login pour décider d'afficher le formulaire de création.
   Future<AlternantProfile?> getMyAlternantProfile() async {
