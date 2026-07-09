@@ -3,10 +3,12 @@ import 'package:stacked_services/stacked_services.dart';
 
 import '../core/api/api_client.dart';
 import '../features/auth/login/login_view.dart';
+import '../features/auth/profil_creation/profil_creation_view.dart';
 import '../features/auth/register/register_view.dart';
 import '../features/home/home_view.dart';
 import '../features/startup/startup_view.dart';
 import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 import '../services/token_storage_service.dart';
 
 /// Point de vérité unique de l'application.
@@ -20,6 +22,7 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: StartupView, initial: true),
     MaterialRoute(page: LoginView),
     MaterialRoute(page: RegisterView),
+    MaterialRoute(page: ProfilCreationView),
     MaterialRoute(page: HomeView),
     // Les prochains écrans seront ajoutés ici
   ],
@@ -32,6 +35,7 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: TokenStorageService),
     LazySingleton(classType: ApiClient),
     LazySingleton(classType: AuthService),
+    LazySingleton(classType: ProfileService),
     // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )

@@ -2,22 +2,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
+import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/features/auth/login/login_viewmodel.dart';
 import 'package:studup_app/services/auth_service.dart';
+import 'package:studup_app/services/profile_service.dart';
 
 class MockAuthService extends Mock implements AuthService {}
+
+class MockProfileService extends Mock implements ProfileService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
 void main() {
   late MockAuthService auth;
+  late MockProfileService profile;
   late MockNavigationService nav;
   late LoginViewModel viewModel;
 
   setUp(() {
     auth = MockAuthService();
+    profile = MockProfileService();
     nav = MockNavigationService();
-    viewModel = LoginViewModel(authService: auth, navigationService: nav);
+    viewModel = LoginViewModel(
+      authService: auth,
+      profileService: profile,
+      navigationService: nav,
+    );
+
+    // Par défaut : pas besoin de créer de profil
+    when(() => profile.needsAlternantProfile())
+        .thenAnswer((_) async => false);
   });
 
   group('LoginViewModel.login', () {
@@ -56,7 +70,26 @@ void main() {
       expect(viewModel.errorMessage, isNull);
       verify(() => auth.login(
           email: 'alice@studup.fr', password: 'motdepasse123')).called(1);
-      verify(() => nav.clearStackAndShow(any())).called(1);
+      verify(() => nav.clearStackAndShow(Routes.homeView)).called(1);
+    });
+
+    test('alternant sans profil : redirection vers la création de profil',
+        () async {
+      viewModel.emailController.text = 'alice@studup.fr';
+      viewModel.passwordController.text = 'motdepasse123';
+
+      when(() => auth.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'))).thenAnswer((_) async {});
+      when(() => profile.needsAlternantProfile())
+          .thenAnswer((_) async => true);
+      when(() => nav.clearStackAndShow(any())).thenAnswer((_) async => null);
+
+      await viewModel.login();
+
+      verify(() => nav.clearStackAndShow(Routes.profilCreationView))
+          .called(1);
+      verifyNever(() => nav.clearStackAndShow(Routes.homeView));
     });
 
     test('401 : message "email ou mot de passe incorrect", pas de navigation',

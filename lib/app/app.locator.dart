@@ -14,6 +14,7 @@ import 'package:stacked_shared/stacked_shared.dart';
 
 import '../core/api/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 import '../services/token_storage_service.dart';
 
 final locator = StackedLocator.instance;
@@ -35,4 +36,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => TokenStorageService());
   locator.registerLazySingleton(() => ApiClient());
   locator.registerLazySingleton(() => AuthService());
+  locator.registerLazySingleton(() => ProfileService());
 }
