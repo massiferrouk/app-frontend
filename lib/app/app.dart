@@ -2,6 +2,9 @@ import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 import '../core/api/api_client.dart';
+import '../features/auth/login/login_view.dart';
+import '../features/auth/register/register_view.dart';
+import '../features/home/home_view.dart';
 import '../features/startup/startup_view.dart';
 import '../services/auth_service.dart';
 import '../services/token_storage_service.dart';
@@ -15,7 +18,10 @@ import '../services/token_storage_service.dart';
 @StackedApp(
   routes: [
     MaterialRoute(page: StartupView, initial: true),
-    // Les prochains écrans seront ajoutés ici (LoginView, RegisterView...)
+    MaterialRoute(page: LoginView),
+    MaterialRoute(page: RegisterView),
+    MaterialRoute(page: HomeView),
+    // Les prochains écrans seront ajoutés ici
   ],
   dependencies: [
     // Services Stacked de base — navigation, dialogs, snackbars
