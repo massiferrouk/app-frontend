@@ -7,6 +7,7 @@ import '../features/auth/profil_creation/profil_creation_view.dart';
 import '../features/auth/register/register_view.dart';
 import '../features/calendrier/mon_calendrier_view.dart';
 import '../features/logements/ajouter_logement_view.dart';
+import '../features/logements/logement_detail_view.dart';
 import '../features/matching/compatibilite_view.dart';
 import '../features/main/main_view.dart';
 import '../features/startup/startup_view.dart';
@@ -34,6 +35,7 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: MonCalendrierView),
     MaterialRoute(page: CompatibiliteView),
     MaterialRoute(page: AjouterLogementView),
+    MaterialRoute(page: LogementDetailView),
     // Les prochains écrans seront ajoutés ici
   ],
   dependencies: [

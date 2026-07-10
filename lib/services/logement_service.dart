@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 
 import '../app/app.locator.dart';
 import '../core/api/api_client.dart';
+import '../shared/models/disponibilite.dart';
 import '../shared/models/enums.dart';
 import '../shared/models/logement.dart';
+import '../shared/models/reputation_score.dart';
 
 /// Service des logements.
 class LogementService {
@@ -18,6 +20,29 @@ class LogementService {
     return data
         .map((e) => Logement.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// GET /logements/{id} — détail complet d'un logement
+  Future<Logement> getLogement(String logementId) async {
+    final data =
+        await _api.get<Map<String, dynamic>>('/logements/$logementId');
+    return Logement.fromJson(data);
+  }
+
+  /// GET /logements/{id}/disponibilites — plages de disponibilité
+  Future<List<Disponibilite>> getDisponibilites(String logementId) async {
+    final data = await _api
+        .get<List<dynamic>>('/logements/$logementId/disponibilites');
+    return data
+        .map((e) => Disponibilite.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// GET /reputation/user/{userId} — score de réputation du propriétaire
+  Future<ReputationScore> getReputation(String userId) async {
+    final data =
+        await _api.get<Map<String, dynamic>>('/reputation/user/$userId');
+    return ReputationScore.fromJson(data);
   }
 
   /// POST /logements — crée un logement en statut BROUILLON

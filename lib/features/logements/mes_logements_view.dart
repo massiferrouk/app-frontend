@@ -89,13 +89,16 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
               itemCount: viewModel.logements.length,
               itemBuilder: (context, index) {
                 final l = viewModel.logements[index];
-                return _LogementCard(
-                  logement: l,
-                  isAlternant: viewModel.isAlternant,
-                  onPublish: () => _handleAction(
-                      context, () => viewModel.publish(l)),
-                  onAssocier: (ville) => _handleAction(
-                      context, () => viewModel.associer(l, ville)),
+                return GestureDetector(
+                  onTap: () => viewModel.goToDetail(l),
+                  child: _LogementCard(
+                    logement: l,
+                    isAlternant: viewModel.isAlternant,
+                    onPublish: () => _handleAction(
+                        context, () => viewModel.publish(l)),
+                    onAssocier: (ville) => _handleAction(
+                        context, () => viewModel.associer(l, ville)),
+                  ),
                 );
               },
             ),
