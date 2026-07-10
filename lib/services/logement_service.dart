@@ -1,5 +1,8 @@
+import 'package:dio/dio.dart';
+
 import '../app/app.locator.dart';
 import '../core/api/api_client.dart';
+import '../shared/models/enums.dart';
 import '../shared/models/logement.dart';
 
 /// Service des logements.
@@ -15,6 +18,56 @@ class LogementService {
     return data
         .map((e) => Logement.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// POST /logements — crée un logement en statut BROUILLON
+  Future<Logement> createLogement({
+    required String adresse,
+    required String ville,
+    required String codePostal,
+    required LogementType type,
+    required double surface,
+    required int nbPieces,
+    required double loyer,
+    required double charges,
+    String? description,
+    List<String> equipements = const [],
+    required bool isMeuble,
+  }) async {
+    final data = await _api.post<Map<String, dynamic>>(
+      '/logements',
+      data: {
+        'adresse': adresse,
+        'ville': ville,
+        'codePostal': codePostal,
+        'type': type.toJson(),
+        'surface': surface,
+        'nbPieces': nbPieces,
+        'loyer': loyer,
+        'charges': charges,
+        'description': description,
+        'equipements': equipements,
+        'isMeuble': isMeuble,
+      },
+    );
+    return Logement.fromJson(data);
+  }
+
+  /// POST /logements/{id}/photos — upload multipart (1 à 10 photos)
+  Future<List<String>> addPhotos(
+      String logementId, List<String> filePaths) async {
+    final formData = FormData();
+    for (final path in filePaths) {
+      formData.files.add(MapEntry(
+        'files',
+        await MultipartFile.fromFile(path),
+      ));
+    }
+    final data = await _api.post<List<dynamic>>(
+      '/logements/$logementId/photos',
+      data: formData,
+    );
+    return data.map((e) => e.toString()).toList();
   }
 
   /// PUT /logements/{id}/publish — BROUILLON → ACTIF

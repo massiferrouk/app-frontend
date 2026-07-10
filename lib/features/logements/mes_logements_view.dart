@@ -31,8 +31,7 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
                       style: Theme.of(context).textTheme.headlineMedium),
                 ),
                 IconButton(
-                  // APP-71 branchera le formulaire d'ajout
-                  onPressed: () => _comingSoon(context, 'APP-71'),
+                  onPressed: viewModel.goToAjouter,
                   icon: const Icon(Icons.add_circle_outline, size: 28),
                 ),
               ],
@@ -112,11 +111,6 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
         backgroundColor: error == null ? AppColors.echange : AppColors.error,
       ));
     }
-  }
-
-  void _comingSoon(BuildContext context, String ticket) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('À venir ($ticket)')));
   }
 
   @override

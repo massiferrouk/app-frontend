@@ -1,6 +1,8 @@
 import 'package:stacked/stacked.dart';
+import 'package:stacked_services/stacked_services.dart';
 
 import '../../app/app.locator.dart';
+import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/logement_service.dart';
 import '../../services/profile_service.dart';
@@ -11,11 +13,22 @@ import '../../shared/models/logement.dart';
 class MesLogementsViewModel extends BaseViewModel {
   final LogementService _logements;
   final ProfileService _profile;
+  final NavigationService _nav;
 
   MesLogementsViewModel(
-      {LogementService? logementService, ProfileService? profileService})
+      {LogementService? logementService,
+      ProfileService? profileService,
+      NavigationService? navigationService})
       : _logements = logementService ?? locator<LogementService>(),
-        _profile = profileService ?? locator<ProfileService>();
+        _profile = profileService ?? locator<ProfileService>(),
+        _nav = navigationService ?? locator<NavigationService>();
+
+  /// Ouvre le formulaire d'ajout, puis recharge la liste au retour
+  /// si un logement a été créé.
+  Future<void> goToAjouter() async {
+    final created = await _nav.navigateTo(Routes.ajouterLogementView);
+    if (created == true) await load();
+  }
 
   List<Logement> logements = [];
   String? errorMessage;
