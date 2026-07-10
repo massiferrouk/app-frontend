@@ -4,6 +4,7 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/widgets/studup_bottom_nav.dart';
+import '../accords/mes_accords_view.dart';
 import '../dashboard/home_alternant_view.dart';
 import '../logements/mes_logements_view.dart';
 import '../matching/suggestions_view.dart';
@@ -55,7 +56,7 @@ class MainView extends StackedView<MainViewModel> {
         return const [
           _PlaceholderTab(title: 'Accueil', ticket: 'APP-79'),
           _PlaceholderTab(title: 'Recherche', ticket: 'APP-79'),
-          _PlaceholderTab(title: 'Mes accords', ticket: 'APP-73'),
+          MesAccordsView(),
           _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
           _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
         ];
