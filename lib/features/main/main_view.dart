@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/widgets/studup_bottom_nav.dart';
 import '../dashboard/home_alternant_view.dart';
+import '../logements/mes_logements_view.dart';
 import '../matching/suggestions_view.dart';
 import 'main_viewmodel.dart';
 
@@ -46,7 +47,7 @@ class MainView extends StackedView<MainViewModel> {
           // Le dashboard peut basculer sur l'onglet Matches (index 1)
           HomeAlternantView(onSeeMatches: () => viewModel.setIndex(1)),
           const SuggestionsView(),
-          const _PlaceholderTab(title: 'Mes logements', ticket: 'APP-70'),
+          const MesLogementsView(),
           const _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
           const _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
         ];
@@ -62,7 +63,7 @@ class MainView extends StackedView<MainViewModel> {
       case UserRole.ADMIN:
         return const [
           _PlaceholderTab(title: 'Accueil', ticket: 'APP-80'),
-          _PlaceholderTab(title: 'Mes logements', ticket: 'APP-70'),
+          MesLogementsView(),
           _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
           _PlaceholderTab(title: 'Alertes', ticket: 'APP-76'),
           _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
