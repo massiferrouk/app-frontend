@@ -4,6 +4,7 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/widgets/studup_bottom_nav.dart';
+import '../dashboard/home_alternant_view.dart';
 import 'main_viewmodel.dart';
 
 /// Shell de navigation — l'écran conteneur post-connexion.
@@ -18,7 +19,7 @@ class MainView extends StackedView<MainViewModel> {
     MainViewModel viewModel,
     Widget? child,
   ) {
-    final pages = _pagesForRole(viewModel.role);
+    final pages = _pagesForRole(viewModel.role, viewModel);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -37,15 +38,16 @@ class MainView extends StackedView<MainViewModel> {
   }
 
   /// Les pages de chaque onglet — placeholders remplacés ticket par ticket
-  List<Widget> _pagesForRole(UserRole role) {
+  List<Widget> _pagesForRole(UserRole role, MainViewModel viewModel) {
     switch (role) {
       case UserRole.ALTERNANT:
-        return const [
-          _PlaceholderTab(title: 'Accueil', ticket: 'APP-66'),
-          _PlaceholderTab(title: 'Matches', ticket: 'APP-68'),
-          _PlaceholderTab(title: 'Mes logements', ticket: 'APP-70'),
-          _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
-          _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
+        return [
+          // Le dashboard peut basculer sur l'onglet Matches (index 1)
+          HomeAlternantView(onSeeMatches: () => viewModel.setIndex(1)),
+          const _PlaceholderTab(title: 'Matches', ticket: 'APP-68'),
+          const _PlaceholderTab(title: 'Mes logements', ticket: 'APP-70'),
+          const _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
+          const _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
         ];
       case UserRole.ETUDIANT:
         return const [
