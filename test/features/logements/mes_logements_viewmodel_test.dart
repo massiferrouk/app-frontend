@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stacked_services/stacked_services.dart' as stacked_services;
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/logements/mes_logements_viewmodel.dart';
 import 'package:studup_app/services/logement_service.dart';
@@ -10,6 +11,9 @@ import 'package:studup_app/shared/models/logement.dart';
 class MockLogementService extends Mock implements LogementService {}
 
 class MockProfileService extends Mock implements ProfileService {}
+
+class MockNavigationService extends Mock
+    implements stacked_services.NavigationService {}
 
 void main() {
   late MockLogementService logementService;
@@ -45,6 +49,7 @@ void main() {
     viewModel = MesLogementsViewModel(
       logementService: logementService,
       profileService: profileService,
+      navigationService: MockNavigationService(),
     );
     when(() => profileService.currentRole())
         .thenAnswer((_) async => UserRole.ALTERNANT);
