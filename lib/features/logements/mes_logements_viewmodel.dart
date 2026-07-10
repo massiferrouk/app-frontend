@@ -30,6 +30,14 @@ class MesLogementsViewModel extends BaseViewModel {
     if (created == true) await load();
   }
 
+  /// Ouvre le détail d'un logement (données passées en argument)
+  void goToDetail(Logement logement) {
+    _nav.navigateTo(
+      Routes.logementDetailView,
+      arguments: LogementDetailViewArguments(logement: logement),
+    );
+  }
+
   List<Logement> logements = [];
   String? errorMessage;
 

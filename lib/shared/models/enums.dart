@@ -124,6 +124,21 @@ enum LogementStatut {
       };
 }
 
+enum DisponibiliteType {
+  LIBRE,
+  OCCUPE,
+  BLOQUE;
+
+  static DisponibiliteType fromJson(String value) => values.byName(value);
+  String toJson() => name;
+
+  String get label => switch (this) {
+        LIBRE => 'Libre',
+        OCCUPE => 'Occupé',
+        BLOQUE => 'Bloqué',
+      };
+}
+
 // ─── Matching / calendrier ──────────────────────────────────────
 
 enum CompatibiliteType {
