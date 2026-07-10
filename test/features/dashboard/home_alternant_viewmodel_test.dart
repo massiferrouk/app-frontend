@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/dashboard/home_alternant_viewmodel.dart';
 import 'package:studup_app/services/dashboard_service.dart';
@@ -7,14 +8,18 @@ import 'package:studup_app/shared/models/alternant_dashboard.dart';
 
 class MockDashboardService extends Mock implements DashboardService {}
 
+class MockNavigationService extends Mock implements NavigationService {}
+
 void main() {
   late MockDashboardService dashboardService;
   late HomeAlternantViewModel viewModel;
 
   setUp(() {
     dashboardService = MockDashboardService();
-    viewModel =
-        HomeAlternantViewModel(dashboardService: dashboardService);
+    viewModel = HomeAlternantViewModel(
+      dashboardService: dashboardService,
+      navigationService: MockNavigationService(),
+    );
   });
 
   group('HomeAlternantViewModel.load', () {

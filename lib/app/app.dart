@@ -5,9 +5,11 @@ import '../core/api/api_client.dart';
 import '../features/auth/login/login_view.dart';
 import '../features/auth/profil_creation/profil_creation_view.dart';
 import '../features/auth/register/register_view.dart';
+import '../features/calendrier/mon_calendrier_view.dart';
 import '../features/main/main_view.dart';
 import '../features/startup/startup_view.dart';
 import '../services/auth_service.dart';
+import '../services/calendrier_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/profile_service.dart';
 import '../services/token_storage_service.dart';
@@ -25,6 +27,7 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: RegisterView),
     MaterialRoute(page: ProfilCreationView),
     MaterialRoute(page: MainView),
+    MaterialRoute(page: MonCalendrierView),
     // Les prochains écrans seront ajoutés ici
   ],
   dependencies: [
@@ -38,6 +41,7 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: AuthService),
     LazySingleton(classType: ProfileService),
     LazySingleton(classType: DashboardService),
+    LazySingleton(classType: CalendrierService),
     // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )
