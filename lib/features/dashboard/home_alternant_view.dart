@@ -100,11 +100,17 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
           const SizedBox(height: AppSpacing.lg),
         ],
 
-        // ─── Action rapide ──────────────────────────────────────
+        // ─── Actions rapides ────────────────────────────────────
         ElevatedButton.icon(
           onPressed: onSeeMatches,
           icon: const Icon(Icons.swap_horiz),
           label: const Text('Voir mes matches'),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        OutlinedButton.icon(
+          onPressed: viewModel.goToCalendrier,
+          icon: const Icon(Icons.calendar_month_outlined),
+          label: const Text('Mon calendrier d\'alternance'),
         ),
       ],
     );
