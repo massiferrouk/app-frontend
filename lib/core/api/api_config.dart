@@ -9,7 +9,9 @@ class ApiConfig {
   /// l'émulateur lui-même, pas ton PC. L'adresse spéciale 10.0.2.2 est
   /// l'alias de la machine hôte vue depuis l'émulateur.
   /// Sur un téléphone réel : remplacer par l'IP locale du PC (ipconfig).
-  static const String baseUrl = 'http://10.0.2.2:8080/api/v1';
+  /// Téléphone réel : IP locale du PC (ipconfig → IPv4), même WiFi requis.
+  /// Émulateur Android : remettre 'http://10.0.2.2:8080/api/v1'.
+  static const String baseUrl = 'http://10.177.155.139:8080/api/v1';
 
   /// Délais avant abandon d'une requête
   static const Duration connectTimeout = Duration(seconds: 10);
