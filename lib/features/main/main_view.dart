@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/widgets/studup_bottom_nav.dart';
 import '../dashboard/home_alternant_view.dart';
+import '../matching/suggestions_view.dart';
 import 'main_viewmodel.dart';
 
 /// Shell de navigation — l'écran conteneur post-connexion.
@@ -44,7 +45,7 @@ class MainView extends StackedView<MainViewModel> {
         return [
           // Le dashboard peut basculer sur l'onglet Matches (index 1)
           HomeAlternantView(onSeeMatches: () => viewModel.setIndex(1)),
-          const _PlaceholderTab(title: 'Matches', ticket: 'APP-68'),
+          const SuggestionsView(),
           const _PlaceholderTab(title: 'Mes logements', ticket: 'APP-70'),
           const _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
           const _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),

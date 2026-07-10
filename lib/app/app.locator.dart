@@ -16,6 +16,7 @@ import '../core/api/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/calendrier_service.dart';
 import '../services/dashboard_service.dart';
+import '../services/matching_service.dart';
 import '../services/profile_service.dart';
 import '../services/token_storage_service.dart';
 
@@ -41,4 +42,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => ProfileService());
   locator.registerLazySingleton(() => DashboardService());
   locator.registerLazySingleton(() => CalendrierService());
+  locator.registerLazySingleton(() => MatchingService());
 }
