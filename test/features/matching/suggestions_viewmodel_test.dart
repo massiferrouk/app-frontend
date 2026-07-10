@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/matching/suggestions_viewmodel.dart';
 import 'package:studup_app/services/matching_service.dart';
@@ -7,6 +8,8 @@ import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/matching_suggestion.dart';
 
 class MockMatchingService extends Mock implements MatchingService {}
+
+class MockNavigationService extends Mock implements NavigationService {}
 
 void main() {
   late MockMatchingService matchingService;
@@ -38,7 +41,10 @@ void main() {
 
   setUp(() {
     matchingService = MockMatchingService();
-    viewModel = SuggestionsViewModel(matchingService: matchingService);
+    viewModel = SuggestionsViewModel(
+      matchingService: matchingService,
+      navigationService: MockNavigationService(),
+    );
   });
 
   group('SuggestionsViewModel', () {

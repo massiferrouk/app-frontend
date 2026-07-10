@@ -6,17 +6,19 @@
 // **************************************************************************
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'package:flutter/material.dart' as _i8;
+import 'package:flutter/material.dart' as _i9;
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart' as _i1;
-import 'package:stacked_services/stacked_services.dart' as _i9;
+import 'package:stacked_services/stacked_services.dart' as _i11;
 import 'package:studup_app/features/auth/login/login_view.dart' as _i3;
 import 'package:studup_app/features/auth/profil_creation/profil_creation_view.dart'
     as _i5;
 import 'package:studup_app/features/auth/register/register_view.dart' as _i4;
 import 'package:studup_app/features/calendrier/mon_calendrier_view.dart' as _i7;
 import 'package:studup_app/features/main/main_view.dart' as _i6;
+import 'package:studup_app/features/matching/compatibilite_view.dart' as _i8;
 import 'package:studup_app/features/startup/startup_view.dart' as _i2;
+import 'package:studup_app/shared/models/matching_suggestion.dart' as _i10;
 
 class Routes {
   static const startupView = '/';
@@ -31,6 +33,8 @@ class Routes {
 
   static const monCalendrierView = '/mon-calendrier-view';
 
+  static const compatibiliteView = '/compatibilite-view';
+
   static const all = <String>{
     startupView,
     loginView,
@@ -38,6 +42,7 @@ class Routes {
     profilCreationView,
     mainView,
     monCalendrierView,
+    compatibiliteView,
   };
 }
 
@@ -49,6 +54,7 @@ class StackedRouter extends _i1.RouterBase {
     _i1.RouteDef(Routes.profilCreationView, page: _i5.ProfilCreationView),
     _i1.RouteDef(Routes.mainView, page: _i6.MainView),
     _i1.RouteDef(Routes.monCalendrierView, page: _i7.MonCalendrierView),
+    _i1.RouteDef(Routes.compatibiliteView, page: _i8.CompatibiliteView),
   ];
 
   final _pagesMap = <Type, _i1.StackedRouteFactory>{
@@ -56,7 +62,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<StartupViewArguments>(
         orElse: () => const StartupViewArguments(),
       );
-      return _i8.MaterialPageRoute<dynamic>(
+      return _i9.MaterialPageRoute<dynamic>(
         builder: (context) => _i2.StartupView(key: args.key),
         settings: data,
       );
@@ -65,7 +71,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<LoginViewArguments>(
         orElse: () => const LoginViewArguments(),
       );
-      return _i8.MaterialPageRoute<dynamic>(
+      return _i9.MaterialPageRoute<dynamic>(
         builder: (context) => _i3.LoginView(key: args.key),
         settings: data,
       );
@@ -74,7 +80,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<RegisterViewArguments>(
         orElse: () => const RegisterViewArguments(),
       );
-      return _i8.MaterialPageRoute<dynamic>(
+      return _i9.MaterialPageRoute<dynamic>(
         builder: (context) => _i4.RegisterView(key: args.key),
         settings: data,
       );
@@ -83,7 +89,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<ProfilCreationViewArguments>(
         orElse: () => const ProfilCreationViewArguments(),
       );
-      return _i8.MaterialPageRoute<dynamic>(
+      return _i9.MaterialPageRoute<dynamic>(
         builder: (context) => _i5.ProfilCreationView(key: args.key),
         settings: data,
       );
@@ -92,7 +98,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<MainViewArguments>(
         orElse: () => const MainViewArguments(),
       );
-      return _i8.MaterialPageRoute<dynamic>(
+      return _i9.MaterialPageRoute<dynamic>(
         builder: (context) => _i6.MainView(key: args.key),
         settings: data,
       );
@@ -101,8 +107,16 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<MonCalendrierViewArguments>(
         orElse: () => const MonCalendrierViewArguments(),
       );
-      return _i8.MaterialPageRoute<dynamic>(
+      return _i9.MaterialPageRoute<dynamic>(
         builder: (context) => _i7.MonCalendrierView(key: args.key),
+        settings: data,
+      );
+    },
+    _i8.CompatibiliteView: (data) {
+      final args = data.getArgs<CompatibiliteViewArguments>(nullOk: false);
+      return _i9.MaterialPageRoute<dynamic>(
+        builder: (context) =>
+            _i8.CompatibiliteView(key: args.key, suggestion: args.suggestion),
         settings: data,
       );
     },
@@ -118,7 +132,7 @@ class StackedRouter extends _i1.RouterBase {
 class StartupViewArguments {
   const StartupViewArguments({this.key});
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
   @override
   String toString() {
@@ -140,7 +154,7 @@ class StartupViewArguments {
 class LoginViewArguments {
   const LoginViewArguments({this.key});
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
   @override
   String toString() {
@@ -162,7 +176,7 @@ class LoginViewArguments {
 class RegisterViewArguments {
   const RegisterViewArguments({this.key});
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
   @override
   String toString() {
@@ -184,7 +198,7 @@ class RegisterViewArguments {
 class ProfilCreationViewArguments {
   const ProfilCreationViewArguments({this.key});
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
   @override
   String toString() {
@@ -206,7 +220,7 @@ class ProfilCreationViewArguments {
 class MainViewArguments {
   const MainViewArguments({this.key});
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
   @override
   String toString() {
@@ -228,7 +242,7 @@ class MainViewArguments {
 class MonCalendrierViewArguments {
   const MonCalendrierViewArguments({this.key});
 
-  final _i8.Key? key;
+  final _i9.Key? key;
 
   @override
   String toString() {
@@ -247,9 +261,33 @@ class MonCalendrierViewArguments {
   }
 }
 
-extension NavigatorStateExtension on _i9.NavigationService {
+class CompatibiliteViewArguments {
+  const CompatibiliteViewArguments({this.key, required this.suggestion});
+
+  final _i9.Key? key;
+
+  final _i10.MatchingSuggestion suggestion;
+
+  @override
+  String toString() {
+    return '{"key": "$key", "suggestion": "$suggestion"}';
+  }
+
+  @override
+  bool operator ==(covariant CompatibiliteViewArguments other) {
+    if (identical(this, other)) return true;
+    return other.key == key && other.suggestion == suggestion;
+  }
+
+  @override
+  int get hashCode {
+    return key.hashCode ^ suggestion.hashCode;
+  }
+}
+
+extension NavigatorStateExtension on _i11.NavigationService {
   Future<dynamic> navigateToStartupView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -267,7 +305,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> navigateToLoginView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -285,7 +323,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> navigateToRegisterView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -303,7 +341,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> navigateToProfilCreationView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -321,7 +359,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> navigateToMainView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -339,7 +377,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> navigateToMonCalendrierView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -356,8 +394,27 @@ extension NavigatorStateExtension on _i9.NavigationService {
     );
   }
 
+  Future<dynamic> navigateToCompatibiliteView({
+    _i9.Key? key,
+    required _i10.MatchingSuggestion suggestion,
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  }) async {
+    return navigateTo<dynamic>(
+      Routes.compatibiliteView,
+      arguments: CompatibiliteViewArguments(key: key, suggestion: suggestion),
+      id: routerId,
+      preventDuplicates: preventDuplicates,
+      parameters: parameters,
+      transition: transition,
+    );
+  }
+
   Future<dynamic> replaceWithStartupView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -375,7 +432,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> replaceWithLoginView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -393,7 +450,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> replaceWithRegisterView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -411,7 +468,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> replaceWithProfilCreationView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -429,7 +486,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> replaceWithMainView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -447,7 +504,7 @@ extension NavigatorStateExtension on _i9.NavigationService {
   }
 
   Future<dynamic> replaceWithMonCalendrierView({
-    _i8.Key? key,
+    _i9.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -457,6 +514,25 @@ extension NavigatorStateExtension on _i9.NavigationService {
     return replaceWith<dynamic>(
       Routes.monCalendrierView,
       arguments: MonCalendrierViewArguments(key: key),
+      id: routerId,
+      preventDuplicates: preventDuplicates,
+      parameters: parameters,
+      transition: transition,
+    );
+  }
+
+  Future<dynamic> replaceWithCompatibiliteView({
+    _i9.Key? key,
+    required _i10.MatchingSuggestion suggestion,
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  }) async {
+    return replaceWith<dynamic>(
+      Routes.compatibiliteView,
+      arguments: CompatibiliteViewArguments(key: key, suggestion: suggestion),
       id: routerId,
       preventDuplicates: preventDuplicates,
       parameters: parameters,
