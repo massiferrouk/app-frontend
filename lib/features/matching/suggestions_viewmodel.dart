@@ -1,6 +1,8 @@
 import 'package:stacked/stacked.dart';
+import 'package:stacked_services/stacked_services.dart';
 
 import '../../app/app.locator.dart';
+import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/matching_service.dart';
 import '../../shared/models/matching_suggestion.dart';
@@ -11,9 +13,22 @@ enum SuggestionFilter { tous, actifs, potentiels }
 /// Logique de l'écran des suggestions de matching.
 class SuggestionsViewModel extends BaseViewModel {
   final MatchingService _matching;
+  final NavigationService _nav;
 
-  SuggestionsViewModel({MatchingService? matchingService})
-      : _matching = matchingService ?? locator<MatchingService>();
+  SuggestionsViewModel(
+      {MatchingService? matchingService,
+      NavigationService? navigationService})
+      : _matching = matchingService ?? locator<MatchingService>(),
+        _nav = navigationService ?? locator<NavigationService>();
+
+  /// Ouvre le calendrier de compatibilité avec ce match.
+  /// Les données voyagent en argument de route : aucun appel réseau.
+  void goToCompatibilite(MatchingSuggestion suggestion) {
+    _nav.navigateTo(
+      Routes.compatibiliteView,
+      arguments: CompatibiliteViewArguments(suggestion: suggestion),
+    );
+  }
 
   List<MatchingSuggestion> _all = [];
   String? errorMessage;

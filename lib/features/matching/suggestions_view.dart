@@ -118,8 +118,7 @@ class SuggestionsView extends StackedView<SuggestionsViewModel> {
                 final s = suggestions[index];
                 return MatchCard(
                   suggestion: s,
-                  // APP-69 branchera le calendrier de compatibilité
-                  onSeeCalendar: () => _comingSoon(context, 'APP-69'),
+                  onSeeCalendar: () => viewModel.goToCompatibilite(s),
                   // APP-75 branchera la messagerie
                   onContact: () => _comingSoon(context, 'APP-75'),
                 );
