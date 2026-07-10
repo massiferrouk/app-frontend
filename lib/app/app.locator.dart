@@ -13,6 +13,7 @@ import 'package:stacked_services/src/snackbar/snackbar_service.dart';
 import 'package:stacked_shared/stacked_shared.dart';
 
 import '../core/api/api_client.dart';
+import '../services/accord_service.dart';
 import '../services/auth_service.dart';
 import '../services/calendrier_service.dart';
 import '../services/dashboard_service.dart';
@@ -45,4 +46,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => CalendrierService());
   locator.registerLazySingleton(() => MatchingService());
   locator.registerLazySingleton(() => LogementService());
+  locator.registerLazySingleton(() => AccordService());
 }

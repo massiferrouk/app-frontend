@@ -11,6 +11,7 @@ import '../features/logements/logement_detail_view.dart';
 import '../features/matching/compatibilite_view.dart';
 import '../features/main/main_view.dart';
 import '../features/startup/startup_view.dart';
+import '../services/accord_service.dart';
 import '../services/auth_service.dart';
 import '../services/calendrier_service.dart';
 import '../services/dashboard_service.dart';
@@ -52,6 +53,7 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: CalendrierService),
     LazySingleton(classType: MatchingService),
     LazySingleton(classType: LogementService),
+    LazySingleton(classType: AccordService),
     // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )
