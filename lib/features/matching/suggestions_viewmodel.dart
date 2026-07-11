@@ -5,6 +5,7 @@ import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/matching_service.dart';
+import '../../shared/models/conversation_summary.dart';
 import '../../shared/models/matching_suggestion.dart';
 
 /// Filtre d'affichage des suggestions
@@ -20,6 +21,23 @@ class SuggestionsViewModel extends BaseViewModel {
       NavigationService? navigationService})
       : _matching = matchingService ?? locator<MatchingService>(),
         _nav = navigationService ?? locator<NavigationService>();
+
+  /// Ouvre un chat avec ce match. conversationId vide = nouvelle
+  /// conversation, créée côté backend au premier message.
+  void goToChat(MatchingSuggestion suggestion) {
+    _nav.navigateTo(
+      Routes.chatView,
+      arguments: ChatViewArguments(
+        conversation: ConversationSummary(
+          conversationId: '',
+          partnerId: suggestion.userId,
+          partnerName: suggestion.displayName,
+          lastMessage: '',
+          unreadCount: 0,
+        ),
+      ),
+    );
+  }
 
   /// Ouvre le calendrier de compatibilité avec ce match.
   /// Les données voyagent en argument de route : aucun appel réseau.

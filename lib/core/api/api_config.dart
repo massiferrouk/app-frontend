@@ -17,6 +17,10 @@ class ApiConfig {
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
 
+  /// Point d'entrée WebSocket SockJS (messagerie temps réel).
+  /// Dérivé de baseUrl : http://host:8080/ws
+  static String get wsUrl => baseUrl.replaceFirst('/api/v1', '/ws');
+
   /// Endpoints publics : aucun token à attacher
   static const List<String> publicPaths = [
     '/auth/login',
