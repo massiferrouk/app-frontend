@@ -151,6 +151,16 @@ enum CompatibiliteType {
   String toJson() => name;
 }
 
+// ─── Avis ───────────────────────────────────────────────────────
+
+enum ReviewTargetType {
+  USER,
+  LOGEMENT;
+
+  static ReviewTargetType fromJson(String value) => values.byName(value);
+  String toJson() => name;
+}
+
 // ─── Notifications ──────────────────────────────────────────────
 // ⚠️ Types liés aux paiements volontairement absents (hors périmètre)
 

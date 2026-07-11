@@ -36,6 +36,14 @@ class MesAccordsViewModel extends BaseViewModel {
     await load();
   }
 
+  /// Ouvre le dépôt d'avis pour un accord terminé
+  Future<void> goToAvis(Accord accord) async {
+    await _nav.navigateTo(
+      Routes.avisView,
+      arguments: AvisViewArguments(accord: accord),
+    );
+  }
+
   List<Accord> _all = [];
   String? errorMessage;
   AccordTab tab = AccordTab.enCours;
