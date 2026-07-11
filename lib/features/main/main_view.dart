@@ -8,6 +8,7 @@ import '../accords/mes_accords_view.dart';
 import '../dashboard/home_alternant_view.dart';
 import '../logements/mes_logements_view.dart';
 import '../matching/suggestions_view.dart';
+import '../notifications/notifications_view.dart';
 import 'main_viewmodel.dart';
 
 /// Shell de navigation — l'écran conteneur post-connexion.
@@ -66,7 +67,7 @@ class MainView extends StackedView<MainViewModel> {
           _PlaceholderTab(title: 'Accueil', ticket: 'APP-80'),
           MesLogementsView(),
           _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
-          _PlaceholderTab(title: 'Alertes', ticket: 'APP-76'),
+          NotificationsView(),
           _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
         ];
     }
