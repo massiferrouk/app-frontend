@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/messages/chat_viewmodel.dart';
+import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/message_service.dart';
 import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/shared/models/conversation_summary.dart';
@@ -11,9 +12,12 @@ class MockMessageService extends Mock implements MessageService {}
 
 class MockProfileService extends Mock implements ProfileService {}
 
+class MockChatSocketService extends Mock implements ChatSocketService {}
+
 void main() {
   late MockMessageService messageService;
   late MockProfileService profileService;
+  late MockChatSocketService socketService;
 
   const conversation = ConversationSummary(
     conversationId: 'conv-1',
@@ -42,11 +46,15 @@ void main() {
         conversation: conv,
         messageService: messageService,
         profileService: profileService,
+        chatSocketService: socketService,
       );
 
   setUp(() {
     messageService = MockMessageService();
     profileService = MockProfileService();
+    socketService = MockChatSocketService();
+    when(() => socketService.subscribeToConversation(any(), any()))
+        .thenAnswer((_) {});
     when(() => profileService.currentUserId())
         .thenAnswer((_) async => 'moi');
     when(() => messageService.markAsRead(any())).thenAnswer((_) async {});
@@ -146,6 +154,46 @@ void main() {
       // Le texte n'est PAS perdu : l'utilisateur peut réessayer
       expect(viewModel.inputController.text, 'Message important');
       expect(viewModel.errorMessage, 'Hors ligne');
+    });
+  });
+
+  group('abonnement temps réel', () {
+    test('conversation existante : abonnement au topic au demarrage', () async {
+      when(() => messageService.getHistory('conv-1'))
+          .thenAnswer((_) async => []);
+
+      final viewModel = makeViewModel();
+      await viewModel.init();
+
+      verify(() =>
+              socketService.subscribeToConversation('conv-1', any()))
+          .called(1);
+    });
+
+    test('nouvelle conversation : abonnement après le premier message',
+        () async {
+      const nouvelle = ConversationSummary(
+        conversationId: '',
+        partnerId: 'lui',
+        partnerName: 'Thomas D.',
+        lastMessage: '',
+        unreadCount: 0,
+      );
+      when(() => messageService.sendMessage('lui', 'Premier !'))
+          .thenAnswer((_) async => buildMessage(id: 'm1', senderId: 'moi'));
+
+      final viewModel = makeViewModel(nouvelle);
+      await viewModel.init();
+      verifyNever(
+          () => socketService.subscribeToConversation(any(), any()));
+
+      viewModel.inputController.text = 'Premier !';
+      await viewModel.send();
+
+      // Le message renvoyé porte l'id de la conversation créée
+      verify(() =>
+              socketService.subscribeToConversation('conv-1', any()))
+          .called(1);
     });
   });
 

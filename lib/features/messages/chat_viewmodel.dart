@@ -3,6 +3,7 @@ import 'package:stacked/stacked.dart';
 
 import '../../app/app.locator.dart';
 import '../../core/api/api_exception.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/message_service.dart';
 import '../../services/profile_service.dart';
 import '../../shared/models/conversation_summary.dart';
@@ -12,14 +13,20 @@ import '../../shared/models/message.dart';
 class ChatViewModel extends BaseViewModel {
   final MessageService _messages;
   final ProfileService _profile;
+  final ChatSocketService _socket;
   final ConversationSummary conversation;
 
   ChatViewModel({
     required this.conversation,
     MessageService? messageService,
     ProfileService? profileService,
+    ChatSocketService? chatSocketService,
   })  : _messages = messageService ?? locator<MessageService>(),
-        _profile = profileService ?? locator<ProfileService>();
+        _profile = profileService ?? locator<ProfileService>(),
+        _socket = chatSocketService ?? locator<ChatSocketService>();
+
+  /// Conversation à laquelle on est abonné en temps réel
+  String? _subscribedConversationId;
 
   final inputController = TextEditingController();
 
@@ -35,6 +42,17 @@ class ChatViewModel extends BaseViewModel {
     currentUserId = await _profile.currentUserId();
     await load();
     _markUnreadAsRead();
+    _subscribeIfPossible(conversation.conversationId);
+  }
+
+  /// Abonnement temps réel — dès qu'on connaît l'id de la conversation
+  void _subscribeIfPossible(String conversationId) {
+    if (conversationId.isEmpty ||
+        _subscribedConversationId == conversationId) {
+      return;
+    }
+    _subscribedConversationId = conversationId;
+    _socket.subscribeToConversation(conversationId, onMessageReceived);
   }
 
   Future<void> load() async {
@@ -82,6 +100,9 @@ class ChatViewModel extends BaseViewModel {
       messages.add(sent);
       inputController.clear();
       errorMessage = null;
+      // Nouvelle conversation : le backend vient de la créer,
+      // on peut maintenant s'abonner au temps réel
+      _subscribeIfPossible(sent.conversationId);
     } on ApiException catch (e) {
       errorMessage = e.message;
     } finally {
@@ -103,6 +124,9 @@ class ChatViewModel extends BaseViewModel {
 
   @override
   void dispose() {
+    if (_subscribedConversationId != null) {
+      _socket.unsubscribeFromConversation(_subscribedConversationId!);
+    }
     inputController.dispose();
     super.dispose();
   }

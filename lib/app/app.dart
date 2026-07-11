@@ -18,6 +18,7 @@ import '../features/startup/startup_view.dart';
 import '../services/accord_service.dart';
 import '../services/auth_service.dart';
 import '../services/calendrier_service.dart';
+import '../services/chat_socket_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/logement_service.dart';
 import '../services/matching_service.dart';
@@ -68,6 +69,7 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: NotificationService),
     LazySingleton(classType: ReviewService),
     LazySingleton(classType: MessageService),
+    LazySingleton(classType: ChatSocketService),
     // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )

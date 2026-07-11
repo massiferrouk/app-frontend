@@ -16,6 +16,7 @@ import '../core/api/api_client.dart';
 import '../services/accord_service.dart';
 import '../services/auth_service.dart';
 import '../services/calendrier_service.dart';
+import '../services/chat_socket_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/logement_service.dart';
 import '../services/matching_service.dart';
@@ -53,4 +54,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => NotificationService());
   locator.registerLazySingleton(() => ReviewService());
   locator.registerLazySingleton(() => MessageService());
+  locator.registerLazySingleton(() => ChatSocketService());
 }
