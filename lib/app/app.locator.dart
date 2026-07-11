@@ -19,6 +19,7 @@ import '../services/calendrier_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/logement_service.dart';
 import '../services/matching_service.dart';
+import '../services/message_service.dart';
 import '../services/notification_service.dart';
 import '../services/profile_service.dart';
 import '../services/review_service.dart';
@@ -51,4 +52,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => AccordService());
   locator.registerLazySingleton(() => NotificationService());
   locator.registerLazySingleton(() => ReviewService());
+  locator.registerLazySingleton(() => MessageService());
 }

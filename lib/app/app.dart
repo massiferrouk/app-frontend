@@ -11,6 +11,7 @@ import '../features/calendrier/mon_calendrier_view.dart';
 import '../features/logements/ajouter_logement_view.dart';
 import '../features/logements/logement_detail_view.dart';
 import '../features/matching/compatibilite_view.dart';
+import '../features/messages/chat_view.dart';
 import '../features/main/main_view.dart';
 import '../features/notifications/notifications_view.dart';
 import '../features/startup/startup_view.dart';
@@ -20,6 +21,7 @@ import '../services/calendrier_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/logement_service.dart';
 import '../services/matching_service.dart';
+import '../services/message_service.dart';
 import '../services/notification_service.dart';
 import '../services/profile_service.dart';
 import '../services/review_service.dart';
@@ -45,6 +47,7 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: AccordDetailView),
     MaterialRoute(page: NotificationsView),
     MaterialRoute(page: AvisView),
+    MaterialRoute(page: ChatView),
     // Les prochains écrans seront ajoutés ici
   ],
   dependencies: [
@@ -64,6 +67,7 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: AccordService),
     LazySingleton(classType: NotificationService),
     LazySingleton(classType: ReviewService),
+    LazySingleton(classType: MessageService),
     // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )

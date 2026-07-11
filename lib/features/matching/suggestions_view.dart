@@ -119,17 +119,10 @@ class SuggestionsView extends StackedView<SuggestionsViewModel> {
                 return MatchCard(
                   suggestion: s,
                   onSeeCalendar: () => viewModel.goToCompatibilite(s),
-                  // APP-75 branchera la messagerie
-                  onContact: () => _comingSoon(context, 'APP-75'),
+                  onContact: () => viewModel.goToChat(s),
                 );
               },
             ),
-    );
-  }
-
-  void _comingSoon(BuildContext context, String ticket) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('À venir ($ticket)')),
     );
   }
 

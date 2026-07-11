@@ -8,6 +8,7 @@ import '../accords/mes_accords_view.dart';
 import '../dashboard/home_alternant_view.dart';
 import '../logements/mes_logements_view.dart';
 import '../matching/suggestions_view.dart';
+import '../messages/conversations_view.dart';
 import '../notifications/notifications_view.dart';
 import 'main_viewmodel.dart';
 
@@ -50,7 +51,7 @@ class MainView extends StackedView<MainViewModel> {
           HomeAlternantView(onSeeMatches: () => viewModel.setIndex(1)),
           const SuggestionsView(),
           const MesLogementsView(),
-          const _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
+          const ConversationsView(),
           const _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
         ];
       case UserRole.ETUDIANT:
@@ -58,7 +59,7 @@ class MainView extends StackedView<MainViewModel> {
           _PlaceholderTab(title: 'Accueil', ticket: 'APP-79'),
           _PlaceholderTab(title: 'Recherche', ticket: 'APP-79'),
           MesAccordsView(),
-          _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
+          ConversationsView(),
           _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
         ];
       case UserRole.PROPRIETAIRE:
@@ -66,7 +67,7 @@ class MainView extends StackedView<MainViewModel> {
         return const [
           _PlaceholderTab(title: 'Accueil', ticket: 'APP-80'),
           MesLogementsView(),
-          _PlaceholderTab(title: 'Messages', ticket: 'APP-75'),
+          ConversationsView(),
           NotificationsView(),
           _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
         ];
