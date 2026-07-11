@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/accords/mes_accords_viewmodel.dart';
 import 'package:studup_app/services/accord_service.dart';
@@ -10,6 +11,8 @@ import 'package:studup_app/shared/models/enums.dart';
 class MockAccordService extends Mock implements AccordService {}
 
 class MockProfileService extends Mock implements ProfileService {}
+
+class MockNavigationService extends Mock implements NavigationService {}
 
 void main() {
   late MockAccordService accordService;
@@ -43,6 +46,7 @@ void main() {
     viewModel = MesAccordsViewModel(
       accordService: accordService,
       profileService: profileService,
+      navigationService: MockNavigationService(),
     );
     when(() => profileService.currentUserId())
         .thenAnswer((_) async => 'moi');

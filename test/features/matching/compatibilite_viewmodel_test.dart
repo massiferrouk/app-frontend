@@ -1,7 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:studup_app/services/accord_service.dart';
+import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/features/matching/compatibilite_viewmodel.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/matching_suggestion.dart';
+
+class MockAccordService extends Mock implements AccordService {}
 
 void main() {
   MatchingSuggestion buildSuggestion() =>
@@ -52,7 +57,7 @@ void main() {
   group('CompatibiliteViewModel', () {
     test('parse les semaines du payload suggestions', () {
       final viewModel =
-          CompatibiliteViewModel(suggestion: buildSuggestion());
+          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService());
 
       expect(viewModel.suggestion.semaines, hasLength(3));
       expect(viewModel.suggestion.semaines[0].type,
@@ -63,7 +68,7 @@ void main() {
 
     test('groupe les semaines par mois', () {
       final viewModel =
-          CompatibiliteViewModel(suggestion: buildSuggestion());
+          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService());
 
       final groupes = viewModel.semainesParMois;
 
@@ -73,12 +78,82 @@ void main() {
 
     test('note explicative selon le type de semaine', () {
       final viewModel =
-          CompatibiliteViewModel(suggestion: buildSuggestion());
+          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService());
       final semaines = viewModel.suggestion.semaines;
 
       expect(viewModel.noteFor(semaines[0]), contains('libèrent'));
       expect(viewModel.noteFor(semaines[1]), contains('gérez entre vous'));
       expect(viewModel.noteFor(semaines[2]), contains('Loyer partagé'));
+    });
+  });
+
+  group('proposerAccord', () {
+    late MockAccordService accordService;
+    late CompatibiliteViewModel viewModel;
+
+    setUp(() {
+      accordService = MockAccordService();
+      viewModel = CompatibiliteViewModel(
+        suggestion: buildSuggestion(),
+        accordService: accordService,
+      );
+    });
+
+    setUpAll(() {
+      registerFallbackValue(AccordType.ECHANGE_TOTAL);
+      registerFallbackValue(DateTime(2026));
+    });
+
+    test('envoie la demande avec le type proposé par l\'algorithme',
+        () async {
+      when(() => accordService.createAccord(
+            receiverId: any(named: 'receiverId'),
+            type: any(named: 'type'),
+            dateDebut: any(named: 'dateDebut'),
+            dateFin: any(named: 'dateFin'),
+            messageInitial: any(named: 'messageInitial'),
+          )).thenAnswer((_) async => Accord.fromJson({
+            'id': 'a1',
+            'initiatorId': 'moi',
+            'receiverId': 'u-1',
+            'type': 'ECHANGE_PARTIEL',
+            'statut': 'EN_ATTENTE',
+            'dateDebut': '2026-09-01',
+            'dateFin': '2026-12-31',
+            'createdAt': DateTime.now().toIso8601String(),
+          }));
+
+      final error = await viewModel.proposerAccord(
+        dateDebut: DateTime(2026, 9, 1),
+        dateFin: DateTime(2026, 12, 31),
+        message: 'Salut !',
+      );
+
+      expect(error, isNull);
+
+      verify(() => accordService.createAccord(
+            receiverId: 'u-1',
+            type: AccordType.ECHANGE_PARTIEL, // le typePropose du match
+            dateDebut: DateTime(2026, 9, 1),
+            dateFin: DateTime(2026, 12, 31),
+            messageInitial: 'Salut !',
+          )).called(1);
+    });
+
+    test('dates incohérentes : erreur locale sans appel réseau', () async {
+      final error = await viewModel.proposerAccord(
+        dateDebut: DateTime(2026, 12, 31),
+        dateFin: DateTime(2026, 9, 1),
+      );
+
+      expect(error, contains('date de début'));
+      verifyNever(() => accordService.createAccord(
+            receiverId: any(named: 'receiverId'),
+            type: any(named: 'type'),
+            dateDebut: any(named: 'dateDebut'),
+            dateFin: any(named: 'dateFin'),
+            messageInitial: any(named: 'messageInitial'),
+          ));
     });
   });
 }
