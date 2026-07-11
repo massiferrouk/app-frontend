@@ -22,6 +22,36 @@ class LogementService {
         .toList();
   }
 
+  /// GET /logements — recherche publique avec filtres (logements ACTIF
+  /// uniquement). Retourne la page + l'indicateur hasNext pour
+  /// l'infinite scroll.
+  Future<({List<Logement> logements, bool hasNext})> search({
+    String? ville,
+    double? loyerMax,
+    double? surfaceMin,
+    bool? meuble,
+    LogementType? type,
+    int page = 0,
+  }) async {
+    final data = await _api.get<Map<String, dynamic>>(
+      '/logements',
+      queryParameters: {
+        if (ville != null && ville.isNotEmpty) 'ville': ville,
+        'loyer_max': ?loyerMax,
+        'surface_min': ?surfaceMin,
+        'meuble': ?meuble,
+        'type': ?type?.toJson(),
+        'page': page,
+      },
+    );
+    return (
+      logements: (data['content'] as List? ?? [])
+          .map((e) => Logement.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      hasNext: data['hasNext'] as bool? ?? false,
+    );
+  }
+
   /// GET /logements/{id} — détail complet d'un logement
   Future<Logement> getLogement(String logementId) async {
     final data =

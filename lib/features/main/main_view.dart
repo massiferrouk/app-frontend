@@ -6,6 +6,8 @@ import '../../shared/models/enums.dart';
 import '../../shared/widgets/studup_bottom_nav.dart';
 import '../accords/mes_accords_view.dart';
 import '../dashboard/home_alternant_view.dart';
+import '../dashboard/home_etudiant_view.dart';
+import '../recherche/recherche_view.dart';
 import '../logements/mes_logements_view.dart';
 import '../matching/suggestions_view.dart';
 import '../messages/conversations_view.dart';
@@ -56,12 +58,15 @@ class MainView extends StackedView<MainViewModel> {
           const ProfilView(),
         ];
       case UserRole.ETUDIANT:
-        return const [
-          _PlaceholderTab(title: 'Accueil', ticket: 'APP-79'),
-          _PlaceholderTab(title: 'Recherche', ticket: 'APP-79'),
-          MesAccordsView(),
-          ConversationsView(),
-          ProfilView(),
+        return [
+          HomeEtudiantView(
+            onSearch: () => viewModel.setIndex(1),
+            onAccords: () => viewModel.setIndex(2),
+          ),
+          const RechercheView(),
+          const MesAccordsView(),
+          const ConversationsView(),
+          const ProfilView(),
         ];
       case UserRole.PROPRIETAIRE:
       case UserRole.ADMIN:
