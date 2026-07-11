@@ -10,6 +10,7 @@ import '../logements/mes_logements_view.dart';
 import '../matching/suggestions_view.dart';
 import '../messages/conversations_view.dart';
 import '../notifications/notifications_view.dart';
+import '../profil/profil_view.dart';
 import 'main_viewmodel.dart';
 
 /// Shell de navigation — l'écran conteneur post-connexion.
@@ -52,7 +53,7 @@ class MainView extends StackedView<MainViewModel> {
           const SuggestionsView(),
           const MesLogementsView(),
           const ConversationsView(),
-          const _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
+          const ProfilView(),
         ];
       case UserRole.ETUDIANT:
         return const [
@@ -60,7 +61,7 @@ class MainView extends StackedView<MainViewModel> {
           _PlaceholderTab(title: 'Recherche', ticket: 'APP-79'),
           MesAccordsView(),
           ConversationsView(),
-          _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
+          ProfilView(),
         ];
       case UserRole.PROPRIETAIRE:
       case UserRole.ADMIN:
@@ -69,7 +70,7 @@ class MainView extends StackedView<MainViewModel> {
           MesLogementsView(),
           ConversationsView(),
           NotificationsView(),
-          _PlaceholderTab(title: 'Profil', ticket: 'APP-78'),
+          ProfilView(),
         ];
     }
   }

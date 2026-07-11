@@ -4,6 +4,7 @@ import '../core/api/api_exception.dart';
 import '../core/utils/jwt_decoder.dart';
 import '../shared/models/alternant_profile.dart';
 import '../shared/models/enums.dart';
+import '../shared/models/user.dart';
 import 'token_storage_service.dart';
 
 /// Service des profils utilisateur.
@@ -35,6 +36,13 @@ class ProfileService {
   Future<String?> currentUserId() async {
     final token = await _tokens.getAccessToken();
     return token == null ? null : JwtDecoder.userId(token);
+  }
+
+  /// GET /users/me — identité complète de l'utilisateur connecté
+  /// (le JWT ne contient pas le prénom/nom)
+  Future<User> getMe() async {
+    final data = await _api.get<Map<String, dynamic>>('/users/me');
+    return User.fromJson(data);
   }
 
   // ─── Profil alternant ──────────────────────────────────────────
