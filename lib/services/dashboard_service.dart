@@ -1,6 +1,7 @@
 import '../app/app.locator.dart';
 import '../core/api/api_client.dart';
 import '../shared/models/alternant_dashboard.dart';
+import '../shared/models/proprietaire_dashboard.dart';
 
 /// Service des tableaux de bord.
 class DashboardService {
@@ -14,5 +15,12 @@ class DashboardService {
     final data =
         await _api.get<Map<String, dynamic>>('/dashboard/alternant');
     return AlternantDashboard.fromJson(data);
+  }
+
+  /// GET /dashboard/proprietaire — KPIs et logements du propriétaire
+  Future<ProprietaireDashboard> getProprietaireDashboard() async {
+    final data =
+        await _api.get<Map<String, dynamic>>('/dashboard/proprietaire');
+    return ProprietaireDashboard.fromJson(data);
   }
 }

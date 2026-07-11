@@ -7,6 +7,7 @@ import '../../shared/widgets/studup_bottom_nav.dart';
 import '../accords/mes_accords_view.dart';
 import '../dashboard/home_alternant_view.dart';
 import '../dashboard/home_etudiant_view.dart';
+import '../dashboard/home_proprio_view.dart';
 import '../recherche/recherche_view.dart';
 import '../logements/mes_logements_view.dart';
 import '../matching/suggestions_view.dart';
@@ -70,12 +71,12 @@ class MainView extends StackedView<MainViewModel> {
         ];
       case UserRole.PROPRIETAIRE:
       case UserRole.ADMIN:
-        return const [
-          _PlaceholderTab(title: 'Accueil', ticket: 'APP-80'),
-          MesLogementsView(),
-          ConversationsView(),
-          NotificationsView(),
-          ProfilView(),
+        return [
+          HomeProprioView(onSeeLogements: () => viewModel.setIndex(1)),
+          const MesLogementsView(),
+          const ConversationsView(),
+          const NotificationsView(),
+          const ProfilView(),
         ];
     }
   }
@@ -87,29 +88,3 @@ class MainView extends StackedView<MainViewModel> {
   void onViewModelReady(MainViewModel viewModel) => viewModel.init();
 }
 
-/// Contenu provisoire d'un onglet
-class _PlaceholderTab extends StatelessWidget {
-  final String title;
-  final String ticket;
-
-  const _PlaceholderTab({required this.title, required this.ticket});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text(
-              'À venir ($ticket)',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
