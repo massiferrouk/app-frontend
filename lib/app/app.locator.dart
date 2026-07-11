@@ -21,6 +21,7 @@ import '../services/logement_service.dart';
 import '../services/matching_service.dart';
 import '../services/notification_service.dart';
 import '../services/profile_service.dart';
+import '../services/review_service.dart';
 import '../services/token_storage_service.dart';
 
 final locator = StackedLocator.instance;
@@ -49,4 +50,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => LogementService());
   locator.registerLazySingleton(() => AccordService());
   locator.registerLazySingleton(() => NotificationService());
+  locator.registerLazySingleton(() => ReviewService());
 }

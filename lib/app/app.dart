@@ -6,6 +6,7 @@ import '../features/auth/login/login_view.dart';
 import '../features/auth/profil_creation/profil_creation_view.dart';
 import '../features/auth/register/register_view.dart';
 import '../features/accords/accord_detail_view.dart';
+import '../features/avis/avis_view.dart';
 import '../features/calendrier/mon_calendrier_view.dart';
 import '../features/logements/ajouter_logement_view.dart';
 import '../features/logements/logement_detail_view.dart';
@@ -21,6 +22,7 @@ import '../services/logement_service.dart';
 import '../services/matching_service.dart';
 import '../services/notification_service.dart';
 import '../services/profile_service.dart';
+import '../services/review_service.dart';
 import '../services/token_storage_service.dart';
 
 /// Point de vérité unique de l'application.
@@ -42,6 +44,7 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: LogementDetailView),
     MaterialRoute(page: AccordDetailView),
     MaterialRoute(page: NotificationsView),
+    MaterialRoute(page: AvisView),
     // Les prochains écrans seront ajoutés ici
   ],
   dependencies: [
@@ -60,6 +63,7 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: LogementService),
     LazySingleton(classType: AccordService),
     LazySingleton(classType: NotificationService),
+    LazySingleton(classType: ReviewService),
     // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )

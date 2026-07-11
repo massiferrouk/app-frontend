@@ -115,6 +115,7 @@ class MesAccordsView extends StackedView<MesAccordsViewModel> {
                       'Refuser cet accord ?', () => viewModel.refuse(a)),
                   onCancel: () => _confirm(context, viewModel,
                       'Annuler ta demande ?', () => viewModel.cancel(a)),
+                  onAvis: () => viewModel.goToAvis(a),
                   ),
                 );
               },
@@ -201,6 +202,7 @@ class _AccordCard extends StatelessWidget {
   final VoidCallback onAccept;
   final VoidCallback onRefuse;
   final VoidCallback onCancel;
+  final VoidCallback onAvis;
 
   const _AccordCard({
     required this.accord,
@@ -209,6 +211,7 @@ class _AccordCard extends StatelessWidget {
     required this.onAccept,
     required this.onRefuse,
     required this.onCancel,
+    required this.onAvis,
   });
 
   (Color, Color) get _statutColors => switch (accord.statut) {
@@ -337,9 +340,7 @@ class _AccordCard extends StatelessWidget {
           ] else if (accord.statut == AccordStatut.TERMINE) ...[
             const SizedBox(height: AppSpacing.md),
             OutlinedButton.icon(
-              // APP-77 branchera le dépôt d'avis
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('À venir (APP-77)'))),
+              onPressed: onAvis,
               icon: const Icon(Icons.star_border, size: 16),
               label: const Text('Laisser un avis',
                   style: TextStyle(fontSize: 13)),
