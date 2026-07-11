@@ -47,9 +47,18 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
-        Text('Bonjour 👋',
-            style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: AppSpacing.xs),
+        Row(
+          children: [
+            Expanded(
+              child: Text('Bonjour 👋',
+                  style: Theme.of(context).textTheme.headlineMedium),
+            ),
+            IconButton(
+              onPressed: viewModel.goToNotifications,
+              icon: const Icon(Icons.notifications_outlined, size: 26),
+            ),
+          ],
+        ),
         Text('Voici où tu en es',
             style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: AppSpacing.lg),

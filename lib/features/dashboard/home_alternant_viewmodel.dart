@@ -20,6 +20,11 @@ class HomeAlternantViewModel extends BaseViewModel {
 
   void goToCalendrier() => _nav.navigateTo(Routes.monCalendrierView);
 
+  void goToNotifications() => _nav.navigateTo(
+        Routes.notificationsView,
+        arguments: const NotificationsViewArguments(standalone: true),
+      );
+
   AlternantDashboard? dashboard;
   String? errorMessage;
 
