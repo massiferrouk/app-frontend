@@ -103,7 +103,9 @@ class MesAccordsView extends StackedView<MesAccordsViewModel> {
               itemCount: viewModel.accords.length,
               itemBuilder: (context, index) {
                 final a = viewModel.accords[index];
-                return _AccordCard(
+                return GestureDetector(
+                  onTap: () => viewModel.goToDetail(a),
+                  child: _AccordCard(
                   accord: a,
                   canAcceptOrRefuse: viewModel.canAcceptOrRefuse(a),
                   canCancel: viewModel.canCancel(a),
@@ -113,6 +115,7 @@ class MesAccordsView extends StackedView<MesAccordsViewModel> {
                       'Refuser cet accord ?', () => viewModel.refuse(a)),
                   onCancel: () => _confirm(context, viewModel,
                       'Annuler ta demande ?', () => viewModel.cancel(a)),
+                  ),
                 );
               },
             ),

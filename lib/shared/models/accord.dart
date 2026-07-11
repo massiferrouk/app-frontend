@@ -50,6 +50,14 @@ class Accord {
   /// true si [userId] a initié la demande
   bool isInitiator(String userId) => initiatorId == userId;
 
+  /// Seul le DESTINATAIRE d'une demande EN_ATTENTE peut accepter/refuser
+  bool canBeAnsweredBy(String userId) =>
+      statut == AccordStatut.EN_ATTENTE && receiverId == userId;
+
+  /// Seul l'INITIATEUR d'une demande EN_ATTENTE peut l'annuler
+  bool canBeCancelledBy(String userId) =>
+      statut == AccordStatut.EN_ATTENTE && initiatorId == userId;
+
   /// Heures restantes avant expiration (72h après création).
   /// null si l'accord n'est plus EN_ATTENTE.
   int? get heuresAvantExpiration {

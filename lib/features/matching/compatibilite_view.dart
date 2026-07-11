@@ -29,6 +29,18 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Compatibilité')),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.screenPadding),
+          child: ElevatedButton.icon(
+            onPressed: viewModel.isBusy
+                ? null
+                : () => _showProposerSheet(context, viewModel),
+            icon: const Icon(Icons.handshake_outlined),
+            label: Text('Proposer un ${s.typePropose.label.toLowerCase()}'),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -133,9 +145,162 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
     );
   }
 
+  /// Bottom sheet de proposition d'accord : dates + message
+  Future<void> _showProposerSheet(
+      BuildContext context, CompatibiliteViewModel viewModel) async {
+    final result = await showModalBottomSheet<
+        ({DateTime debut, DateTime fin, String? message})>(
+      context: context,
+      isScrollControlled: true, // laisse la place au clavier
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _ProposerAccordSheet(
+          typeLabel: viewModel.suggestion.typePropose.label),
+    );
+    if (result == null) return;
+
+    final error = await viewModel.proposerAccord(
+      dateDebut: result.debut,
+      dateFin: result.fin,
+      message: result.message,
+    );
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(error ??
+            'Demande envoyée ! Elle expire dans 72h sans réponse.'),
+        backgroundColor: error == null ? AppColors.echange : AppColors.error,
+      ));
+    }
+  }
+
   @override
   CompatibiliteViewModel viewModelBuilder(BuildContext context) =>
       CompatibiliteViewModel(suggestion: suggestion);
+}
+
+// ─── Bottom sheet de proposition ──────────────────────────────────
+
+class _ProposerAccordSheet extends StatefulWidget {
+  final String typeLabel;
+
+  const _ProposerAccordSheet({required this.typeLabel});
+
+  @override
+  State<_ProposerAccordSheet> createState() => _ProposerAccordSheetState();
+}
+
+class _ProposerAccordSheetState extends State<_ProposerAccordSheet> {
+  DateTime? _debut;
+  DateTime? _fin;
+  final _messageController = TextEditingController();
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate(bool isDebut) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: (isDebut ? _debut : _fin) ??
+          now.add(const Duration(days: 7)),
+      firstDate: now.add(const Duration(days: 1)), // @Future côté backend
+      lastDate: DateTime(now.year + 2),
+    );
+    if (picked == null) return;
+    setState(() => isDebut ? _debut = picked : _fin = picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = _debut != null && _fin != null;
+
+    return Padding(
+      // Remonte le sheet au-dessus du clavier
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Proposer un ${widget.typeLabel.toLowerCase()}',
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                    child: _dateButton('Début', _debut, () => _pickDate(true))),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                    child: _dateButton('Fin', _fin, () => _pickDate(false))),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _messageController,
+              maxLines: 3,
+              maxLength: 500,
+              decoration: const InputDecoration(
+                  hintText: 'Message (optionnel)', counterText: ''),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ElevatedButton(
+              onPressed: ready
+                  ? () => Navigator.pop(context, (
+                        debut: _debut!,
+                        fin: _fin!,
+                        message: _messageController.text.trim().isEmpty
+                            ? null
+                            : _messageController.text.trim(),
+                      ))
+                  : null,
+              child: const Text('Envoyer la demande'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dateButton(String label, DateTime? value, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textTertiary)),
+            Text(
+              value == null
+                  ? 'Choisir…'
+                  : DateFormat('dd/MM/yyyy').format(value),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: value == null
+                      ? AppColors.textTertiary
+                      : AppColors.textPrimary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ─── Widgets internes ─────────────────────────────────────────────

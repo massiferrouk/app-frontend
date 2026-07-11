@@ -1,6 +1,8 @@
 import '../app/app.locator.dart';
 import '../core/api/api_client.dart';
 import '../shared/models/accord.dart';
+import '../shared/models/alternant_profile.dart';
+import '../shared/models/enums.dart';
 
 /// Service des accords.
 class AccordService {
@@ -17,6 +19,28 @@ class AccordService {
     return (data['content'] as List? ?? [])
         .map((e) => Accord.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// POST /accords — envoie une demande d'accord (statut EN_ATTENTE,
+  /// expire après 72h, notifie le destinataire côté backend)
+  Future<Accord> createAccord({
+    required String receiverId,
+    required AccordType type,
+    required DateTime dateDebut,
+    required DateTime dateFin,
+    String? messageInitial,
+  }) async {
+    final data = await _api.post<Map<String, dynamic>>(
+      '/accords',
+      data: {
+        'receiverId': receiverId,
+        'type': type.toJson(),
+        'dateDebut': AlternantProfile.toIsoDate(dateDebut),
+        'dateFin': AlternantProfile.toIsoDate(dateFin),
+        'messageInitial': messageInitial,
+      },
+    );
+    return Accord.fromJson(data);
   }
 
   Future<Accord> accept(String accordId) async {
