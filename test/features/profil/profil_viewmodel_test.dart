@@ -4,6 +4,7 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/profil/profil_viewmodel.dart';
 import 'package:studup_app/services/auth_service.dart';
+import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/services/review_service.dart';
@@ -19,6 +20,8 @@ class MockReviewService extends Mock implements ReviewService {}
 
 class MockAuthService extends Mock implements AuthService {}
 
+class MockChatSocketService extends Mock implements ChatSocketService {}
+
 class MockNavigationService extends Mock implements NavigationService {}
 
 void main() {
@@ -26,6 +29,7 @@ void main() {
   late MockLogementService logementService;
   late MockReviewService reviewService;
   late MockAuthService authService;
+  late MockChatSocketService socketService;
   late MockNavigationService nav;
   late ProfilViewModel viewModel;
 
@@ -43,12 +47,14 @@ void main() {
     logementService = MockLogementService();
     reviewService = MockReviewService();
     authService = MockAuthService();
+    socketService = MockChatSocketService();
     nav = MockNavigationService();
     viewModel = ProfilViewModel(
       profileService: profileService,
       logementService: logementService,
       reviewService: reviewService,
       authService: authService,
+      chatSocketService: socketService,
       navigationService: nav,
     );
   });
@@ -108,13 +114,16 @@ void main() {
   });
 
   group('logout', () {
-    test('révoque, purge et retourne au login', () async {
+    test('coupe le WebSocket, révoque, purge et retourne au login',
+        () async {
       when(() => authService.logout()).thenAnswer((_) async {});
       when(() => nav.clearStackAndShow(any()))
           .thenAnswer((_) async => null);
 
       await viewModel.logout();
 
+      // APP-89 : l'ancien compte ne doit plus recevoir de messages
+      verify(() => socketService.disconnect()).called(1);
       verify(() => authService.logout()).called(1);
       verify(() => nav.clearStackAndShow(any())).called(1);
     });

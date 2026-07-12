@@ -5,6 +5,7 @@ import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/auth_service.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/review_service.dart';
@@ -20,6 +21,7 @@ class ProfilViewModel extends BaseViewModel {
   final LogementService _logements;
   final ReviewService _reviews;
   final AuthService _auth;
+  final ChatSocketService _socket;
   final NavigationService _nav;
 
   ProfilViewModel({
@@ -27,11 +29,13 @@ class ProfilViewModel extends BaseViewModel {
     LogementService? logementService,
     ReviewService? reviewService,
     AuthService? authService,
+    ChatSocketService? chatSocketService,
     NavigationService? navigationService,
   })  : _profile = profileService ?? locator<ProfileService>(),
         _logements = logementService ?? locator<LogementService>(),
         _reviews = reviewService ?? locator<ReviewService>(),
         _auth = authService ?? locator<AuthService>(),
+        _socket = chatSocketService ?? locator<ChatSocketService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
   User? user;
@@ -70,9 +74,12 @@ class ProfilViewModel extends BaseViewModel {
 
   void goToCalendrier() => _nav.navigateTo(Routes.monCalendrierView);
 
-  /// Déconnexion : révocation serveur + purge locale + retour au login
+  /// Déconnexion : coupure du WebSocket (l'ancien compte ne doit plus
+  /// recevoir de messages sur l'appareil), révocation serveur,
+  /// purge locale, retour au login. (APP-89)
   Future<void> logout() async {
     setBusy(true);
+    _socket.disconnect();
     await _auth.logout();
     await _nav.clearStackAndShow(Routes.loginView);
   }
