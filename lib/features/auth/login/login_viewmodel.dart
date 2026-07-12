@@ -55,10 +55,16 @@ class LoginViewModel extends BaseViewModel {
         await _nav.clearStackAndShow(Routes.mainView);
       }
     } on ApiException catch (e) {
-      // Le message backend est déjà en français et affichable
-      errorMessage = e.isUnauthorized
-          ? 'Email ou mot de passe incorrect'
-          : e.message;
+      // Un 401 peut être un mauvais mot de passe OU un email non confirmé :
+      // le code métier du backend permet de distinguer (APP-83)
+      if (e.code == 'EMAIL_NOT_CONFIRMED') {
+        errorMessage =
+            'Confirme ton adresse email avant de te connecter (vérifie ta boîte mail)';
+      } else if (e.isUnauthorized) {
+        errorMessage = 'Email ou mot de passe incorrect';
+      } else {
+        errorMessage = e.message;
+      }
     } finally {
       setBusy(false); // notifie aussi les listeners
     }

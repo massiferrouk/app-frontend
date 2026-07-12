@@ -112,6 +112,27 @@ void main() {
       verifyNever(() => nav.clearStackAndShow(any()));
     });
 
+    test('401 EMAIL_NOT_CONFIRMED : message dédié, pas "mot de passe incorrect"',
+        () async {
+      viewModel.emailController.text = 'alice@studup.fr';
+      viewModel.passwordController.text = 'motdepasse123';
+
+      when(() => auth.login(
+              email: any(named: 'email'), password: any(named: 'password')))
+          .thenThrow(const ApiException(
+        code: 'EMAIL_NOT_CONFIRMED',
+        message: 'Confirme ton adresse email avant de te connecter',
+        statusCode: 401,
+      ));
+
+      await viewModel.login();
+
+      expect(viewModel.errorMessage, contains('Confirme ton adresse email'));
+      expect(viewModel.errorMessage,
+          isNot(contains('mot de passe incorrect')));
+      verifyNever(() => nav.clearStackAndShow(any()));
+    });
+
     test('erreur réseau : le message ApiException est affiché', () async {
       viewModel.emailController.text = 'alice@studup.fr';
       viewModel.passwordController.text = 'motdepasse123';
