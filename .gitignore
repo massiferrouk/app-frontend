@@ -48,5 +48,9 @@ app.*.map.json
 lib/app/app.locator.dart
 lib/app/app.router.dart
 
-# Contexte Claude Code — fichier local, non versionné
+# Contexte Claude Code — fichiers locaux, non versionnés
 CLAUDE.md
+.claude/
+
+# Plateforme desktop Windows — essai abandonné, cible = web + Android
+/windows/

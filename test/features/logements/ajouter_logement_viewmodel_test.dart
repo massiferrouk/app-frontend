@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
@@ -32,7 +33,10 @@ void main() {
     'isMeuble': true,
   });
 
-  setUpAll(() => registerFallbackValue(LogementType.STUDIO));
+  setUpAll(() {
+    registerFallbackValue(LogementType.STUDIO);
+    registerFallbackValue(<XFile>[]);
+  });
 
   setUp(() {
     logementService = MockLogementService();
@@ -152,8 +156,8 @@ void main() {
 
     test('avec photos : upload après création', () async {
       fillValidForm();
-      viewModel.addPhoto('/tmp/photo1.jpg');
-      viewModel.addPhoto('/tmp/photo2.jpg');
+      viewModel.addPhoto(XFile('/tmp/photo1.jpg'));
+      viewModel.addPhoto(XFile('/tmp/photo2.jpg'));
       stubCreate();
       when(() => logementService.addPhotos('log-1', any()))
           .thenAnswer((_) async => ['url1', 'url2']);
@@ -161,8 +165,11 @@ void main() {
 
       await viewModel.submit(publierMaintenant: false);
 
-      verify(() => logementService.addPhotos(
-          'log-1', ['/tmp/photo1.jpg', '/tmp/photo2.jpg'])).called(1);
+      // XFile n'a pas d'égalité par valeur : on vérifie l'appel avec les
+      // 2 photos ajoutées via un matcher de longueur.
+      final captured = verify(() => logementService.addPhotos(
+          'log-1', captureAny())).captured.single as List<XFile>;
+      expect(captured, hasLength(2));
     });
 
     test('erreur backend : message affiché, pas de retour', () async {
@@ -195,10 +202,10 @@ void main() {
   group('photos', () {
     test('limite de 10 photos', () {
       for (var i = 0; i < 10; i++) {
-        expect(viewModel.addPhoto('/tmp/p$i.jpg'), isTrue);
+        expect(viewModel.addPhoto(XFile('/tmp/p$i.jpg')), isTrue);
       }
-      expect(viewModel.addPhoto('/tmp/p11.jpg'), isFalse);
-      expect(viewModel.photoPaths, hasLength(10));
+      expect(viewModel.addPhoto(XFile('/tmp/p11.jpg')), isFalse);
+      expect(viewModel.photos, hasLength(10));
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stacked/stacked.dart';
@@ -150,7 +151,7 @@ class AjouterLogementView extends StackedView<AjouterLogementViewModel> {
               const SizedBox(height: AppSpacing.lg),
 
               // ─── Photos ─────────────────────────────────────
-              Text('Photos (${viewModel.photoPaths.length}/10)',
+              Text('Photos (${viewModel.photos.length}/10)',
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: AppSpacing.sm),
               _PhotosRow(viewModel: viewModel),
@@ -239,7 +240,7 @@ class _PhotosRow extends StatelessWidget {
         source: ImageSource.gallery, maxWidth: 1920, imageQuality: 80);
     if (image == null) return;
 
-    final added = viewModel.addPhoto(image.path);
+    final added = viewModel.addPhoto(image);
     if (!added && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Maximum 10 photos')));
@@ -268,23 +269,28 @@ class _PhotosRow extends StatelessWidget {
                   color: AppColors.textTertiary),
             ),
           ),
-          // Miniatures
-          ...viewModel.photoPaths.map((path) => Stack(
+          // Miniatures — sur le web image_picker renvoie un blob URL
+          // (Image.network), sur mobile un vrai fichier (Image.file).
+          ...viewModel.photos.map((photo) => Stack(
                 children: [
-                  Container(
-                    width: 84,
-                    margin: const EdgeInsets.only(right: AppSpacing.sm),
-                    decoration: BoxDecoration(
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      image: DecorationImage(
-                          image: FileImage(File(path)), fit: BoxFit.cover),
+                      child: SizedBox(
+                        width: 84,
+                        height: 84,
+                        child: kIsWeb
+                            ? Image.network(photo.path, fit: BoxFit.cover)
+                            : Image.file(File(photo.path), fit: BoxFit.cover),
+                      ),
                     ),
                   ),
                   Positioned(
                     top: 4,
                     right: 12,
                     child: GestureDetector(
-                      onTap: () => viewModel.removePhoto(path),
+                      onTap: () => viewModel.removePhoto(photo),
                       child: const CircleAvatar(
                         radius: 10,
                         backgroundColor: Colors.black54,

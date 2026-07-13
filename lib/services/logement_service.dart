@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../app/app.locator.dart';
 import '../core/api/api_client.dart';
@@ -108,14 +109,20 @@ class LogementService {
     return Logement.fromJson(data);
   }
 
-  /// POST /logements/{id}/photos — upload multipart (1 à 10 photos)
+  /// POST /logements/{id}/photos — upload multipart (1 à 10 photos).
+  /// Utilise les bytes de chaque image (readAsBytes) plutôt que le chemin
+  /// fichier : fonctionne à la fois sur mobile ET sur le web (où image_picker
+  /// renvoie un blob non lisible par MultipartFile.fromFile). (APP-93)
   Future<List<String>> addPhotos(
-      String logementId, List<String> filePaths) async {
+      String logementId, List<XFile> photos) async {
     final formData = FormData();
-    for (final path in filePaths) {
+    for (final photo in photos) {
       formData.files.add(MapEntry(
         'files',
-        await MultipartFile.fromFile(path),
+        MultipartFile.fromBytes(
+          await photo.readAsBytes(),
+          filename: photo.name,
+        ),
       ));
     }
     final data = await _api.post<List<dynamic>>(

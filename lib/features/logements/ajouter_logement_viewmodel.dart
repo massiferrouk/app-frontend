@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 
@@ -37,8 +38,8 @@ class AjouterLogementViewModel extends BaseViewModel {
   ];
   final Set<String> equipements = {};
 
-  /// Chemins locaux des photos sélectionnées (max 10)
-  final List<String> photoPaths = [];
+  /// Photos sélectionnées (max 10). XFile fonctionne web ET mobile.
+  final List<XFile> photos = [];
 
   String? errorMessage;
 
@@ -61,15 +62,15 @@ class AjouterLogementViewModel extends BaseViewModel {
   }
 
   /// Ajoute une photo. Retourne false si la limite de 10 est atteinte.
-  bool addPhoto(String path) {
-    if (photoPaths.length >= 10) return false;
-    photoPaths.add(path);
+  bool addPhoto(XFile photo) {
+    if (photos.length >= 10) return false;
+    photos.add(photo);
     notifyListeners();
     return true;
   }
 
-  void removePhoto(String path) {
-    photoPaths.remove(path);
+  void removePhoto(XFile photo) {
+    photos.remove(photo);
     notifyListeners();
   }
 
@@ -123,8 +124,8 @@ class AjouterLogementViewModel extends BaseViewModel {
         isMeuble: isMeuble,
       );
 
-      if (photoPaths.isNotEmpty) {
-        await _logements.addPhotos(logement.id, photoPaths);
+      if (photos.isNotEmpty) {
+        await _logements.addPhotos(logement.id, photos);
       }
 
       if (publierMaintenant) {
