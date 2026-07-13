@@ -116,7 +116,7 @@ void main() {
     test('retourne le profil quand il existe', () async {
       when(() => tokens.getAccessToken())
           .thenAnswer((_) async => fakeJwt({'userId': 'user-1'}));
-      when(() => api.get<Map<String, dynamic>>('/profile/user-1'))
+      when(() => api.get<Map<String, dynamic>>('/profile/alternant'))
           .thenAnswer((_) async => profileJson);
 
       final profile = await service.getMyAlternantProfile();
@@ -128,7 +128,7 @@ void main() {
     test('retourne null sur 404 (pas encore de profil)', () async {
       when(() => tokens.getAccessToken())
           .thenAnswer((_) async => fakeJwt({'userId': 'user-1'}));
-      when(() => api.get<Map<String, dynamic>>('/profile/user-1'))
+      when(() => api.get<Map<String, dynamic>>('/profile/alternant'))
           .thenThrow(const ApiException(
         code: 'NOT_FOUND',
         message: 'Profil introuvable',
@@ -141,7 +141,7 @@ void main() {
     test('propage les autres erreurs (500...)', () async {
       when(() => tokens.getAccessToken())
           .thenAnswer((_) async => fakeJwt({'userId': 'user-1'}));
-      when(() => api.get<Map<String, dynamic>>('/profile/user-1'))
+      when(() => api.get<Map<String, dynamic>>('/profile/alternant'))
           .thenThrow(const ApiException(
         code: 'INTERNAL_ERROR',
         message: 'Erreur interne',

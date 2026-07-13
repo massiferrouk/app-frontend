@@ -87,15 +87,13 @@ class ProfileService {
     }
   }
 
-  /// GET /profile/{userId} — null si le profil n'existe pas encore (404).
+  /// GET /profile/alternant — MON profil, null s'il n'existe pas (404).
   /// Utilisé après login pour décider d'afficher le formulaire de création.
+  /// (Bug corrigé en recette : /profile/{userId} n'existe pas côté backend)
   Future<AlternantProfile?> getMyAlternantProfile() async {
-    final userId = await currentUserId();
-    if (userId == null) return null;
-
     try {
       final data =
-          await _api.get<Map<String, dynamic>>('/profile/$userId');
+          await _api.get<Map<String, dynamic>>('/profile/alternant');
       return AlternantProfile.fromJson(data);
     } on ApiException catch (e) {
       if (e.isNotFound) return null; // pas encore de profil : cas normal
