@@ -18,16 +18,21 @@ class CompatibiliteViewModel extends BaseViewModel {
       {required this.suggestion, AccordService? accordService})
       : _accords = accordService ?? locator<AccordService>();
 
+  /// true si le type d'accord est un échange (nécessite les 2 logements).
+  bool get _estEchange =>
+      suggestion.typePropose == AccordType.ECHANGE_TOTAL ||
+      suggestion.typePropose == AccordType.ECHANGE_PARTIEL;
+
   /// Envoie la demande d'accord au match affiché.
-  /// Le type vient de l'algorithme (typePropose).
+  /// Le type vient de l'algorithme (typePropose). Aucune date : le backend
+  /// déduit la période commune des deux alternances.
   /// Retourne null si OK, un message d'erreur sinon.
-  Future<String?> proposerAccord({
-    required DateTime dateDebut,
-    required DateTime dateFin,
-    String? message,
-  }) async {
-    if (!dateDebut.isBefore(dateFin)) {
-      return 'La date de début doit être avant la date de fin';
+  Future<String?> proposerAccord({String? message}) async {
+    // Un échange n'est signable que si les deux logements sont publiés.
+    if (_estEchange &&
+        (suggestion.logementAId == null || suggestion.logementBId == null)) {
+      return 'Match potentiel : vous devez tous les deux avoir publié votre '
+          'logement pour proposer un échange.';
     }
 
     setBusy(true);
@@ -35,8 +40,8 @@ class CompatibiliteViewModel extends BaseViewModel {
       await _accords.createAccord(
         receiverId: suggestion.userId,
         type: suggestion.typePropose,
-        dateDebut: dateDebut,
-        dateFin: dateFin,
+        logementAId: suggestion.logementAId,
+        logementBId: suggestion.logementBId,
         messageInitial: message,
       );
       return null;

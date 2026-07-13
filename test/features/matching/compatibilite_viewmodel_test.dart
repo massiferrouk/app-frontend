@@ -9,8 +9,11 @@ import 'package:studup_app/shared/models/matching_suggestion.dart';
 class MockAccordService extends Mock implements AccordService {}
 
 void main() {
-  MatchingSuggestion buildSuggestion() =>
-      MatchingSuggestion.fromJson(const {
+  // Match actif : les deux logements sont publiés (IDs non nuls).
+  MatchingSuggestion buildSuggestion({
+    bool actif = true,
+  }) =>
+      MatchingSuggestion.fromJson({
         'profileId': 'p-1',
         'userId': 'u-1',
         'prenom': 'Thomas',
@@ -20,13 +23,15 @@ void main() {
         'score': 0.75,
         'scorePercent': 75,
         'typePropose': 'ECHANGE_PARTIEL',
-        'isMatchActif': true,
+        'isMatchActif': actif,
         'messageMatchPotentiel': null,
         'nbSemainesEchange': 3,
         'nbSemainesColocation': 0,
         'nbSemainesChevauchement': 1,
         'messageResume': 'Vos rythmes sont compatibles à 75%.',
-        'semaines': [
+        'logementAId': actif ? 'log-a' : null,
+        'logementBId': actif ? 'log-b' : null,
+        'semaines': const [
           {
             'semaine': '2026-07-27',
             'villeAlternantA': 'Paris',
@@ -101,16 +106,15 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(AccordType.ECHANGE_TOTAL);
-      registerFallbackValue(DateTime(2026));
     });
 
-    test('envoie la demande avec le type proposé par l\'algorithme',
+    test('envoie la demande avec le type et les 2 logements, sans dates',
         () async {
       when(() => accordService.createAccord(
             receiverId: any(named: 'receiverId'),
             type: any(named: 'type'),
-            dateDebut: any(named: 'dateDebut'),
-            dateFin: any(named: 'dateFin'),
+            logementAId: any(named: 'logementAId'),
+            logementBId: any(named: 'logementBId'),
             messageInitial: any(named: 'messageInitial'),
           )).thenAnswer((_) async => Accord.fromJson({
             'id': 'a1',
@@ -123,35 +127,35 @@ void main() {
             'createdAt': DateTime.now().toIso8601String(),
           }));
 
-      final error = await viewModel.proposerAccord(
-        dateDebut: DateTime(2026, 9, 1),
-        dateFin: DateTime(2026, 12, 31),
-        message: 'Salut !',
-      );
+      final error = await viewModel.proposerAccord(message: 'Salut !');
 
       expect(error, isNull);
 
       verify(() => accordService.createAccord(
             receiverId: 'u-1',
             type: AccordType.ECHANGE_PARTIEL, // le typePropose du match
-            dateDebut: DateTime(2026, 9, 1),
-            dateFin: DateTime(2026, 12, 31),
+            logementAId: 'log-a',
+            logementBId: 'log-b',
             messageInitial: 'Salut !',
           )).called(1);
     });
 
-    test('dates incohérentes : erreur locale sans appel réseau', () async {
-      final error = await viewModel.proposerAccord(
-        dateDebut: DateTime(2026, 12, 31),
-        dateFin: DateTime(2026, 9, 1),
+    test('match potentiel (logements manquants) : erreur locale sans réseau',
+        () async {
+      // Suggestion sans logements publiés → échange non signable
+      viewModel = CompatibiliteViewModel(
+        suggestion: buildSuggestion(actif: false),
+        accordService: accordService,
       );
 
-      expect(error, contains('date de début'));
+      final error = await viewModel.proposerAccord();
+
+      expect(error, contains('Match potentiel'));
       verifyNever(() => accordService.createAccord(
             receiverId: any(named: 'receiverId'),
             type: any(named: 'type'),
-            dateDebut: any(named: 'dateDebut'),
-            dateFin: any(named: 'dateFin'),
+            logementAId: any(named: 'logementAId'),
+            logementBId: any(named: 'logementBId'),
             messageInitial: any(named: 'messageInitial'),
           ));
     });

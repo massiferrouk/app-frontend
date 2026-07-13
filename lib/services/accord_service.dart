@@ -1,7 +1,6 @@
 import '../app/app.locator.dart';
 import '../core/api/api_client.dart';
 import '../shared/models/accord.dart';
-import '../shared/models/alternant_profile.dart';
 import '../shared/models/enums.dart';
 
 /// Service des accords.
@@ -22,12 +21,16 @@ class AccordService {
   }
 
   /// POST /accords — envoie une demande d'accord (statut EN_ATTENTE,
-  /// expire après 72h, notifie le destinataire côté backend)
+  /// expire après 72h, notifie le destinataire côté backend).
+  ///
+  /// Aucune date n'est envoyée : le backend déduit la période commune des
+  /// deux alternances. On transmet les 2 logements pour que l'échange soit
+  /// signable (contrainte backend sur les échanges).
   Future<Accord> createAccord({
     required String receiverId,
     required AccordType type,
-    required DateTime dateDebut,
-    required DateTime dateFin,
+    String? logementAId,
+    String? logementBId,
     String? messageInitial,
   }) async {
     final data = await _api.post<Map<String, dynamic>>(
@@ -35,8 +38,8 @@ class AccordService {
       data: {
         'receiverId': receiverId,
         'type': type.toJson(),
-        'dateDebut': AlternantProfile.toIsoDate(dateDebut),
-        'dateFin': AlternantProfile.toIsoDate(dateFin),
+        'logementAId': logementAId,
+        'logementBId': logementBId,
         'messageInitial': messageInitial,
       },
     );
