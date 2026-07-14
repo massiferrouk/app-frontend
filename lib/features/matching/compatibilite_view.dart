@@ -9,9 +9,10 @@ import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/semaine_compatibilite.dart';
 import 'compatibilite_viewmodel.dart';
 
-/// Calendrier de compatibilité — vue semaine par semaine entre
-/// l'utilisateur connecté et un match.
-/// VERT = échange, BLEU = colocation, ORANGE = chevauchement, GRIS = rien.
+/// Calendrier de compatibilité (refonte APP-100).
+/// Lecture en deux colonnes « Toi | {prénom} » : une pastille ville par
+/// personne et par semaine. Le texte explicatif vit dans une légende fixe
+/// et une bottom sheet au tap — plus jamais répété sur les cartes.
 class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
   final MatchingSuggestion suggestion;
 
@@ -28,91 +29,88 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Compatibilité')),
+      appBar: AppBar(
+        title: const Text('Compatibilité'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.screenPadding),
+            child: Center(
+              child: Text(
+                '${s.scorePercent}%',
+                style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.echange),
+              ),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          child: ElevatedButton.icon(
-            onPressed: viewModel.isBusy
-                ? null
-                : () => _showProposerSheet(context, viewModel),
-            icon: const Icon(Icons.handshake_outlined),
-            label: Text('Proposer un ${s.typePropose.label.toLowerCase()}'),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+              AppSpacing.screenPadding, AppSpacing.screenPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _Legende(),
+              const SizedBox(height: AppSpacing.sm),
+              ElevatedButton.icon(
+                onPressed: viewModel.isBusy
+                    ? null
+                    : () => _showProposerSheet(context, viewModel),
+                icon: const Icon(Icons.handshake_outlined),
+                label: Text('Proposer un ${s.typePropose.label.toLowerCase()}'),
+              ),
+            ],
           ),
         ),
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Header duo + résumé ────────────────────────────
+            // ─── Tuiles chiffrées ───────────────────────────────
             Padding(
               padding: const EdgeInsets.all(AppSpacing.screenPadding),
-              child: Column(
+              child: Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const _MiniProfile(initials: 'Moi', name: 'Toi'),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg),
-                        child: Icon(Icons.swap_horiz,
-                            color: AppColors.echange, size: 28),
-                      ),
-                      _MiniProfile(
-                          initials: s.initials, name: s.displayName),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.xs,
-                          children: [
-                            if (s.nbSemainesEchange > 0)
-                              _SummaryChip(
-                                label: '${s.nbSemainesEchange} sem. échange',
-                                color: AppColors.echange,
-                                background: AppColors.echangeLight,
-                              ),
-                            if (s.nbSemainesColocation > 0)
-                              _SummaryChip(
-                                label: '${s.nbSemainesColocation} sem. coloc',
-                                color: AppColors.colocation,
-                                background: AppColors.colocationLight,
-                              ),
-                            if (s.nbSemainesChevauchement > 0)
-                              _SummaryChip(
-                                label:
-                                    '${s.nbSemainesChevauchement} sem. chevauchement',
-                                color: AppColors.chevauchement,
-                                background: AppColors.chevauchementLight,
-                              ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${s.scorePercent}%',
-                        style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.echange),
-                      ),
-                    ],
-                  ),
-                  if (s.messageResume != null) ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      s.messageResume!,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall,
+                  Expanded(
+                    child: _StatTile(
+                      value: s.nbSemainesEchange,
+                      label: s.nbSemainesEchange > 1 ? 'échanges' : 'échange',
+                      color: AppColors.echange,
+                      background: AppColors.echangeLight,
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _StatTile(
+                      value: s.nbSemainesColocation,
+                      label: s.nbSemainesColocation > 1 ? 'colocs' : 'coloc',
+                      color: AppColors.colocation,
+                      background: AppColors.colocationLight,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _StatTile(
+                      value: s.nbSemainesChevauchement,
+                      label: 'à gérer',
+                      color: AppColors.chevauchement,
+                      background: AppColors.chevauchementLight,
+                    ),
+                  ),
                 ],
               ),
             ),
+
+            // ─── En-tête de colonnes Toi | Lui ──────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenPadding),
+              child: _ColonnesHeader(autreNom: s.displayName),
+            ),
+            const SizedBox(height: AppSpacing.xs),
             const Divider(height: 1),
 
             // ─── Semaines ───────────────────────────────────────
@@ -122,17 +120,17 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                 children: [
                   for (final entry in groupes.entries) ...[
                     Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: AppSpacing.sm),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: Text(entry.key,
                           style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textSecondary)),
                     ),
-                    ...entry.value.map((sem) => _SemaineCompatCard(
+                    ...entry.value.map((sem) => _SemaineRow(
                           semaine: sem,
-                          note: viewModel.noteFor(sem),
+                          onTap: () =>
+                              _showDetailSheet(context, viewModel, sem),
                         )),
                     const SizedBox(height: AppSpacing.md),
                   ],
@@ -141,6 +139,22 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Bottom sheet de détail d'une semaine : type, explication complète.
+  void _showDetailSheet(BuildContext context, CompatibiliteViewModel viewModel,
+      SemaineCompatibilite semaine) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _SemaineDetailSheet(
+        semaine: semaine,
+        autreNom: viewModel.suggestion.displayName,
+        explication: viewModel.explicationFor(semaine.type),
       ),
     );
   }
@@ -175,6 +189,371 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
   @override
   CompatibiliteViewModel viewModelBuilder(BuildContext context) =>
       CompatibiliteViewModel(suggestion: suggestion);
+}
+
+// ─── Style par type de semaine ────────────────────────────────────
+
+(Color bg, Color accent, IconData? icon) styleFor(CompatibiliteType type) =>
+    switch (type) {
+      CompatibiliteType.ECHANGE => (
+          AppColors.echangeLight,
+          AppColors.echange,
+          Icons.swap_horiz
+        ),
+      CompatibiliteType.COLOCATION => (
+          AppColors.colocationLight,
+          AppColors.colocation,
+          Icons.group_outlined
+        ),
+      CompatibiliteType.CHEVAUCHEMENT => (
+          AppColors.chevauchementLight,
+          AppColors.chevauchement,
+          Icons.warning_amber_outlined
+        ),
+      CompatibiliteType.INCOMPATIBLE => (
+          AppColors.surface,
+          AppColors.textTertiary,
+          null
+        ),
+    };
+
+// ─── Widgets internes ─────────────────────────────────────────────
+
+/// Tuile chiffrée du header : gros nombre + label court
+class _StatTile extends StatelessWidget {
+  final int value;
+  final String label;
+  final Color color;
+  final Color background;
+
+  const _StatTile({
+    required this.value,
+    required this.label,
+    required this.color,
+    required this.background,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Une stat à zéro reste visible mais grisée : l'absence est une info
+    final actif = value > 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: actif ? background : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+      ),
+      child: Column(
+        children: [
+          Text('$value',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: actif ? color : AppColors.textTertiary)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11,
+                  color: actif ? color : AppColors.textTertiary)),
+        ],
+      ),
+    );
+  }
+}
+
+/// En-tête des colonnes : Semaine | Toi | {prénom}
+class _ColonnesHeader extends StatelessWidget {
+  final String autreNom;
+
+  const _ColonnesHeader({required this.autreNom});
+
+  static const _styleNom = TextStyle(
+      fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const SizedBox(
+          width: 52,
+          child: Text('Semaine',
+              style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+        ),
+        const Expanded(
+            child: Center(child: Text('Toi', style: _styleNom))),
+        Expanded(
+          child: Center(
+            child: Text(autreNom,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _styleNom),
+          ),
+        ),
+        const SizedBox(width: 26),
+      ],
+    );
+  }
+}
+
+/// Row d'une semaine : date + pastille ville par personne + icône type.
+/// Coloc/chevauchement (même ville) : pastille fusionnée « ville · ensemble ».
+class _SemaineRow extends StatelessWidget {
+  final SemaineCompatibilite semaine;
+  final VoidCallback onTap;
+
+  const _SemaineRow({required this.semaine, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, accent, icon) = styleFor(semaine.type);
+    final date = DateFormat('dd/MM').format(semaine.semaine);
+    final memeVille = semaine.villeAlternantA.toLowerCase() ==
+        semaine.villeAlternantB.toLowerCase();
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding:
+            const EdgeInsets.symmetric(vertical: 7, horizontal: AppSpacing.xs),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(8)),
+          border: Border(left: BorderSide(color: accent, width: 4)),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 48,
+              child: Text(date,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: accent)),
+            ),
+            if (memeVille)
+              Expanded(
+                child: _VillePill(
+                    text: '${_cap(semaine.villeAlternantA)} · ensemble'),
+              )
+            else ...[
+              Expanded(
+                  child: _VillePill(text: _cap(semaine.villeAlternantA))),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                  child: _VillePill(text: _cap(semaine.villeAlternantB))),
+            ],
+            SizedBox(
+              width: 26,
+              child: icon != null
+                  ? Icon(icon, size: 16, color: accent)
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Première lettre en majuscule (les villes arrivent en minuscules du back)
+  static String _cap(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+}
+
+/// Pastille blanche affichant une ville
+class _VillePill extends StatelessWidget {
+  final String text;
+
+  const _VillePill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+      ),
+    );
+  }
+}
+
+/// Légende fixe sous la liste : un point coloré par type
+class _Legende extends StatelessWidget {
+  const _Legende();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Wrap(
+      spacing: AppSpacing.md,
+      alignment: WrapAlignment.center,
+      children: [
+        _LegendeItem(color: AppColors.echange, label: 'Échange de logements'),
+        _LegendeItem(color: AppColors.colocation, label: 'Même ville, coloc'),
+        _LegendeItem(color: AppColors.chevauchement, label: 'À gérer entre vous'),
+      ],
+    );
+  }
+}
+
+class _LegendeItem extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _LegendeItem({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+}
+
+/// Bottom sheet de détail d'une semaine (tap sur une row)
+class _SemaineDetailSheet extends StatelessWidget {
+  final SemaineCompatibilite semaine;
+  final String autreNom;
+  final String explication;
+
+  const _SemaineDetailSheet({
+    required this.semaine,
+    required this.autreNom,
+    required this.explication,
+  });
+
+  static const _mois = [
+    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, accent, icon) = styleFor(semaine.type);
+    final d = semaine.semaine;
+    final date = '${d.day} ${_mois[d.month - 1]} ${d.year}';
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: bg,
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusButton),
+                    ),
+                    child: Icon(icon, size: 20, color: accent),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        semaine.label.isNotEmpty
+                            ? semaine.label
+                            : 'Semaine neutre',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: accent),
+                      ),
+                      Text('Semaine du $date',
+                          style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Qui est où cette semaine
+            Row(
+              children: [
+                Expanded(
+                  child: _PositionCard(
+                      nom: 'Toi', ville: semaine.villeAlternantA),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: _PositionCard(
+                      nom: autreNom, ville: semaine.villeAlternantB),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            Text(explication,
+                style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Petite carte « qui est où » dans la bottom sheet
+class _PositionCard extends StatelessWidget {
+  final String nom;
+  final String ville;
+
+  const _PositionCard({required this.nom, required this.ville});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+      ),
+      child: Column(
+        children: [
+          Text(nom,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 11, color: AppColors.textSecondary)),
+          const SizedBox(height: 2),
+          Text(_SemaineRow._cap(ville),
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
 }
 
 // ─── Bottom sheet de proposition ──────────────────────────────────
@@ -237,151 +616,6 @@ class _ProposerAccordSheetState extends State<_ProposerAccordSheet> {
             const SizedBox(height: AppSpacing.sm),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ─── Widgets internes ─────────────────────────────────────────────
-
-class _MiniProfile extends StatelessWidget {
-  final String initials;
-  final String name;
-
-  const _MiniProfile({required this.initials, required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 24,
-          backgroundColor: AppColors.surfaceDark,
-          child: Text(initials,
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary)),
-        ),
-        const SizedBox(height: 4),
-        Text(name, style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
-}
-
-class _SummaryChip extends StatelessWidget {
-  final String label;
-  final Color color;
-  final Color background;
-
-  const _SummaryChip({
-    required this.label,
-    required this.color,
-    required this.background,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-    );
-  }
-}
-
-/// Carte d'une semaine de compatibilité — fond teinté selon le type
-class _SemaineCompatCard extends StatelessWidget {
-  final SemaineCompatibilite semaine;
-  final String note;
-
-  const _SemaineCompatCard({required this.semaine, required this.note});
-
-  (Color bg, Color accent, IconData? icon) get _style =>
-      switch (semaine.type) {
-        CompatibiliteType.ECHANGE => (
-            AppColors.echangeLight,
-            AppColors.echange,
-            Icons.check_circle_outline
-          ),
-        CompatibiliteType.COLOCATION => (
-            AppColors.colocationLight,
-            AppColors.colocation,
-            Icons.group_outlined
-          ),
-        CompatibiliteType.CHEVAUCHEMENT => (
-            AppColors.chevauchementLight,
-            AppColors.chevauchement,
-            Icons.warning_amber_outlined
-          ),
-        CompatibiliteType.INCOMPATIBLE => (
-            AppColors.surface,
-            AppColors.textTertiary,
-            null
-          ),
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    final (bg, accent, icon) = _style;
-    final dates = DateFormat('dd/MM').format(semaine.semaine);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border(left: BorderSide(color: accent, width: 5)),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 44,
-            child: Text(dates,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary)),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (semaine.label.isNotEmpty)
-                      Text(semaine.label,
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: accent)),
-                    const Spacer(),
-                    // Les deux villes : Toi → / ← Lui
-                    Text(
-                      'Toi : ${semaine.villeAlternantA} · '
-                      '${semaine.villeAlternantB}',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-                if (note.isNotEmpty)
-                  Text(note,
-                      style: TextStyle(
-                          fontSize: 11, color: accent)),
-              ],
-            ),
-          ),
-          if (icon != null) ...[
-            const SizedBox(width: AppSpacing.sm),
-            Icon(icon, size: 18, color: accent),
-          ],
-        ],
       ),
     );
   }

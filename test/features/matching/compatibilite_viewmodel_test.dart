@@ -90,6 +90,21 @@ void main() {
       expect(viewModel.noteFor(semaines[1]), contains('gérez entre vous'));
       expect(viewModel.noteFor(semaines[2]), contains('Loyer partagé'));
     });
+
+    test('explication complète par type pour la bottom sheet (APP-100)', () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(), accordService: MockAccordService());
+
+      // L'échange mentionne le prénom du match pour personnaliser
+      expect(viewModel.explicationFor(CompatibiliteType.ECHANGE),
+          contains(viewModel.suggestion.displayName));
+      expect(viewModel.explicationFor(CompatibiliteType.COLOCATION),
+          contains('moitié du'));
+      expect(viewModel.explicationFor(CompatibiliteType.CHEVAUCHEMENT),
+          contains('organiser entre vous'));
+      expect(viewModel.explicationFor(CompatibiliteType.INCOMPATIBLE),
+          isNotEmpty);
+    });
   });
 
   group('proposerAccord', () {

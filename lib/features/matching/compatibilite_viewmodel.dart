@@ -75,4 +75,25 @@ class CompatibiliteViewModel extends BaseViewModel {
           'Même ville en même temps — gérez entre vous',
         CompatibiliteType.INCOMPATIBLE => '',
       };
+
+  /// Explication complète d'un type de semaine — affichée dans la bottom
+  /// sheet au tap sur une semaine (le texte est retiré des cartes, APP-100).
+  String explicationFor(CompatibiliteType type) => switch (type) {
+        CompatibiliteType.ECHANGE =>
+          'Cette semaine, vous êtes chacun dans la ville de l\'autre : '
+              'vos logements se libèrent mutuellement. Tu peux loger chez '
+              '${suggestion.displayName} et inversement — sans payer de '
+              'loyer supplémentaire.',
+        CompatibiliteType.COLOCATION =>
+          'Cette semaine, vous êtes tous les deux dans la même ville. '
+              'En partageant un seul logement, chacun paie la moitié du '
+              'loyer au lieu d\'un loyer plein.',
+        CompatibiliteType.CHEVAUCHEMENT =>
+          'Vous êtes dans la même ville en même temps, mais de façon '
+              'ponctuelle. Ni échange ni coloc structurelle cette semaine : '
+              'à vous de vous organiser entre vous si vous signez un accord.',
+        CompatibiliteType.INCOMPATIBLE =>
+          'Cette semaine, vos positions ne permettent ni échange ni '
+              'colocation. Rien à faire, c\'est juste une semaine neutre.',
+      };
 }
