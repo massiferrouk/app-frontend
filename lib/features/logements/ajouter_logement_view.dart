@@ -8,12 +8,15 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/enums.dart';
+import '../../shared/models/logement.dart';
 import 'ajouter_logement_viewmodel.dart';
 
-/// Formulaire d'ajout de logement — créé en brouillon,
-/// publiable immédiatement.
+/// Formulaire d'ajout / modification de logement.
+/// [logement] non null = mode édition (formulaire pré-rempli).
 class AjouterLogementView extends StackedView<AjouterLogementViewModel> {
-  const AjouterLogementView({super.key});
+  final Logement? logement;
+
+  const AjouterLogementView({super.key, this.logement});
 
   @override
   Widget builder(
@@ -23,18 +26,47 @@ class AjouterLogementView extends StackedView<AjouterLogementViewModel> {
   ) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Ajouter un logement')),
+      appBar: AppBar(
+          title: Text(viewModel.isEdition
+              ? 'Modifier le logement'
+              : 'Ajouter un logement')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ─── Adresse ────────────────────────────────────
+              // ─── Adresse (avec autocomplétion) ──────────────
               TextField(
                 controller: viewModel.adresseController,
-                decoration: const InputDecoration(hintText: 'Adresse'),
+                onChanged: viewModel.onAddressChanged,
+                decoration: const InputDecoration(
+                  hintText: 'Adresse (ex: rue Clovis…)',
+                  prefixIcon: Icon(Icons.location_on_outlined, size: 20),
+                ),
               ),
+              // Liste de suggestions renvoyées par la Base Adresse Nationale
+              if (viewModel.addressSuggestions.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      for (final s in viewModel.addressSuggestions)
+                        ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.place_outlined, size: 18),
+                          title: Text(s.label,
+                              style: const TextStyle(fontSize: 13)),
+                          onTap: () => viewModel.applyAddressSuggestion(s),
+                        ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
@@ -153,6 +185,15 @@ class AjouterLogementView extends StackedView<AjouterLogementViewModel> {
               // ─── Photos ─────────────────────────────────────
               Text('Photos (${viewModel.photos.length}/10)',
                   style: Theme.of(context).textTheme.titleMedium),
+              if (viewModel.isEdition)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    'Les photos déjà enregistrées sont conservées ; '
+                    'celles que tu ajoutes ici s\'ajoutent à la suite.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
               const SizedBox(height: AppSpacing.sm),
               _PhotosRow(viewModel: viewModel),
 
@@ -166,25 +207,34 @@ class AjouterLogementView extends StackedView<AjouterLogementViewModel> {
               const SizedBox(height: AppSpacing.lg),
 
               // ─── Boutons ────────────────────────────────────
+              // Logement déjà publié : un seul bouton « Enregistrer ».
+              // Sinon (création ou brouillon) : publier OU garder en brouillon.
               ElevatedButton(
                 onPressed: viewModel.isBusy
                     ? null
-                    : () => viewModel.submit(publierMaintenant: true),
+                    : () => viewModel.submit(
+                        publierMaintenant: !viewModel.dejaPublie),
                 child: viewModel.isBusy
                     ? const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Text('Publier maintenant'),
+                    : Text(viewModel.dejaPublie
+                        ? 'Enregistrer les modifications'
+                        : 'Publier maintenant'),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              OutlinedButton(
-                onPressed: viewModel.isBusy
-                    ? null
-                    : () => viewModel.submit(publierMaintenant: false),
-                child: const Text('Enregistrer en brouillon'),
-              ),
+              if (!viewModel.dejaPublie) ...[
+                const SizedBox(height: AppSpacing.sm),
+                OutlinedButton(
+                  onPressed: viewModel.isBusy
+                      ? null
+                      : () => viewModel.submit(publierMaintenant: false),
+                  child: Text(viewModel.isEdition
+                      ? 'Enregistrer sans publier'
+                      : 'Enregistrer en brouillon'),
+                ),
+              ],
             ],
           ),
         ),
@@ -194,7 +244,7 @@ class AjouterLogementView extends StackedView<AjouterLogementViewModel> {
 
   @override
   AjouterLogementViewModel viewModelBuilder(BuildContext context) =>
-      AjouterLogementViewModel();
+      AjouterLogementViewModel(existant: logement);
 }
 
 // ─── Widgets internes ─────────────────────────────────────────────

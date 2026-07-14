@@ -18,7 +18,7 @@ List<NavTab> navTabsForRole(UserRole role) {
       return const [
         NavTab(label: 'Accueil', icon: Icons.home_outlined),
         NavTab(label: 'Matches', icon: Icons.swap_horiz),
-        NavTab(label: 'Logement', icon: Icons.apartment_outlined),
+        NavTab(label: 'Recherche', icon: Icons.search),
         NavTab(label: 'Messages', icon: Icons.chat_bubble_outline),
         NavTab(label: 'Profil', icon: Icons.person_outline),
       ];

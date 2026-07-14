@@ -138,6 +138,16 @@ class AccordDetailView extends StackedView<AccordDetailViewModel> {
 
             const SizedBox(height: AppSpacing.xl),
 
+            // ─── Contacter (accord accepté / en cours) ──────
+            if (viewModel.canContact) ...[
+              ElevatedButton.icon(
+                onPressed: viewModel.contacter,
+                icon: const Icon(Icons.chat_bubble_outline),
+                label: const Text('Contacter'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+
             // ─── Actions ────────────────────────────────────
             if (viewModel.canAcceptOrRefuse) ...[
               ElevatedButton(

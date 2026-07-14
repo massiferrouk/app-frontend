@@ -208,4 +208,61 @@ void main() {
       expect(viewModel.photos, hasLength(10));
     });
   });
+
+  group('édition', () {
+    test('pré-remplit le formulaire depuis le logement existant', () {
+      final vm = AjouterLogementViewModel(
+        existant: fakeLogement,
+        logementService: logementService,
+        navigationService: nav,
+      );
+
+      expect(vm.isEdition, isTrue);
+      expect(vm.adresseController.text, '12 rue de la Paix');
+      expect(vm.villeController.text, 'Paris');
+      expect(vm.loyerController.text, '800');
+      expect(vm.selectedType, LogementType.STUDIO);
+    });
+
+    test('submit en édition appelle updateLogement', () async {
+      final vm = AjouterLogementViewModel(
+        existant: fakeLogement,
+        logementService: logementService,
+        navigationService: nav,
+      );
+
+      when(() => logementService.updateLogement(
+            logementId: any(named: 'logementId'),
+            adresse: any(named: 'adresse'),
+            ville: any(named: 'ville'),
+            codePostal: any(named: 'codePostal'),
+            type: any(named: 'type'),
+            surface: any(named: 'surface'),
+            nbPieces: any(named: 'nbPieces'),
+            loyer: any(named: 'loyer'),
+            charges: any(named: 'charges'),
+            description: any(named: 'description'),
+            equipements: any(named: 'equipements'),
+            isMeuble: any(named: 'isMeuble'),
+          )).thenAnswer((_) async => fakeLogement);
+      when(() => nav.back(result: any(named: 'result'))).thenReturn(true);
+
+      await vm.submit(publierMaintenant: false);
+
+      verify(() => logementService.updateLogement(
+            logementId: 'log-1',
+            adresse: any(named: 'adresse'),
+            ville: any(named: 'ville'),
+            codePostal: any(named: 'codePostal'),
+            type: any(named: 'type'),
+            surface: any(named: 'surface'),
+            nbPieces: any(named: 'nbPieces'),
+            loyer: any(named: 'loyer'),
+            charges: any(named: 'charges'),
+            description: any(named: 'description'),
+            equipements: any(named: 'equipements'),
+            isMeuble: any(named: 'isMeuble'),
+          )).called(1);
+    });
+  });
 }

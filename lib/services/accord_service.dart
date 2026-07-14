@@ -46,6 +46,12 @@ class AccordService {
     return Accord.fromJson(data);
   }
 
+  /// GET /accords/{id} — détail complet d'un accord (participants uniquement)
+  Future<Accord> getAccord(String accordId) async {
+    final data = await _api.get<Map<String, dynamic>>('/accords/$accordId');
+    return Accord.fromJson(data);
+  }
+
   Future<Accord> accept(String accordId) async {
     final data =
         await _api.put<Map<String, dynamic>>('/accords/$accordId/accept');

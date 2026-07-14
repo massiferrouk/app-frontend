@@ -30,6 +30,15 @@ class MesLogementsViewModel extends BaseViewModel {
     if (created == true) await load();
   }
 
+  /// Ouvre le formulaire pré-rempli pour modifier un logement, puis recharge.
+  Future<void> goToModifier(Logement logement) async {
+    final updated = await _nav.navigateTo(
+      Routes.ajouterLogementView,
+      arguments: AjouterLogementViewArguments(logement: logement),
+    );
+    if (updated == true) await load();
+  }
+
   /// Ouvre le détail d'un logement (données passées en argument)
   void goToDetail(Logement logement) {
     _nav.navigateTo(
@@ -44,10 +53,20 @@ class MesLogementsViewModel extends BaseViewModel {
   /// L'association VILLE_A/VILLE_B n'a de sens que pour un alternant
   bool isAlternant = false;
 
+  /// Noms réels des villes du profil, pour un affichage explicite lors de
+  /// l'association (« Paris (ville de ton école) » plutôt que « Ville A »).
+  String? villeEcole; // villeA
+  String? villeEntreprise; // villeB
+
   Future<void> load() async {
     setBusy(true);
     try {
       isAlternant = await _profile.currentRole() == UserRole.ALTERNANT;
+      if (isAlternant) {
+        final profil = await _profile.getMyAlternantProfile();
+        villeEcole = profil?.villeA;
+        villeEntreprise = profil?.villeB;
+      }
       logements = await _logements.getMesLogements();
       errorMessage = null;
     } on ApiException catch (e) {
@@ -65,6 +84,20 @@ class MesLogementsViewModel extends BaseViewModel {
       return null;
     } on ApiException catch (e) {
       return e.message;
+    }
+  }
+
+  /// Supprime un logement m'appartenant (brouillon ou publié).
+  /// Retourne null si OK, un message d'erreur sinon (409 = accord lié).
+  Future<String?> supprimer(Logement logement) async {
+    try {
+      await _logements.delete(logement.id);
+      await load();
+      return null;
+    } on ApiException catch (e) {
+      return e.isConflict
+          ? 'Ce logement est lié à un accord et ne peut pas être supprimé'
+          : e.message;
     }
   }
 

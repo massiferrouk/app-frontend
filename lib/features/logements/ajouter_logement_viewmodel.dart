@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stacked/stacked.dart';
@@ -7,17 +9,48 @@ import '../../app/app.locator.dart';
 import '../../core/api/api_exception.dart';
 import '../../core/utils/validators.dart';
 import '../../services/logement_service.dart';
+import '../../shared/models/address_suggestion.dart';
 import '../../shared/models/enums.dart';
+import '../../shared/models/logement.dart';
 
-/// Logique du formulaire d'ajout de logement.
+/// Logique du formulaire d'ajout / modification de logement.
 class AjouterLogementViewModel extends BaseViewModel {
   final LogementService _logements;
   final NavigationService _nav;
 
+  /// Logement à modifier ; null = création d'un nouveau logement.
+  final Logement? existant;
+
   AjouterLogementViewModel(
-      {LogementService? logementService, NavigationService? navigationService})
+      {this.existant,
+      LogementService? logementService,
+      NavigationService? navigationService})
       : _logements = logementService ?? locator<LogementService>(),
-        _nav = navigationService ?? locator<NavigationService>();
+        _nav = navigationService ?? locator<NavigationService>() {
+    _prefill();
+  }
+
+  bool get isEdition => existant != null;
+
+  /// true si on édite un logement déjà publié (pas de bouton « brouillon »).
+  bool get dejaPublie => existant?.statut == LogementStatut.ACTIF;
+
+  /// Pré-remplit le formulaire depuis le logement existant (mode édition).
+  void _prefill() {
+    final l = existant;
+    if (l == null) return;
+    adresseController.text = l.adresse;
+    villeController.text = l.ville;
+    codePostalController.text = l.codePostal;
+    surfaceController.text = l.surface.toStringAsFixed(0);
+    nbPiecesController.text = l.nbPieces.toString();
+    loyerController.text = l.loyer.toStringAsFixed(0);
+    chargesController.text = l.charges.toStringAsFixed(0);
+    descriptionController.text = l.description ?? '';
+    selectedType = l.type;
+    isMeuble = l.isMeuble;
+    equipements.addAll(l.equipements);
+  }
 
   // ─── Champs du formulaire ─────────────────────────────────────
   final adresseController = TextEditingController();
@@ -42,6 +75,43 @@ class AjouterLogementViewModel extends BaseViewModel {
   final List<XFile> photos = [];
 
   String? errorMessage;
+
+  // ─── Autocomplétion d'adresse (Base Adresse Nationale) ────────
+  List<AddressSuggestion> addressSuggestions = [];
+  Timer? _addressDebounce;
+
+  /// Appelé à chaque frappe dans le champ adresse. Débounce 350ms puis
+  /// interroge le backend. En dessous de 3 caractères, on vide les suggestions.
+  void onAddressChanged(String query) {
+    _addressDebounce?.cancel();
+    if (query.trim().length < 3) {
+      addressSuggestions = [];
+      notifyListeners();
+      return;
+    }
+    _addressDebounce = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        addressSuggestions = await _logements.autocompleteAddress(query.trim());
+      } on ApiException {
+        addressSuggestions = [];
+      }
+      notifyListeners();
+    });
+  }
+
+  /// L'utilisateur choisit une suggestion : on remplit adresse + ville + CP.
+  void applyAddressSuggestion(AddressSuggestion s) {
+    if (s.adresse != null) adresseController.text = s.adresse!;
+    if (s.ville != null) villeController.text = s.ville!;
+    if (s.codePostal != null) codePostalController.text = s.codePostal!;
+    addressSuggestions = [];
+    notifyListeners();
+  }
+
+  void clearAddressSuggestions() {
+    addressSuggestions = [];
+    notifyListeners();
+  }
 
   void selectType(LogementType? type) {
     if (type == null) return;
@@ -96,8 +166,9 @@ class AjouterLogementViewModel extends BaseViewModel {
     return null;
   }
 
-  /// Crée le logement (BROUILLON), upload les photos,
-  /// puis publie si [publierMaintenant].
+  /// Crée (ou met à jour en mode édition) le logement, upload les nouvelles
+  /// photos, puis publie si [publierMaintenant] (uniquement possible sur un
+  /// brouillon).
   Future<void> submit({required bool publierMaintenant}) async {
     errorMessage = _validate();
     if (errorMessage != null) {
@@ -105,25 +176,53 @@ class AjouterLogementViewModel extends BaseViewModel {
       return;
     }
 
+    final adresse = adresseController.text.trim();
+    final ville = villeController.text.trim();
+    final codePostal = codePostalController.text.trim();
+    final surface = double.parse(surfaceController.text.replaceAll(',', '.'));
+    final nbPieces = int.tryParse(nbPiecesController.text) ?? 1;
+    final loyer = double.parse(loyerController.text.replaceAll(',', '.'));
+    final charges =
+        double.tryParse(chargesController.text.replaceAll(',', '.')) ?? 0;
+    final description = descriptionController.text.trim().isEmpty
+        ? null
+        : descriptionController.text.trim();
+
     setBusy(true);
     try {
-      final logement = await _logements.createLogement(
-        adresse: adresseController.text.trim(),
-        ville: villeController.text.trim(),
-        codePostal: codePostalController.text.trim(),
-        type: selectedType,
-        surface: double.parse(surfaceController.text.replaceAll(',', '.')),
-        nbPieces: int.tryParse(nbPiecesController.text) ?? 1,
-        loyer: double.parse(loyerController.text.replaceAll(',', '.')),
-        charges:
-            double.tryParse(chargesController.text.replaceAll(',', '.')) ?? 0,
-        description: descriptionController.text.trim().isEmpty
-            ? null
-            : descriptionController.text.trim(),
-        equipements: equipements.toList(),
-        isMeuble: isMeuble,
-      );
+      final Logement logement;
+      if (isEdition) {
+        logement = await _logements.updateLogement(
+          logementId: existant!.id,
+          adresse: adresse,
+          ville: ville,
+          codePostal: codePostal,
+          type: selectedType,
+          surface: surface,
+          nbPieces: nbPieces,
+          loyer: loyer,
+          charges: charges,
+          description: description,
+          equipements: equipements.toList(),
+          isMeuble: isMeuble,
+        );
+      } else {
+        logement = await _logements.createLogement(
+          adresse: adresse,
+          ville: ville,
+          codePostal: codePostal,
+          type: selectedType,
+          surface: surface,
+          nbPieces: nbPieces,
+          loyer: loyer,
+          charges: charges,
+          description: description,
+          equipements: equipements.toList(),
+          isMeuble: isMeuble,
+        );
+      }
 
+      // Photos nouvellement sélectionnées (ajoutées aux éventuelles existantes)
       if (photos.isNotEmpty) {
         await _logements.addPhotos(logement.id, photos);
       }
@@ -135,13 +234,16 @@ class AjouterLogementViewModel extends BaseViewModel {
       // Retour à la liste — elle se recharge au retour
       _nav.back(result: true);
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      errorMessage = e.isConflict
+          ? 'Ce logement est lié à un accord et ne peut plus être modifié'
+          : e.message;
       setBusy(false);
     }
   }
 
   @override
   void dispose() {
+    _addressDebounce?.cancel();
     adresseController.dispose();
     villeController.dispose();
     codePostalController.dispose();

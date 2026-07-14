@@ -1,16 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/logements/logement_detail_viewmodel.dart';
 import 'package:studup_app/services/logement_service.dart';
+import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/shared/models/disponibilite.dart';
 import 'package:studup_app/shared/models/logement.dart';
 import 'package:studup_app/shared/models/reputation_score.dart';
 
 class MockLogementService extends Mock implements LogementService {}
 
+class MockProfileService extends Mock implements ProfileService {}
+
+class MockNavigationService extends Mock implements NavigationService {}
+
 void main() {
   late MockLogementService logementService;
+  late MockProfileService profileService;
   late LogementDetailViewModel viewModel;
 
   final logement = Logement.fromJson({
@@ -46,9 +53,17 @@ void main() {
 
   setUp(() {
     logementService = MockLogementService();
+    profileService = MockProfileService();
+    when(() => profileService.currentUserId())
+        .thenAnswer((_) async => 'moi');
+    // Rechargement du logement complet dans loadExtras
+    when(() => logementService.getLogement('log-1'))
+        .thenAnswer((_) async => logement);
     viewModel = LogementDetailViewModel(
       logement: logement,
       logementService: logementService,
+      profileService: profileService,
+      navigationService: MockNavigationService(),
     );
   });
 

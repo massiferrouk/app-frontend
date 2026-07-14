@@ -34,6 +34,9 @@ class Logement {
   final VilleAssociee? villeAssociee;
   final List<String> photoUrls;
 
+  /// Prénom du propriétaire (pour le bouton « Contacter »). Nullable.
+  final String? ownerPrenom;
+
   const Logement({
     required this.id,
     required this.ownerId,
@@ -52,6 +55,7 @@ class Logement {
     required this.isMeuble,
     this.villeAssociee,
     this.photoUrls = const [],
+    this.ownerPrenom,
   });
 
   factory Logement.fromJson(Map<String, dynamic> json) {
@@ -79,6 +83,7 @@ class Logement {
       photoUrls: (json['photoUrls'] as List? ?? [])
           .map((e) => e.toString())
           .toList(),
+      ownerPrenom: json['ownerPrenom'] as String?,
     );
   }
 }
