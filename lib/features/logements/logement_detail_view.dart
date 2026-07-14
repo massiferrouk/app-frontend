@@ -163,14 +163,30 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
 
 // ─── Widgets internes ─────────────────────────────────────────────
 
-class _PhotoCarousel extends StatelessWidget {
+class _PhotoCarousel extends StatefulWidget {
   final List<String> photoUrls;
 
   const _PhotoCarousel({required this.photoUrls});
 
   @override
+  State<_PhotoCarousel> createState() => _PhotoCarouselState();
+}
+
+class _PhotoCarouselState extends State<_PhotoCarousel> {
+  final _controller = PageController();
+  int _current = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (photoUrls.isEmpty) {
+    final urls = widget.photoUrls;
+
+    if (urls.isEmpty) {
       return Container(
         height: 220,
         color: AppColors.surfaceDark,
@@ -183,21 +199,120 @@ class _PhotoCarousel extends StatelessWidget {
 
     return SizedBox(
       height: 220,
-      child: PageView.builder(
-        itemCount: photoUrls.length,
-        itemBuilder: (context, index) => CachedNetworkImage(
-          imageUrl: photoUrls[index],
-          fit: BoxFit.cover,
-          placeholder: (_, _) => Container(
-            color: AppColors.surfaceDark,
-            child: const Center(
-                child: CircularProgressIndicator(
-                    color: AppColors.echange, strokeWidth: 2)),
+      child: Stack(
+        children: [
+          // Carrousel swipe + tap pour ouvrir en plein écran
+          PageView.builder(
+            controller: _controller,
+            onPageChanged: (i) => setState(() => _current = i),
+            itemCount: urls.length,
+            itemBuilder: (context, index) => GestureDetector(
+              onTap: () => _openFullScreen(context, index),
+              child: CachedNetworkImage(
+                imageUrl: urls[index],
+                fit: BoxFit.cover,
+                width: double.infinity,
+                placeholder: (_, _) => Container(
+                  color: AppColors.surfaceDark,
+                  child: const Center(
+                      child: CircularProgressIndicator(
+                          color: AppColors.echange, strokeWidth: 2)),
+                ),
+                errorWidget: (_, _, _) => Container(
+                  color: AppColors.surfaceDark,
+                  child: const Icon(Icons.broken_image_outlined,
+                      color: AppColors.textTertiary),
+                ),
+              ),
+            ),
           ),
-          errorWidget: (_, _, _) => Container(
-            color: AppColors.surfaceDark,
-            child: const Icon(Icons.broken_image_outlined,
-                color: AppColors.textTertiary),
+
+          // Compteur "2 / 5" en haut à droite (masqué si une seule photo)
+          if (urls.length > 1)
+            Positioned(
+              top: AppSpacing.sm,
+              right: AppSpacing.sm,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+                ),
+                child: Text('${_current + 1} / ${urls.length}',
+                    style: const TextStyle(color: Colors.white, fontSize: 12)),
+              ),
+            ),
+
+          // Points de position en bas (masqués si une seule photo)
+          if (urls.length > 1)
+            Positioned(
+              bottom: AppSpacing.sm,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(urls.length, (i) {
+                  final active = i == _current;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: active ? 18 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Ouvre la galerie en plein écran, zoomable, à partir de la photo tapée.
+  void _openFullScreen(BuildContext context, int initialIndex) {
+    Navigator.of(context).push(MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _FullScreenGallery(
+        photoUrls: widget.photoUrls,
+        initialIndex: initialIndex,
+      ),
+    ));
+  }
+}
+
+/// Visionneuse plein écran : swipe entre les photos + pinch-to-zoom.
+class _FullScreenGallery extends StatelessWidget {
+  final List<String> photoUrls;
+  final int initialIndex;
+
+  const _FullScreenGallery(
+      {required this.photoUrls, required this.initialIndex});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: PageView.builder(
+        controller: PageController(initialPage: initialIndex),
+        itemCount: photoUrls.length,
+        itemBuilder: (context, index) => InteractiveViewer(
+          minScale: 1,
+          maxScale: 4,
+          child: Center(
+            child: CachedNetworkImage(
+              imageUrl: photoUrls[index],
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ),
