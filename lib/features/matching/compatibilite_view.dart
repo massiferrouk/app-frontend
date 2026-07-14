@@ -34,15 +34,7 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.screenPadding),
-            child: Center(
-              child: Text(
-                '${s.scorePercent}%',
-                style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.echange),
-              ),
-            ),
+            child: Center(child: _ScoreRing(percent: s.scorePercent)),
           ),
         ],
       ),
@@ -69,7 +61,7 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Tuiles chiffrées ───────────────────────────────
+            // ─── Tuiles chiffrées (tap = filtre) ────────────────
             Padding(
               padding: const EdgeInsets.all(AppSpacing.screenPadding),
               child: Row(
@@ -80,6 +72,11 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                       label: s.nbSemainesEchange > 1 ? 'échanges' : 'échange',
                       color: AppColors.echange,
                       background: AppColors.echangeLight,
+                      selected: viewModel.filtre == CompatibiliteType.ECHANGE,
+                      dimmed: viewModel.filtre != null &&
+                          viewModel.filtre != CompatibiliteType.ECHANGE,
+                      onTap: () =>
+                          viewModel.toggleFiltre(CompatibiliteType.ECHANGE),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -89,6 +86,12 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                       label: s.nbSemainesColocation > 1 ? 'colocs' : 'coloc',
                       color: AppColors.colocation,
                       background: AppColors.colocationLight,
+                      selected:
+                          viewModel.filtre == CompatibiliteType.COLOCATION,
+                      dimmed: viewModel.filtre != null &&
+                          viewModel.filtre != CompatibiliteType.COLOCATION,
+                      onTap: () =>
+                          viewModel.toggleFiltre(CompatibiliteType.COLOCATION),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -98,6 +101,12 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                       label: 'à gérer',
                       color: AppColors.chevauchement,
                       background: AppColors.chevauchementLight,
+                      selected:
+                          viewModel.filtre == CompatibiliteType.CHEVAUCHEMENT,
+                      dimmed: viewModel.filtre != null &&
+                          viewModel.filtre != CompatibiliteType.CHEVAUCHEMENT,
+                      onTap: () => viewModel
+                          .toggleFiltre(CompatibiliteType.CHEVAUCHEMENT),
                     ),
                   ),
                 ],
@@ -113,28 +122,44 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
             const SizedBox(height: AppSpacing.xs),
             const Divider(height: 1),
 
-            // ─── Semaines ───────────────────────────────────────
+            // ─── Semaines (mois collants, hauteurs fixes) ───────
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.screenPadding),
-                children: [
-                  for (final entry in groupes.entries) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: Text(entry.key,
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary)),
-                    ),
-                    ...entry.value.map((sem) => _SemaineRow(
-                          semaine: sem,
-                          onTap: () =>
-                              _showDetailSheet(context, viewModel, sem),
-                        )),
-                    const SizedBox(height: AppSpacing.md),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPadding),
+                child: CustomScrollView(
+                  controller: viewModel.scrollController,
+                  slivers: [
+                    const SliverToBoxAdapter(
+                        child: SizedBox(
+                            height: CompatibiliteViewModel.topGap)),
+                    for (final entry in groupes.entries)
+                      SliverMainAxisGroup(
+                        slivers: [
+                          SliverPersistentHeader(
+                            pinned: true,
+                            delegate: _MoisHeaderDelegate(entry.key),
+                          ),
+                          SliverFixedExtentList(
+                            itemExtent: CompatibiliteViewModel.rowExtent,
+                            delegate: SliverChildBuilderDelegate(
+                              (context, i) => _SemaineRow(
+                                semaine: entry.value[i],
+                                courante: viewModel
+                                    .isSemaineCourante(entry.value[i]),
+                                onTap: () => _showDetailSheet(
+                                    context, viewModel, entry.value[i]),
+                              ),
+                              childCount: entry.value.length,
+                            ),
+                          ),
+                          const SliverToBoxAdapter(
+                              child: SizedBox(
+                                  height: CompatibiliteViewModel.groupGap)),
+                        ],
+                      ),
                   ],
-                ],
+                ),
               ),
             ),
           ],
@@ -189,6 +214,14 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
   @override
   CompatibiliteViewModel viewModelBuilder(BuildContext context) =>
       CompatibiliteViewModel(suggestion: suggestion);
+
+  @override
+  void onViewModelReady(CompatibiliteViewModel viewModel) {
+    // Attend le premier frame : le ScrollController doit être attaché
+    // à la liste avant de pouvoir calculer l'offset.
+    WidgetsBinding.instance.addPostFrameCallback(
+        (_) => viewModel.scrollToSemaineCourante());
+  }
 }
 
 // ─── Style par type de semaine ────────────────────────────────────
@@ -219,45 +252,126 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
 
 // ─── Widgets internes ─────────────────────────────────────────────
 
-/// Tuile chiffrée du header : gros nombre + label court
+/// Anneau de progression autour du score (AppBar)
+class _ScoreRing extends StatelessWidget {
+  final int percent;
+
+  const _ScoreRing({required this.percent});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CircularProgressIndicator(
+            value: percent / 100,
+            strokeWidth: 3.5,
+            color: AppColors.echange,
+            backgroundColor: AppColors.echangeLight,
+          ),
+          Center(
+            child: Text('$percent%',
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.echange)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tuile chiffrée du header : gros nombre + label court.
+/// Tap = filtre la liste sur ce type (re-tap pour tout réafficher).
 class _StatTile extends StatelessWidget {
   final int value;
   final String label;
   final Color color;
   final Color background;
+  final bool selected;
+  final bool dimmed;
+  final VoidCallback onTap;
 
   const _StatTile({
     required this.value,
     required this.label,
     required this.color,
     required this.background,
+    required this.selected,
+    required this.dimmed,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Une stat à zéro reste visible mais grisée : l'absence est une info
+    // Une stat à zéro reste visible mais grisée et non tappable
     final actif = value > 0;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: actif ? background : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-      ),
-      child: Column(
-        children: [
-          Text('$value',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: actif ? color : AppColors.textTertiary)),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  color: actif ? color : AppColors.textTertiary)),
-        ],
+    return InkWell(
+      onTap: actif ? onTap : null,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+      child: AnimatedOpacity(
+        opacity: dimmed ? 0.45 : 1,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: actif ? background : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+            border: Border.all(
+                color: selected ? color : Colors.transparent, width: 1.5),
+          ),
+          child: Column(
+            children: [
+              Text('$value',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: actif ? color : AppColors.textTertiary)),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: actif ? color : AppColors.textTertiary)),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
+
+/// Header de mois collant : reste affiché en haut pendant le scroll
+class _MoisHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final String label;
+
+  const _MoisHeaderDelegate(this.label);
+
+  @override
+  double get minExtent => CompatibiliteViewModel.headerExtent;
+  @override
+  double get maxExtent => CompatibiliteViewModel.headerExtent;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    // Fond opaque : les rows glissent dessous sans transparaître
+    return Container(
+      color: AppColors.background,
+      alignment: Alignment.centerLeft,
+      child: Text(label,
+          style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary)),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _MoisHeaderDelegate oldDelegate) =>
+      oldDelegate.label != label;
 }
 
 /// En-tête des colonnes : Semaine | Toi | {prénom}
@@ -296,11 +410,18 @@ class _ColonnesHeader extends StatelessWidget {
 
 /// Row d'une semaine : date + pastille ville par personne + icône type.
 /// Coloc/chevauchement (même ville) : pastille fusionnée « ville · ensemble ».
+/// [courante] : semaine en cours → bordure pleine pour la repérer d'un œil.
+/// Hauteur FIXE (rowExtent) : requise par le calcul d'auto-scroll.
 class _SemaineRow extends StatelessWidget {
   final SemaineCompatibilite semaine;
+  final bool courante;
   final VoidCallback onTap;
 
-  const _SemaineRow({required this.semaine, required this.onTap});
+  const _SemaineRow({
+    required this.semaine,
+    required this.courante,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -314,23 +435,26 @@ class _SemaineRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         margin: const EdgeInsets.only(bottom: 6),
-        padding:
-            const EdgeInsets.symmetric(vertical: 7, horizontal: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: const BorderRadius.horizontal(
-              right: Radius.circular(8)),
-          border: Border(left: BorderSide(color: accent, width: 4)),
+          borderRadius: courante
+              ? BorderRadius.circular(8)
+              : const BorderRadius.horizontal(right: Radius.circular(8)),
+          border: courante
+              ? Border.all(color: accent, width: 2)
+              : Border(left: BorderSide(color: accent, width: 4)),
         ),
         child: Row(
           children: [
             SizedBox(
               width: 48,
-              child: Text(date,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: accent)),
+              child: Text(
+                courante ? '● $date' : date,
+                style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600, color: accent),
+              ),
             ),
             if (memeVille)
               Expanded(
