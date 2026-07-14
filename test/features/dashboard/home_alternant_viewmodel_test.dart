@@ -5,6 +5,7 @@ import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/dashboard/home_alternant_viewmodel.dart';
 import 'package:studup_app/services/accord_service.dart';
 import 'package:studup_app/services/dashboard_service.dart';
+import 'package:studup_app/services/notification_service.dart';
 import 'package:studup_app/shared/models/alternant_dashboard.dart';
 
 class MockDashboardService extends Mock implements DashboardService {}
@@ -13,15 +14,23 @@ class MockAccordService extends Mock implements AccordService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
+class MockNotificationService extends Mock implements NotificationService {}
+
 void main() {
   late MockDashboardService dashboardService;
+  late MockNotificationService notificationService;
   late HomeAlternantViewModel viewModel;
 
   setUp(() {
     dashboardService = MockDashboardService();
+    notificationService = MockNotificationService();
+    // Badge cloche : le load() rafraîchit aussi le compteur non-lues
+    when(() => notificationService.getUnreadCount())
+        .thenAnswer((_) async => 2);
     viewModel = HomeAlternantViewModel(
       dashboardService: dashboardService,
       accordService: MockAccordService(),
+      notificationService: notificationService,
       navigationService: MockNavigationService(),
     );
   });
@@ -70,6 +79,44 @@ void main() {
       expect(viewModel.dashboard, isNull);
       expect(viewModel.errorMessage, contains('Impossible de joindre'));
       expect(viewModel.isBusy, isFalse);
+    });
+
+    test('load rafraîchit le compteur de notifications non lues', () async {
+      when(() => dashboardService.getAlternantDashboard())
+          .thenAnswer((_) async => AlternantDashboard.fromJson(const {
+                'prochainAccords': [],
+                'accordsEnAttente': [],
+                'economiesEstimees': 0,
+                'nbAccordsTermines': 0,
+              }));
+
+      await viewModel.load();
+
+      expect(viewModel.unreadCount, 2);
+    });
+
+    test('erreur sur le compteur de notifs : silencieuse, dashboard intact',
+        () async {
+      when(() => dashboardService.getAlternantDashboard())
+          .thenAnswer((_) async => AlternantDashboard.fromJson(const {
+                'prochainAccords': [],
+                'accordsEnAttente': [],
+                'economiesEstimees': 0,
+                'nbAccordsTermines': 0,
+              }));
+      when(() => notificationService.getUnreadCount())
+          .thenThrow(const ApiException(
+        code: 'NETWORK_ERROR',
+        message: 'Réseau indisponible',
+        statusCode: 0,
+      ));
+
+      await viewModel.load();
+
+      // Le badge est secondaire : pas d'erreur affichée, badge à 0
+      expect(viewModel.dashboard, isNotNull);
+      expect(viewModel.errorMessage, isNull);
+      expect(viewModel.unreadCount, 0);
     });
 
     test('un rechargement réussi efface l\'erreur précédente', () async {
