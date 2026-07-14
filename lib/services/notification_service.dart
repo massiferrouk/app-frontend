@@ -17,11 +17,11 @@ class NotificationService {
         .toList();
   }
 
-  /// GET /notifications/unread-count → {"count": n}
+  /// GET /notifications/unread-count → {"unreadCount": n}
   Future<int> getUnreadCount() async {
     final data =
         await _api.get<Map<String, dynamic>>('/notifications/unread-count');
-    return (data['count'] as num? ?? 0).toInt();
+    return (data['unreadCount'] as num? ?? 0).toInt();
   }
 
   Future<void> markAsRead(String id) =>

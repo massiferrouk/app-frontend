@@ -59,9 +59,14 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
             ),
-            IconButton(
-              onPressed: viewModel.goToNotifications,
-              icon: const Icon(Icons.notifications_outlined, size: 26),
+            Badge(
+              label: Text('${viewModel.unreadCount}'),
+              isLabelVisible: viewModel.unreadCount > 0,
+              backgroundColor: AppColors.error,
+              child: IconButton(
+                onPressed: viewModel.goToNotifications,
+                icon: const Icon(Icons.notifications_outlined, size: 26),
+              ),
             ),
           ],
         ),

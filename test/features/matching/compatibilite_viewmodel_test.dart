@@ -5,6 +5,7 @@ import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/features/matching/compatibilite_viewmodel.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/matching_suggestion.dart';
+import 'package:studup_app/shared/models/semaine_compatibilite.dart';
 
 class MockAccordService extends Mock implements AccordService {}
 
@@ -89,6 +90,63 @@ void main() {
       expect(viewModel.noteFor(semaines[0]), contains('libèrent'));
       expect(viewModel.noteFor(semaines[1]), contains('gérez entre vous'));
       expect(viewModel.noteFor(semaines[2]), contains('Loyer partagé'));
+    });
+
+    test('explication complète par type pour la bottom sheet (APP-100)', () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(), accordService: MockAccordService());
+
+      // L'échange mentionne le prénom du match pour personnaliser
+      expect(viewModel.explicationFor(CompatibiliteType.ECHANGE),
+          contains(viewModel.suggestion.displayName));
+      expect(viewModel.explicationFor(CompatibiliteType.COLOCATION),
+          contains('moitié du'));
+      expect(viewModel.explicationFor(CompatibiliteType.CHEVAUCHEMENT),
+          contains('organiser entre vous'));
+      expect(viewModel.explicationFor(CompatibiliteType.INCOMPATIBLE),
+          isNotEmpty);
+    });
+
+    test('toggleFiltre ne garde que les semaines du type choisi (APP-100)',
+        () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(), accordService: MockAccordService());
+
+      viewModel.toggleFiltre(CompatibiliteType.COLOCATION);
+      final filtrees =
+          viewModel.semainesParMois.values.expand((s) => s).toList();
+      expect(filtrees, hasLength(1));
+      expect(filtrees.single.type, CompatibiliteType.COLOCATION);
+
+      // Re-tap sur la même tuile : le filtre se désactive
+      viewModel.toggleFiltre(CompatibiliteType.COLOCATION);
+      expect(viewModel.filtre, isNull);
+      expect(viewModel.semainesParMois.values.expand((s) => s), hasLength(3));
+    });
+
+    test('isSemaineCourante détecte le lundi de la semaine en cours (APP-100)',
+        () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(), accordService: MockAccordService());
+
+      final now = DateTime.now();
+      final lundi = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+
+      final semaineCourante = SemaineCompatibilite(
+        semaine: lundi,
+        villeAlternantA: 'Paris',
+        villeAlternantB: 'Lyon',
+        type: CompatibiliteType.ECHANGE,
+        couleurHex: '#27AE60',
+        label: 'Échange',
+      );
+
+      expect(viewModel.isSemaineCourante(semaineCourante), isTrue);
+      // Les semaines du payload (2026) ne sont pas la semaine courante
+      for (final s in viewModel.suggestion.semaines) {
+        expect(viewModel.isSemaineCourante(s),
+            s.semaine == lundi ? isTrue : isFalse);
+      }
     });
   });
 
