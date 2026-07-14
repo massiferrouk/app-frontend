@@ -38,5 +38,24 @@ void main() {
 
       expect(viewModel.currentIndex, 2);
     });
+
+    test('ouvrir l\'onglet Accueil incrémente homeReloadKey', () {
+      viewModel.setIndex(1); // on quitte l'accueil
+      final before = viewModel.homeReloadKey;
+
+      viewModel.setIndex(0); // on revient sur l'accueil
+
+      expect(viewModel.homeReloadKey, before + 1);
+    });
+
+    test('ouvrir l\'onglet Messages incrémente messagesReloadKey (alternant)',
+        () {
+      // rôle par défaut ALTERNANT → onglet Messages = index 3
+      final before = viewModel.messagesReloadKey;
+
+      viewModel.setIndex(3);
+
+      expect(viewModel.messagesReloadKey, before + 1);
+    });
   });
 }

@@ -134,16 +134,15 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                   const SizedBox(height: AppSpacing.sm),
                   _DisponibilitesSection(viewModel: viewModel),
 
-                  const SizedBox(height: AppSpacing.xl),
-                  ElevatedButton.icon(
-                    // APP-75 branchera la messagerie
-                    onPressed: () =>
-                        ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('À venir (APP-75)')),
+                  // Contacter le propriétaire (masqué sur son propre logement)
+                  if (viewModel.canContact) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    ElevatedButton.icon(
+                      onPressed: viewModel.contacter,
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: const Text('Contacter'),
                     ),
-                    icon: const Icon(Icons.chat_bubble_outline),
-                    label: const Text('Contacter'),
-                  ),
+                  ],
                 ],
               ),
             ),

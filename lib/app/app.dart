@@ -13,7 +13,9 @@ import '../features/logements/logement_detail_view.dart';
 import '../features/matching/compatibilite_view.dart';
 import '../features/messages/chat_view.dart';
 import '../features/main/main_view.dart';
+import '../features/logements/mes_logements_view.dart';
 import '../features/notifications/notifications_view.dart';
+import '../features/recherche/recherche_view.dart';
 import '../features/startup/startup_view.dart';
 import '../services/accord_service.dart';
 import '../services/auth_service.dart';
@@ -47,6 +49,8 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: LogementDetailView),
     MaterialRoute(page: AccordDetailView),
     MaterialRoute(page: NotificationsView),
+    MaterialRoute(page: RechercheView),
+    MaterialRoute(page: MesLogementsView),
     MaterialRoute(page: AvisView),
     MaterialRoute(page: ChatView),
     // Les prochains écrans seront ajoutés ici

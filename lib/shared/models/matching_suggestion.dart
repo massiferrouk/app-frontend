@@ -23,6 +23,11 @@ class MatchingSuggestion {
   final String? messageResume;
   final List<SemaineCompatibilite> semaines;
 
+  /// Logements publiés qui rendent l'échange signable.
+  /// null si l'alternant concerné n'a pas encore publié son logement.
+  final String? logementAId; // logement de l'utilisateur connecté
+  final String? logementBId; // logement du candidat
+
   const MatchingSuggestion({
     required this.profileId,
     required this.userId,
@@ -40,6 +45,8 @@ class MatchingSuggestion {
     required this.nbSemainesChevauchement,
     this.messageResume,
     this.semaines = const [],
+    this.logementAId,
+    this.logementBId,
   });
 
   factory MatchingSuggestion.fromJson(Map<String, dynamic> json) {
@@ -64,6 +71,8 @@ class MatchingSuggestion {
       semaines: (json['semaines'] as List? ?? [])
           .map((e) => SemaineCompatibilite.fromJson(e as Map<String, dynamic>))
           .toList(),
+      logementAId: json['logementAId'] as String?,
+      logementBId: json['logementBId'] as String?,
     );
   }
 

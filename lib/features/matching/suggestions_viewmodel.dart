@@ -4,6 +4,7 @@ import 'package:stacked_services/stacked_services.dart';
 import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
+import '../../services/logement_service.dart';
 import '../../services/matching_service.dart';
 import '../../shared/models/conversation_summary.dart';
 import '../../shared/models/matching_suggestion.dart';
@@ -14,13 +15,38 @@ enum SuggestionFilter { tous, actifs, potentiels }
 /// Logique de l'écran des suggestions de matching.
 class SuggestionsViewModel extends BaseViewModel {
   final MatchingService _matching;
+  final LogementService _logements;
   final NavigationService _nav;
 
   SuggestionsViewModel(
       {MatchingService? matchingService,
+      LogementService? logementService,
       NavigationService? navigationService})
       : _matching = matchingService ?? locator<MatchingService>(),
+        _logements = logementService ?? locator<LogementService>(),
         _nav = navigationService ?? locator<NavigationService>();
+
+  /// Ouvre le détail du logement de l'autre alternant (match actif).
+  /// La suggestion ne porte que l'id du logement : on le charge avant
+  /// d'ouvrir l'écran de détail.
+  Future<void> goToLogement(MatchingSuggestion suggestion) async {
+    final logementId = suggestion.logementBId;
+    if (logementId == null) return; // match potentiel : pas de logement publié
+
+    setBusy(true);
+    try {
+      final logement = await _logements.getLogement(logementId);
+      errorMessage = null;
+      setBusy(false);
+      await _nav.navigateTo(
+        Routes.logementDetailView,
+        arguments: LogementDetailViewArguments(logement: logement),
+      );
+    } on ApiException catch (e) {
+      errorMessage = e.message;
+      setBusy(false);
+    }
+  }
 
   /// Ouvre un chat avec ce match. conversationId vide = nouvelle
   /// conversation, créée côté backend au premier message.

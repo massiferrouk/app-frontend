@@ -53,6 +53,9 @@ void main() {
     );
     when(() => profileService.currentRole())
         .thenAnswer((_) async => UserRole.ALTERNANT);
+    // Profil chargé pour afficher les vrais noms de villes à l'association
+    when(() => profileService.getMyAlternantProfile())
+        .thenAnswer((_) async => null);
   });
 
   group('load', () {
@@ -130,6 +133,38 @@ void main() {
 
       expect(error, isNull);
       verify(() => logementService.getMesLogements()).called(2);
+    });
+  });
+
+  group('supprimer', () {
+    test('succès : supprime puis recharge', () async {
+      when(() => logementService.getMesLogements())
+          .thenAnswer((_) async => [build()]);
+      await viewModel.load();
+
+      when(() => logementService.delete('log-1')).thenAnswer((_) async {});
+
+      final error = await viewModel.supprimer(viewModel.logements.first);
+
+      expect(error, isNull);
+      verify(() => logementService.delete('log-1')).called(1);
+      verify(() => logementService.getMesLogements()).called(2);
+    });
+
+    test('409 : message clair quand un accord est lié', () async {
+      when(() => logementService.getMesLogements())
+          .thenAnswer((_) async => [build()]);
+      await viewModel.load();
+
+      when(() => logementService.delete(any())).thenThrow(const ApiException(
+        code: 'CONFLICT',
+        message: 'Conflit',
+        statusCode: 409,
+      ));
+
+      final error = await viewModel.supprimer(viewModel.logements.first);
+
+      expect(error, contains('accord'));
     });
   });
 }

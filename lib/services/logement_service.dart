@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../app/app.locator.dart';
 import '../core/api/api_client.dart';
+import '../shared/models/address_suggestion.dart';
 import '../shared/models/disponibilite.dart';
 import '../shared/models/enums.dart';
 import '../shared/models/logement.dart';
@@ -76,6 +77,18 @@ class LogementService {
     return ReputationScore.fromJson(data);
   }
 
+  /// GET /geocoding/autocomplete — suggestions d'adresses (Base Adresse
+  /// Nationale). Retourne une liste vide si la requête est trop courte.
+  Future<List<AddressSuggestion>> autocompleteAddress(String query) async {
+    final data = await _api.get<List<dynamic>>(
+      '/geocoding/autocomplete',
+      queryParameters: {'q': query},
+    );
+    return data
+        .map((e) => AddressSuggestion.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// POST /logements — crée un logement en statut BROUILLON
   Future<Logement> createLogement({
     required String adresse,
@@ -92,6 +105,41 @@ class LogementService {
   }) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/logements',
+      data: {
+        'adresse': adresse,
+        'ville': ville,
+        'codePostal': codePostal,
+        'type': type.toJson(),
+        'surface': surface,
+        'nbPieces': nbPieces,
+        'loyer': loyer,
+        'charges': charges,
+        'description': description,
+        'equipements': equipements,
+        'isMeuble': isMeuble,
+      },
+    );
+    return Logement.fromJson(data);
+  }
+
+  /// PUT /logements/{id} — met à jour un logement (brouillon ou publié).
+  /// 409 si le logement est engagé dans un accord.
+  Future<Logement> updateLogement({
+    required String logementId,
+    required String adresse,
+    required String ville,
+    required String codePostal,
+    required LogementType type,
+    required double surface,
+    required int nbPieces,
+    required double loyer,
+    required double charges,
+    String? description,
+    List<String> equipements = const [],
+    required bool isMeuble,
+  }) async {
+    final data = await _api.put<Map<String, dynamic>>(
+      '/logements/$logementId',
       data: {
         'adresse': adresse,
         'ville': ville,
@@ -130,6 +178,12 @@ class LogementService {
       data: formData,
     );
     return data.map((e) => e.toString()).toList();
+  }
+
+  /// DELETE /logements/{id} — supprime un logement m'appartenant.
+  /// 409 si le logement est engagé dans un accord.
+  Future<void> delete(String logementId) async {
+    await _api.delete<void>('/logements/$logementId');
   }
 
   /// PUT /logements/{id}/publish — BROUILLON → ACTIF

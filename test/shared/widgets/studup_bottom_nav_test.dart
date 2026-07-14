@@ -8,7 +8,7 @@ void main() {
       MaterialApp(home: Scaffold(bottomNavigationBar: child));
 
   group('StudUpBottomNav — un onglet par rôle', () {
-    testWidgets('alternant : Accueil, Matches, Logement, Messages, Profil',
+    testWidgets('alternant : Accueil, Matches, Recherche, Messages, Profil',
         (tester) async {
       await tester.pumpWidget(wrap(StudUpBottomNav(
         role: UserRole.ALTERNANT,
@@ -18,7 +18,7 @@ void main() {
 
       expect(find.text('Accueil'), findsOneWidget);
       expect(find.text('Matches'), findsOneWidget);
-      expect(find.text('Logement'), findsOneWidget);
+      expect(find.text('Recherche'), findsOneWidget);
       expect(find.text('Messages'), findsOneWidget);
       expect(find.text('Profil'), findsOneWidget);
     });

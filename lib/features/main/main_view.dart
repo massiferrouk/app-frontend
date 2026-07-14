@@ -52,34 +52,60 @@ class MainView extends StackedView<MainViewModel> {
       case UserRole.ALTERNANT:
         return [
           // Le dashboard peut basculer sur l'onglet Matches (index 1)
-          HomeAlternantView(onSeeMatches: () => viewModel.setIndex(1)),
+          HomeAlternantView(
+            key: _homeKey(viewModel),
+            onSeeMatches: () => viewModel.setIndex(1),
+          ),
           const SuggestionsView(),
-          const MesLogementsView(),
-          const ConversationsView(),
+          // Recherche de logements : onglet principal (comme les étudiants).
+          // La gestion de « Mes logements » est accessible depuis le Profil.
+          _rechercheTab(viewModel),
+          _conversationsTab(viewModel),
           const ProfilView(),
         ];
       case UserRole.ETUDIANT:
         return [
           HomeEtudiantView(
+            key: _homeKey(viewModel),
             onSearch: () => viewModel.setIndex(1),
             onAccords: () => viewModel.setIndex(2),
           ),
-          const RechercheView(),
+          _rechercheTab(viewModel),
           const MesAccordsView(),
-          const ConversationsView(),
+          _conversationsTab(viewModel),
           const ProfilView(),
         ];
       case UserRole.PROPRIETAIRE:
       case UserRole.ADMIN:
         return [
-          HomeProprioView(onSeeLogements: () => viewModel.setIndex(1)),
+          HomeProprioView(
+            key: _homeKey(viewModel),
+            onSeeLogements: () => viewModel.setIndex(1),
+          ),
           const MesLogementsView(),
-          const ConversationsView(),
+          _conversationsTab(viewModel),
           const NotificationsView(),
           const ProfilView(),
         ];
     }
   }
+
+  /// Clé du dashboard Accueil — change à chaque ouverture de l'onglet pour
+  /// forcer un rechargement (accord reçu, etc.).
+  Key _homeKey(MainViewModel viewModel) =>
+      ValueKey('home-${viewModel.homeReloadKey}');
+
+  /// ConversationsView avec une clé qui change à chaque ouverture de l'onglet,
+  /// ce qui force son rechargement (onViewModelReady → load()).
+  Widget _conversationsTab(MainViewModel viewModel) => ConversationsView(
+        key: ValueKey('conversations-${viewModel.messagesReloadKey}'),
+      );
+
+  /// RechercheView rechargée à chaque ouverture de l'onglet (nouveaux
+  /// logements publiés visibles sans relancer l'app).
+  Widget _rechercheTab(MainViewModel viewModel) => RechercheView(
+        key: ValueKey('recherche-${viewModel.rechercheReloadKey}'),
+      );
 
   @override
   MainViewModel viewModelBuilder(BuildContext context) => MainViewModel();

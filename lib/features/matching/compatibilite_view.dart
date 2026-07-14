@@ -145,11 +145,12 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
     );
   }
 
-  /// Bottom sheet de proposition d'accord : dates + message
+  /// Bottom sheet de proposition d'accord : message uniquement.
+  /// Pas de dates : l'app met en relation, l'organisation est laissée aux
+  /// deux utilisateurs (période déduite automatiquement côté backend).
   Future<void> _showProposerSheet(
       BuildContext context, CompatibiliteViewModel viewModel) async {
-    final result = await showModalBottomSheet<
-        ({DateTime debut, DateTime fin, String? message})>(
+    final result = await showModalBottomSheet<({String? message})>(
       context: context,
       isScrollControlled: true, // laisse la place au clavier
       shape: const RoundedRectangleBorder(
@@ -160,11 +161,7 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
     );
     if (result == null) return;
 
-    final error = await viewModel.proposerAccord(
-      dateDebut: result.debut,
-      dateFin: result.fin,
-      message: result.message,
-    );
+    final error = await viewModel.proposerAccord(message: result.message);
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -192,8 +189,6 @@ class _ProposerAccordSheet extends StatefulWidget {
 }
 
 class _ProposerAccordSheetState extends State<_ProposerAccordSheet> {
-  DateTime? _debut;
-  DateTime? _fin;
   final _messageController = TextEditingController();
 
   @override
@@ -202,23 +197,8 @@ class _ProposerAccordSheetState extends State<_ProposerAccordSheet> {
     super.dispose();
   }
 
-  Future<void> _pickDate(bool isDebut) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: (isDebut ? _debut : _fin) ??
-          now.add(const Duration(days: 7)),
-      firstDate: now.add(const Duration(days: 1)), // @Future côté backend
-      lastDate: DateTime(now.year + 2),
-    );
-    if (picked == null) return;
-    setState(() => isDebut ? _debut = picked : _fin = picked);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final ready = _debut != null && _fin != null;
-
     return Padding(
       // Remonte le sheet au-dessus du clavier
       padding: EdgeInsets.only(
@@ -231,15 +211,11 @@ class _ProposerAccordSheetState extends State<_ProposerAccordSheet> {
           children: [
             Text('Proposer un ${widget.typeLabel.toLowerCase()}',
                 style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                    child: _dateButton('Début', _debut, () => _pickDate(true))),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                    child: _dateButton('Fin', _fin, () => _pickDate(false))),
-              ],
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Vous entrez en contact. Vous organisez ensuite les détails '
+              'entre vous — l\'app ne fixe pas les dates.',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: AppSpacing.md),
             TextField(
@@ -251,51 +227,14 @@ class _ProposerAccordSheetState extends State<_ProposerAccordSheet> {
             ),
             const SizedBox(height: AppSpacing.md),
             ElevatedButton(
-              onPressed: ready
-                  ? () => Navigator.pop(context, (
-                        debut: _debut!,
-                        fin: _fin!,
-                        message: _messageController.text.trim().isEmpty
-                            ? null
-                            : _messageController.text.trim(),
-                      ))
-                  : null,
+              onPressed: () => Navigator.pop(context, (
+                    message: _messageController.text.trim().isEmpty
+                        ? null
+                        : _messageController.text.trim(),
+                  )),
               child: const Text('Envoyer la demande'),
             ),
             const SizedBox(height: AppSpacing.sm),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _dateButton(String label, DateTime? value, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 11, color: AppColors.textTertiary)),
-            Text(
-              value == null
-                  ? 'Choisir…'
-                  : DateFormat('dd/MM/yyyy').format(value),
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: value == null
-                      ? AppColors.textTertiary
-                      : AppColors.textPrimary),
-            ),
           ],
         ),
       ),

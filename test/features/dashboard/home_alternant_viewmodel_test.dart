@@ -3,10 +3,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/dashboard/home_alternant_viewmodel.dart';
+import 'package:studup_app/services/accord_service.dart';
 import 'package:studup_app/services/dashboard_service.dart';
 import 'package:studup_app/shared/models/alternant_dashboard.dart';
 
 class MockDashboardService extends Mock implements DashboardService {}
+
+class MockAccordService extends Mock implements AccordService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
@@ -18,6 +21,7 @@ void main() {
     dashboardService = MockDashboardService();
     viewModel = HomeAlternantViewModel(
       dashboardService: dashboardService,
+      accordService: MockAccordService(),
       navigationService: MockNavigationService(),
     );
   });

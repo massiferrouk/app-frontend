@@ -15,6 +15,11 @@ class Accord {
   final String? messageInitial;
   final DateTime createdAt;
 
+  /// Prénoms des participants (fournis par le backend pour l'affichage,
+  /// ex: bouton « Contacter »). Peuvent être null selon l'endpoint.
+  final String? initiatorPrenom;
+  final String? receiverPrenom;
+
   const Accord({
     required this.id,
     required this.initiatorId,
@@ -28,6 +33,8 @@ class Accord {
     this.montantLoyer,
     this.messageInitial,
     required this.createdAt,
+    this.initiatorPrenom,
+    this.receiverPrenom,
   });
 
   factory Accord.fromJson(Map<String, dynamic> json) {
@@ -44,8 +51,18 @@ class Accord {
       montantLoyer: (json['montantLoyer'] as num?)?.toDouble(),
       messageInitial: json['messageInitial'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      initiatorPrenom: json['initiatorPrenom'] as String?,
+      receiverPrenom: json['receiverPrenom'] as String?,
     );
   }
+
+  /// Id du partenaire vu par [userId] (l'autre participant).
+  String partnerId(String userId) =>
+      initiatorId == userId ? receiverId : initiatorId;
+
+  /// Prénom du partenaire vu par [userId].
+  String? partnerPrenom(String userId) =>
+      initiatorId == userId ? receiverPrenom : initiatorPrenom;
 
   /// true si [userId] a initié la demande
   bool isInitiator(String userId) => initiatorId == userId;

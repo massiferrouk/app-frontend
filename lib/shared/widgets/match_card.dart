@@ -13,11 +13,16 @@ class MatchCard extends StatelessWidget {
   final VoidCallback? onSeeCalendar;
   final VoidCallback? onContact;
 
+  /// Tap sur toute la carte → détail du logement de l'autre alternant.
+  /// null si aucun logement à afficher (match potentiel).
+  final VoidCallback? onTap;
+
   const MatchCard({
     super.key,
     required this.suggestion,
     this.onSeeCalendar,
     this.onContact,
+    this.onTap,
   });
 
   /// Couleur d'accent selon le type d'accord proposé
@@ -40,7 +45,9 @@ class MatchCard extends StatelessWidget {
     final isPotentiel = !suggestion.isMatchActif;
     final accent = isPotentiel ? AppColors.textTertiary : _accentColor;
 
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.background,
@@ -201,6 +208,7 @@ class MatchCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

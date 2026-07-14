@@ -135,11 +135,28 @@ class ProfilView extends StackedView<ProfilViewModel> {
           const SizedBox(height: AppSpacing.lg),
 
           // ─── Mes logements ──────────────────────────────────
-          if (viewModel.logements.isNotEmpty) ...[
+          // Toujours affiché pour l'alternant (dont la nav n'a plus d'onglet
+          // Logement) : il peut y ajouter/gérer son logement. Pour les autres
+          // rôles, seulement s'ils en ont (liste en lecture).
+          if (viewModel.isAlternant ||
+              viewModel.logements.isNotEmpty) ...[
             Text('Mes logements',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
-            ...viewModel.logements.map((l) => _LogementLine(logement: l)),
+            ...viewModel.logements.map((l) => _LogementLine(
+                  logement: l,
+                  onTap: () => viewModel.goToLogementDetail(l),
+                )),
+            if (viewModel.isAlternant) ...[
+              const SizedBox(height: AppSpacing.sm),
+              OutlinedButton.icon(
+                onPressed: viewModel.goToGererLogements,
+                icon: const Icon(Icons.apartment_outlined),
+                label: Text(viewModel.logements.isEmpty
+                    ? 'Ajouter un logement'
+                    : 'Gérer mes logements'),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
           ],
 
@@ -226,34 +243,42 @@ class _Badge extends StatelessWidget {
 
 class _LogementLine extends StatelessWidget {
   final Logement logement;
+  final VoidCallback? onTap;
 
-  const _LogementLine({required this.logement});
+  const _LogementLine({required this.logement, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.apartment_outlined,
-              size: 20, color: AppColors.textSecondary),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text('${logement.type.label} · ${logement.ville}',
-                style: const TextStyle(fontSize: 14)),
-          ),
-          if (logement.villeAssociee != null)
-            _Badge(
-                label: logement.villeAssociee!.label,
-                color: AppColors.colocation,
-                background: AppColors.colocationLight),
-        ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.apartment_outlined,
+                size: 20, color: AppColors.textSecondary),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text('${logement.type.label} · ${logement.ville}',
+                  style: const TextStyle(fontSize: 14)),
+            ),
+            if (logement.villeAssociee != null)
+              _Badge(
+                  label: logement.villeAssociee!.label,
+                  color: AppColors.colocation,
+                  background: AppColors.colocationLight),
+            const SizedBox(width: AppSpacing.sm),
+            const Icon(Icons.chevron_right,
+                size: 20, color: AppColors.textTertiary),
+          ],
+        ),
       ),
     );
   }

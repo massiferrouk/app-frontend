@@ -74,6 +74,22 @@ class ProfilViewModel extends BaseViewModel {
 
   void goToCalendrier() => _nav.navigateTo(Routes.monCalendrierView);
 
+  /// Ouvre le détail d'un de mes logements (données passées en argument).
+  void goToLogementDetail(Logement logement) => _nav.navigateTo(
+        Routes.logementDetailView,
+        arguments: LogementDetailViewArguments(logement: logement),
+      );
+
+  /// Ouvre l'écran complet de gestion des logements (ajout, publication,
+  /// association ville). Recharge le profil au retour (la liste a pu changer).
+  Future<void> goToGererLogements() async {
+    await _nav.navigateTo(
+      Routes.mesLogementsView,
+      arguments: const MesLogementsViewArguments(standalone: true),
+    );
+    await load();
+  }
+
   /// Déconnexion : coupure du WebSocket (l'ancien compte ne doit plus
   /// recevoir de messages sur l'appareil), révocation serveur,
   /// purge locale, retour au login. (APP-89)

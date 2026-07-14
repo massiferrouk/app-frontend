@@ -7,9 +7,13 @@ import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
 import 'mes_logements_viewmodel.dart';
 
-/// Mes logements — onglet Logement du shell (alternant & propriétaire).
+/// Mes logements — onglet Logement du propriétaire, ou écran empilé
+/// ([standalone] = true, avec AppBar) accessible depuis le Profil de
+/// l'alternant (dont la nav n'a plus d'onglet Logement).
 class MesLogementsView extends StackedView<MesLogementsViewModel> {
-  const MesLogementsView({super.key});
+  final bool standalone;
+
+  const MesLogementsView({super.key, this.standalone = false});
 
   @override
   Widget builder(
@@ -17,29 +21,47 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
     MesLogementsViewModel viewModel,
     Widget? child,
   ) {
-    return SafeArea(
+    final content = SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                AppSpacing.md, AppSpacing.screenPadding, AppSpacing.sm),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text('Mes logements',
-                      style: Theme.of(context).textTheme.headlineMedium),
-                ),
-                IconButton(
-                  onPressed: viewModel.goToAjouter,
-                  icon: const Icon(Icons.add_circle_outline, size: 28),
-                ),
-              ],
+          // Header interne (titre + ajout) masqué en standalone : l'AppBar le porte
+          if (!standalone)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                  AppSpacing.md, AppSpacing.screenPadding, AppSpacing.sm),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Mes logements',
+                        style: Theme.of(context).textTheme.headlineMedium),
+                  ),
+                  IconButton(
+                    onPressed: viewModel.goToAjouter,
+                    icon: const Icon(Icons.add_circle_outline, size: 28),
+                  ),
+                ],
+              ),
             ),
-          ),
           Expanded(child: _buildList(context, viewModel)),
         ],
       ),
+    );
+
+    if (!standalone) return content;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Mes logements'),
+        actions: [
+          IconButton(
+            onPressed: viewModel.goToAjouter,
+            icon: const Icon(Icons.add_circle_outline),
+          ),
+        ],
+      ),
+      body: content,
     );
   }
 
@@ -94,10 +116,15 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
                   child: _LogementCard(
                     logement: l,
                     isAlternant: viewModel.isAlternant,
+                    villeEcole: viewModel.villeEcole,
+                    villeEntreprise: viewModel.villeEntreprise,
                     onPublish: () => _handleAction(
                         context, () => viewModel.publish(l)),
                     onAssocier: (ville) => _handleAction(
                         context, () => viewModel.associer(l, ville)),
+                    onSupprimer: () => _handleAction(
+                        context, () => viewModel.supprimer(l)),
+                    onModifier: () => viewModel.goToModifier(l),
                   ),
                 );
               },
@@ -129,15 +156,46 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
 class _LogementCard extends StatelessWidget {
   final Logement logement;
   final bool isAlternant;
+  final String? villeEcole; // villeA du profil
+  final String? villeEntreprise; // villeB du profil
   final VoidCallback onPublish;
   final void Function(VilleAssociee) onAssocier;
+  final VoidCallback onSupprimer;
+  final VoidCallback onModifier;
 
   const _LogementCard({
     required this.logement,
     required this.isAlternant,
+    required this.villeEcole,
+    required this.villeEntreprise,
     required this.onPublish,
     required this.onAssocier,
+    required this.onSupprimer,
+    required this.onModifier,
   });
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer ce logement ?'),
+        content: Text(
+            '${logement.type.label} · ${logement.ville} sera définitivement '
+            'supprimé. Cette action est irréversible.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error),
+              child: const Text('Supprimer')),
+        ],
+      ),
+    );
+    if (confirmed == true) onSupprimer();
+  }
 
   (Color, Color) get _statutColors => switch (logement.statut) {
         LogementStatut.ACTIF => (AppColors.echange, AppColors.echangeLight),
@@ -258,12 +316,40 @@ class _LogementCard extends StatelessWidget {
               ],
             ),
           ],
+
+          // ─── Modifier / Supprimer (toujours dispo pour le propriétaire) ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: onModifier,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Modifier', style: TextStyle(fontSize: 13)),
+              ),
+              TextButton.icon(
+                onPressed: () => _confirmDelete(context),
+                icon: const Icon(Icons.delete_outline,
+                    size: 18, color: AppColors.error),
+                label: const Text('Supprimer',
+                    style: TextStyle(fontSize: 13, color: AppColors.error)),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Future<void> _showAssocierDialog(BuildContext context) async {
+    // On affiche les vrais noms de villes du profil pour lever toute
+    // ambiguïté : « Paris (ville de ton école) » plutôt que « Ville A ».
+    final labelEcole = villeEcole != null
+        ? '$villeEcole (ville de ton école)'
+        : 'Ville de ton école';
+    final labelEntreprise = villeEntreprise != null
+        ? '$villeEntreprise (ville de ton entreprise)'
+        : 'Ville de ton entreprise';
+
     final ville = await showDialog<VilleAssociee>(
       context: context,
       builder: (context) => SimpleDialog(
@@ -271,11 +357,11 @@ class _LogementCard extends StatelessWidget {
         children: [
           SimpleDialogOption(
             onPressed: () => Navigator.pop(context, VilleAssociee.VILLE_A),
-            child: const Text('Ville A (ville de ton école)'),
+            child: Text(labelEcole),
           ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(context, VilleAssociee.VILLE_B),
-            child: const Text('Ville B (ville de ton entreprise)'),
+            child: Text(labelEntreprise),
           ),
         ],
       ),

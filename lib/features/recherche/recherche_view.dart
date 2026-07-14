@@ -7,9 +7,14 @@ import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
 import 'recherche_viewmodel.dart';
 
-/// Recherche de logements — onglet Recherche de l'étudiant.
+/// Recherche de logements.
+/// Onglet Recherche de l'étudiant, ou écran empilé ([standalone] = true,
+/// avec AppBar) pour les autres rôles (ex: alternant qui cherche une
+/// location classique en plus du matching).
 class RechercheView extends StackedView<RechercheViewModel> {
-  const RechercheView({super.key});
+  final bool standalone;
+
+  const RechercheView({super.key, this.standalone = false});
 
   @override
   Widget builder(
@@ -17,16 +22,18 @@ class RechercheView extends StackedView<RechercheViewModel> {
     RechercheViewModel viewModel,
     Widget? child,
   ) {
-    return SafeArea(
+    final content = SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                AppSpacing.md, AppSpacing.screenPadding, AppSpacing.sm),
-            child: Text('Rechercher un logement',
-                style: Theme.of(context).textTheme.headlineMedium),
-          ),
+          // Titre interne masqué en mode standalone (l'AppBar le porte déjà)
+          if (!standalone)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                  AppSpacing.md, AppSpacing.screenPadding, AppSpacing.sm),
+              child: Text('Rechercher un logement',
+                  style: Theme.of(context).textTheme.headlineMedium),
+            ),
 
           // ─── Barre de recherche ville ───────────────────────
           Padding(
@@ -95,6 +102,14 @@ class RechercheView extends StackedView<RechercheViewModel> {
         ],
       ),
     );
+
+    if (!standalone) return content;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('Rechercher un logement')),
+      body: content,
+    );
   }
 
   Widget _buildResults(BuildContext context, RechercheViewModel viewModel) {
@@ -121,14 +136,23 @@ class RechercheView extends StackedView<RechercheViewModel> {
     }
 
     if (viewModel.resultats.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      // Liste vide mais rafraîchissable : un ListView (scrollable) permet le
+      // pull-to-refresh même sans résultat (tirer vers le bas pour réessayer).
+      return RefreshIndicator(
+        onRefresh: viewModel.search,
+        color: AppColors.echange,
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
           children: [
+            const SizedBox(height: 80),
             const Icon(Icons.search_off,
                 size: 48, color: AppColors.textTertiary),
             const SizedBox(height: AppSpacing.md),
             Text('Aucun logement ne correspond à ta recherche.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: AppSpacing.sm),
+            Text('Tire vers le bas pour rafraîchir.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall),
           ],
