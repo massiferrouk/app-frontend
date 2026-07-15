@@ -42,6 +42,7 @@ class MainView extends StackedView<MainViewModel> {
         role: viewModel.role,
         currentIndex: viewModel.currentIndex,
         onTap: viewModel.setIndex,
+        messagesBadge: viewModel.conversationsNonLues,
       ),
     );
   }

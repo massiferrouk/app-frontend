@@ -1,6 +1,8 @@
 import 'package:stacked/stacked.dart';
 
 import '../../app/app.locator.dart';
+import '../../core/api/api_exception.dart';
+import '../../services/message_service.dart';
 import '../../services/profile_service.dart';
 import '../../shared/models/enums.dart';
 
@@ -8,14 +10,20 @@ import '../../shared/models/enums.dart';
 /// Lit le rôle dans le JWT et pilote l'onglet courant.
 class MainViewModel extends BaseViewModel {
   final ProfileService _profile;
+  final MessageService _messages;
 
-  MainViewModel({ProfileService? profileService})
-      : _profile = profileService ?? locator<ProfileService>();
+  MainViewModel({ProfileService? profileService, MessageService? messageService})
+      : _profile = profileService ?? locator<ProfileService>(),
+        _messages = messageService ?? locator<MessageService>();
 
   /// Rôle par défaut le temps de lire le token (évite un écran vide)
   UserRole role = UserRole.ALTERNANT;
 
   int currentIndex = 0;
+
+  /// Badge de l'onglet Messages : nombre de CONVERSATIONS avec des
+  /// messages non lus (pas le total de messages — convention WhatsApp).
+  int conversationsNonLues = 0;
 
   /// Compteurs incrémentés à chaque ouverture de l'onglet Accueil / Messages.
   /// Servent de clé aux vues correspondantes pour forcer un rechargement :
@@ -40,6 +48,7 @@ class MainViewModel extends BaseViewModel {
   Future<void> init() async {
     role = await _profile.currentRole() ?? UserRole.ALTERNANT;
     notifyListeners();
+    await refreshMessagesBadge();
   }
 
   void setIndex(int index) {
@@ -50,5 +59,20 @@ class MainViewModel extends BaseViewModel {
     if (index == _messagesTabIndex) messagesReloadKey++;
     if (index == _rechercheTabIndex) rechercheReloadKey++;
     notifyListeners();
+    // Chaque changement d'onglet rafraîchit le badge : en quittant
+    // Messages il retombe à zéro, ailleurs il capte les nouveautés.
+    refreshMessagesBadge();
+  }
+
+  /// Le badge est secondaire : une erreur réseau ne doit rien bloquer.
+  Future<void> refreshMessagesBadge() async {
+    try {
+      final conversations = await _messages.getConversations();
+      conversationsNonLues =
+          conversations.where((c) => c.unreadCount > 0).length;
+      notifyListeners();
+    } on ApiException {
+      // silencieux
+    }
   }
 }
