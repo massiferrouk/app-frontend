@@ -154,6 +154,27 @@ class MatchCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
 
+                    // Argument massue : l'économie estimée en euros (APP-103)
+                    if (suggestion.hasEconomie) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          const Icon(Icons.savings_outlined,
+                              size: 15, color: AppColors.echange),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              suggestion.economieLabel,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.echange),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
                     // Message match potentiel ("Si tu publies un logement...")
                     if (isPotentiel &&
                         suggestion.messageMatchPotentiel != null) ...[

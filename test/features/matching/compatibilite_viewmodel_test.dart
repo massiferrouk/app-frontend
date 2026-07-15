@@ -32,6 +32,7 @@ void main() {
         'messageResume': 'Vos rythmes sont compatibles à 75%.',
         'logementAId': actif ? 'log-a' : null,
         'logementBId': actif ? 'log-b' : null,
+        'economieMensuelle': actif ? 225 : 0,
         'semaines': const [
           {
             'semaine': '2026-07-27',
@@ -105,6 +106,23 @@ void main() {
           contains('organiser entre vous'));
       expect(viewModel.explicationFor(CompatibiliteType.INCOMPATIBLE),
           isNotEmpty);
+    });
+
+    test('économie mensuelle parsée et formatée (APP-103)', () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(), accordService: MockAccordService());
+
+      expect(viewModel.suggestion.economieMensuelle, 225);
+      expect(viewModel.suggestion.hasEconomie, isTrue);
+      expect(viewModel.suggestion.economieLabel, contains('225 €/mois'));
+    });
+
+    test('pas de loyer connu : aucune économie affichable (APP-103)', () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(actif: false),
+          accordService: MockAccordService());
+
+      expect(viewModel.suggestion.hasEconomie, isFalse);
     });
 
     test('toggleFiltre ne garde que les semaines du type choisi (APP-100)',

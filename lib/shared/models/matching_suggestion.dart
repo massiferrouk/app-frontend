@@ -28,6 +28,10 @@ class MatchingSuggestion {
   final String? logementAId; // logement de l'utilisateur connecté
   final String? logementBId; // logement du candidat
 
+  /// Économie mensuelle estimée pour l'utilisateur connecté, en euros
+  /// entiers (APP-103). 0 = pas calculable (loyers inconnus).
+  final int economieMensuelle;
+
   const MatchingSuggestion({
     required this.profileId,
     required this.userId,
@@ -47,6 +51,7 @@ class MatchingSuggestion {
     this.semaines = const [],
     this.logementAId,
     this.logementBId,
+    this.economieMensuelle = 0,
   });
 
   factory MatchingSuggestion.fromJson(Map<String, dynamic> json) {
@@ -73,8 +78,17 @@ class MatchingSuggestion {
           .toList(),
       logementAId: json['logementAId'] as String?,
       logementBId: json['logementBId'] as String?,
+      economieMensuelle: (json['economieMensuelle'] as num? ?? 0).round(),
     );
   }
+
+  /// true si une économie chiffrée peut être affichée
+  bool get hasEconomie => economieMensuelle > 0;
+
+  /// Phrase d'économie selon le type d'accord (APP-103)
+  String get economieLabel => typePropose == AccordType.COLOCATION_TOURNANTE
+      ? 'Divisez vos loyers : ≈ $economieMensuelle €/mois économisés chacun'
+      : 'Économise ≈ $economieMensuelle €/mois';
 
   /// Nom affiché : "Thomas D."
   String get displayName =>
