@@ -97,7 +97,12 @@ class ChatViewModel extends BaseViewModel {
     try {
       final sent =
           await _messages.sendMessage(conversation.partnerId!, content);
-      messages.add(sent);
+      // Le broadcast WebSocket arrive souvent AVANT cette réponse REST :
+      // le message est alors déjà dans la liste (via onMessageReceived).
+      // Sans ce garde, l'émetteur voyait son message en double.
+      if (!messages.any((m) => m.id == sent.id)) {
+        messages.add(sent);
+      }
       inputController.clear();
       errorMessage = null;
       // Nouvelle conversation : le backend vient de la créer,

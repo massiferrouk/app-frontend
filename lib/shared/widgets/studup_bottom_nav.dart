@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../models/enums.dart';
 
 /// Définition d'un onglet de navigation
@@ -43,17 +44,30 @@ List<NavTab> navTabsForRole(UserRole role) {
 }
 
 /// Bottom nav StudUp — style du design system (sélection noire).
+/// [messagesBadge] : conversations non lues sur l'onglet Messages.
+/// [alertesBadge] : notifications non lues sur l'onglet Alertes (proprio).
 class StudUpBottomNav extends StatelessWidget {
   final UserRole role;
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final int messagesBadge;
+  final int alertesBadge;
 
   const StudUpBottomNav({
     super.key,
     required this.role,
     required this.currentIndex,
     required this.onTap,
+    this.messagesBadge = 0,
+    this.alertesBadge = 0,
   });
+
+  /// Badge du tab selon son label — 0 = pas de badge
+  int _badgeFor(NavTab tab) => switch (tab.label) {
+        'Messages' => messagesBadge,
+        'Alertes' => alertesBadge,
+        _ => 0,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -61,12 +75,19 @@ class StudUpBottomNav extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      items: tabs
-          .map((t) => BottomNavigationBarItem(
-                icon: Icon(t.icon),
-                label: t.label,
-              ))
-          .toList(),
+      items: tabs.map((t) {
+        final badge = _badgeFor(t);
+        return BottomNavigationBarItem(
+          icon: badge > 0
+              ? Badge(
+                  label: Text('$badge'),
+                  backgroundColor: AppColors.error,
+                  child: Icon(t.icon),
+                )
+              : Icon(t.icon),
+          label: t.label,
+        );
+      }).toList(),
     );
   }
 }
