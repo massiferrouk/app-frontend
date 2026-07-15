@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
+import '../../shared/models/matching_suggestion.dart';
 import 'logement_detail_viewmodel.dart';
 
 /// Détail d'un logement : carousel photos, caractéristiques,
@@ -117,6 +118,15 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                                     style: const TextStyle(fontSize: 13)),
                               ))
                           .toList(),
+                    ),
+                  ],
+
+                  // ─── Compatibilité avec l'annonceur (APP-104) ──
+                  if (viewModel.matchAnnonceur != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    _CompatibiliteCard(
+                      suggestion: viewModel.matchAnnonceur!,
+                      onTap: viewModel.voirCompatibilite,
                     ),
                   ],
 
@@ -346,6 +356,59 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(label, style: TextStyle(fontSize: 13, color: color)),
         ],
+      ),
+    );
+  }
+}
+
+/// Carte compatibilité : l'annonceur est un alternant compatible (APP-104).
+/// Score + économie estimée, tap → calendrier de compatibilité.
+class _CompatibiliteCard extends StatelessWidget {
+  final MatchingSuggestion suggestion;
+  final VoidCallback onTap;
+
+  const _CompatibiliteCard({required this.suggestion, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.echangeLight,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          border: Border.all(color: AppColors.echange),
+        ),
+        child: Row(
+          children: [
+            Text('${suggestion.scorePercent}%',
+                style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.echange)),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Compatible avec ton rythme d\'alternance',
+                      style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600)),
+                  if (suggestion.hasEconomie) ...[
+                    const SizedBox(height: 2),
+                    Text(suggestion.economieLabel,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.echange)),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.echange),
+          ],
+        ),
       ),
     );
   }

@@ -5,10 +5,13 @@ import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/logement_service.dart';
+import '../../services/matching_service.dart';
 import '../../services/profile_service.dart';
 import '../../shared/models/conversation_summary.dart';
 import '../../shared/models/disponibilite.dart';
+import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
+import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/reputation_score.dart';
 
 /// Logique du détail d'un logement.
@@ -16,6 +19,7 @@ import '../../shared/models/reputation_score.dart';
 /// et la réputation du propriétaire se chargent ensuite.
 class LogementDetailViewModel extends BaseViewModel {
   final LogementService _logements;
+  final MatchingService _matching;
   final ProfileService _profile;
   final NavigationService _nav;
 
@@ -27,15 +31,21 @@ class LogementDetailViewModel extends BaseViewModel {
   LogementDetailViewModel(
       {required this.logement,
       LogementService? logementService,
+      MatchingService? matchingService,
       ProfileService? profileService,
       NavigationService? navigationService})
       : _logements = logementService ?? locator<LogementService>(),
+        _matching = matchingService ?? locator<MatchingService>(),
         _profile = profileService ?? locator<ProfileService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
   List<Disponibilite> disponibilites = [];
   ReputationScore? reputation;
   String? currentUserId;
+
+  /// Si l'annonceur est un alternant compatible avec moi : sa suggestion
+  /// de matching (score, économie, semaines) — null sinon (APP-104).
+  MatchingSuggestion? matchAnnonceur;
 
   /// On ne peut pas se contacter soi-même (mon propre logement).
   bool get canContact =>
@@ -79,7 +89,33 @@ class LogementDetailViewModel extends BaseViewModel {
     } on ApiException {
       // Non bloquant : la carte propriétaire s'affiche sans score
     }
+    await _loadMatchAnnonceur();
     setBusy(false);
+  }
+
+  /// Cherche l'annonceur dans mes suggestions de matching (APP-104).
+  /// Alternants uniquement, jamais sur mon propre logement, erreurs muettes.
+  Future<void> _loadMatchAnnonceur() async {
+    if (currentUserId == null || currentUserId == logement.ownerId) return;
+    try {
+      if (await _profile.currentRole() != UserRole.ALTERNANT) return;
+      final suggestions = await _matching.getSuggestions();
+      final matches =
+          suggestions.where((s) => s.userId == logement.ownerId);
+      matchAnnonceur = matches.isEmpty ? null : matches.first;
+    } on ApiException {
+      // silencieux — la fiche reste complète sans la section matching
+    }
+  }
+
+  /// Ouvre le calendrier de compatibilité avec l'annonceur
+  void voirCompatibilite() {
+    final match = matchAnnonceur;
+    if (match == null) return;
+    _nav.navigateTo(
+      Routes.compatibiliteView,
+      arguments: CompatibiliteViewArguments(suggestion: match),
+    );
   }
 
   /// Disponibilités des 4 prochaines semaines uniquement

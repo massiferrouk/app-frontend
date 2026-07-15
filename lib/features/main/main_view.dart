@@ -61,7 +61,9 @@ class MainView extends StackedView<MainViewModel> {
           const SuggestionsView(),
           // Recherche de logements : onglet principal (comme les étudiants).
           // La gestion de « Mes logements » est accessible depuis le Profil.
-          _rechercheTab(viewModel),
+          // onSeeMatches : la carte matching de la recherche bascule sur
+          // l'onglet Matches (index 1) — alternants uniquement (APP-104).
+          _rechercheTab(viewModel, onSeeMatches: () => viewModel.setIndex(1)),
           _conversationsTab(viewModel),
           const ProfilView(),
         ];
@@ -105,8 +107,11 @@ class MainView extends StackedView<MainViewModel> {
 
   /// RechercheView rechargée à chaque ouverture de l'onglet (nouveaux
   /// logements publiés visibles sans relancer l'app).
-  Widget _rechercheTab(MainViewModel viewModel) => RechercheView(
+  Widget _rechercheTab(MainViewModel viewModel,
+          {VoidCallback? onSeeMatches}) =>
+      RechercheView(
         key: ValueKey('recherche-${viewModel.rechercheReloadKey}'),
+        onSeeMatches: onSeeMatches,
       );
 
   @override
