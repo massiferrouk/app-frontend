@@ -2,6 +2,7 @@ import 'package:stacked/stacked.dart';
 
 import '../../app/app.locator.dart';
 import '../../core/api/api_exception.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/message_service.dart';
 import '../../services/profile_service.dart';
 import '../../shared/models/enums.dart';
@@ -11,10 +12,15 @@ import '../../shared/models/enums.dart';
 class MainViewModel extends BaseViewModel {
   final ProfileService _profile;
   final MessageService _messages;
+  final ChatSocketService _socket;
 
-  MainViewModel({ProfileService? profileService, MessageService? messageService})
+  MainViewModel(
+      {ProfileService? profileService,
+      MessageService? messageService,
+      ChatSocketService? chatSocketService})
       : _profile = profileService ?? locator<ProfileService>(),
-        _messages = messageService ?? locator<MessageService>();
+        _messages = messageService ?? locator<MessageService>(),
+        _socket = chatSocketService ?? locator<ChatSocketService>();
 
   /// Rôle par défaut le temps de lire le token (évite un écran vide)
   UserRole role = UserRole.ALTERNANT;
@@ -45,10 +51,29 @@ class MainViewModel extends BaseViewModel {
         _ => -1,
       };
 
+  /// userId abonné au topic personnel — pour se désabonner au dispose
+  String? _subscribedUserId;
+
   Future<void> init() async {
     role = await _profile.currentRole() ?? UserRole.ALTERNANT;
     notifyListeners();
     await refreshMessagesBadge();
+
+    // Temps réel (APP-102) : tout message qui m'est adressé rafraîchit le
+    // badge instantanément, quel que soit l'onglet ouvert.
+    final userId = await _profile.currentUserId();
+    if (userId != null) {
+      _subscribedUserId = userId;
+      _socket.subscribeToUserMessages(userId, (_) => refreshMessagesBadge());
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_subscribedUserId != null) {
+      _socket.unsubscribeFromUserMessages(_subscribedUserId!);
+    }
+    super.dispose();
   }
 
   void setIndex(int index) {

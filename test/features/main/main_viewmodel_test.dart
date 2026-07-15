@@ -2,18 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/main/main_viewmodel.dart';
+import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/message_service.dart';
 import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/shared/models/conversation_summary.dart';
 import 'package:studup_app/shared/models/enums.dart';
+import 'package:studup_app/shared/models/message.dart';
 
 class MockProfileService extends Mock implements ProfileService {}
 
 class MockMessageService extends Mock implements MessageService {}
 
+class MockChatSocketService extends Mock implements ChatSocketService {}
+
 void main() {
   late MockProfileService profile;
   late MockMessageService messages;
+  late MockChatSocketService socket;
   late MainViewModel viewModel;
 
   ConversationSummary buildConv({required int unread}) => ConversationSummary(
@@ -24,14 +29,23 @@ void main() {
         unreadCount: unread,
       );
 
+  setUpAll(() {
+    registerFallbackValue((ChatMessage _) {});
+  });
+
   setUp(() {
     profile = MockProfileService();
     messages = MockMessageService();
+    socket = MockChatSocketService();
     // Par défaut : aucune conversation (le badge reste à 0)
     when(() => messages.getConversations()).thenAnswer((_) async => []);
+    when(() => profile.currentUserId()).thenAnswer((_) async => 'moi');
+    when(() => socket.subscribeToUserMessages(any(), any()))
+        .thenAnswer((_) {});
     viewModel = MainViewModel(
       profileService: profile,
       messageService: messages,
+      chatSocketService: socket,
     );
   });
 
@@ -115,6 +129,45 @@ void main() {
       await viewModel.init();
 
       expect(viewModel.conversationsNonLues, 0); // pas de crash
+    });
+
+    test('init s\'abonne au topic personnel de l\'utilisateur', () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+
+      await viewModel.init();
+
+      verify(() => socket.subscribeToUserMessages('moi', any())).called(1);
+    });
+
+    test('message reçu en temps réel : le badge se rafraîchit', () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+      // Capture le callback passé au socket pour simuler un message entrant
+      void Function(ChatMessage)? onMessage;
+      when(() => socket.subscribeToUserMessages(any(), any()))
+          .thenAnswer((invocation) {
+        onMessage =
+            invocation.positionalArguments[1] as void Function(ChatMessage);
+      });
+
+      await viewModel.init();
+      expect(viewModel.conversationsNonLues, 0);
+
+      // Un nouveau message arrive → le serveur compte 1 conversation non lue
+      when(() => messages.getConversations()).thenAnswer(
+          (_) async => [buildConv(unread: 1)]);
+      onMessage!(ChatMessage(
+        id: 'm1',
+        conversationId: 'c1',
+        senderId: 'lui',
+        content: 'salut',
+        isRead: false,
+        createdAt: DateTime.now(),
+      ));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(viewModel.conversationsNonLues, 1);
     });
   });
 }

@@ -17,10 +17,13 @@ class ChatSocketService {
   StompClient? _client;
   bool _stompConnected = false;
 
-  /// Callbacks actifs par conversation — resouscrits après reconnexion
+  /// Callbacks actifs par destination STOMP — resouscrits après reconnexion.
+  /// Deux familles de destinations (APP-102) :
+  /// - /topic/conversation/{id} : messages d'un chat ouvert
+  /// - /topic/user/{userId}/messages : tout message reçu (badge temps réel)
   final Map<String, void Function(ChatMessage)> _callbacks = {};
 
-  /// Fonctions de désabonnement STOMP par conversation
+  /// Fonctions de désabonnement STOMP par destination
   final Map<String, dynamic> _unsubscribers = {};
 
   void _ensureConnected() {
@@ -48,9 +51,9 @@ class ChatSocketService {
   }
 
   void _doSubscribe(
-      String conversationId, void Function(ChatMessage) onMessage) {
+      String destination, void Function(ChatMessage) onMessage) {
     final unsubscribe = _client!.subscribe(
-      destination: '/topic/conversation/$conversationId',
+      destination: destination,
       callback: (frame) {
         if (frame.body == null) return;
         try {
@@ -61,25 +64,40 @@ class ChatSocketService {
         }
       },
     );
-    _unsubscribers[conversationId] = unsubscribe;
+    _unsubscribers[destination] = unsubscribe;
   }
 
-  /// S'abonne aux messages temps réel d'une conversation.
-  void subscribeToConversation(
-      String conversationId, void Function(ChatMessage) onMessage) {
-    _callbacks[conversationId] = onMessage;
+  void _subscribe(String destination, void Function(ChatMessage) onMessage) {
+    _callbacks[destination] = onMessage;
     _ensureConnected();
-    if (_stompConnected) _doSubscribe(conversationId, onMessage);
+    if (_stompConnected) _doSubscribe(destination, onMessage);
   }
 
-  /// Se désabonne (appelé quand on quitte l'écran de chat).
-  void unsubscribeFromConversation(String conversationId) {
-    _callbacks.remove(conversationId);
-    final unsubscribe = _unsubscribers.remove(conversationId);
+  void _unsubscribe(String destination) {
+    _callbacks.remove(destination);
+    final unsubscribe = _unsubscribers.remove(destination);
     if (unsubscribe != null && _stompConnected) {
       unsubscribe();
     }
   }
+
+  /// S'abonne aux messages temps réel d'une conversation.
+  void subscribeToConversation(
+          String conversationId, void Function(ChatMessage) onMessage) =>
+      _subscribe('/topic/conversation/$conversationId', onMessage);
+
+  /// Se désabonne (appelé quand on quitte l'écran de chat).
+  void unsubscribeFromConversation(String conversationId) =>
+      _unsubscribe('/topic/conversation/$conversationId');
+
+  /// S'abonne au topic personnel : reçoit TOUT message qui m'est adressé,
+  /// quel que soit l'écran ouvert — alimente le badge Messages (APP-102).
+  void subscribeToUserMessages(
+          String userId, void Function(ChatMessage) onMessage) =>
+      _subscribe('/topic/user/$userId/messages', onMessage);
+
+  void unsubscribeFromUserMessages(String userId) =>
+      _unsubscribe('/topic/user/$userId/messages');
 
   /// Coupe la connexion (logout).
   void disconnect() {
