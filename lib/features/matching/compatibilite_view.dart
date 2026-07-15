@@ -113,6 +113,30 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
               ),
             ),
 
+            // ─── Économie estimée (APP-103) ─────────────────────
+            if (s.hasEconomie)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                    0, AppSpacing.screenPadding, AppSpacing.md),
+                child: _EconomieBanner(
+                  label: s.economieLabel,
+                  coloc: s.typePropose == AccordType.COLOCATION_TOURNANTE,
+                ),
+              )
+            else if (s.logementAId == null || s.logementBId == null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                    0, AppSpacing.screenPadding, AppSpacing.md),
+                child: Text(
+                  'Publie ton logement pour estimer tes économies',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      color: AppColors.textSecondary),
+                ),
+              ),
+
             // ─── En-tête de colonnes Toi | Lui ──────────────────
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -251,6 +275,42 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
     };
 
 // ─── Widgets internes ─────────────────────────────────────────────
+
+/// Bandeau d'économie estimée — vert pour l'échange, bleu pour la coloc
+class _EconomieBanner extends StatelessWidget {
+  final String label;
+  final bool coloc;
+
+  const _EconomieBanner({required this.label, required this.coloc});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = coloc ? AppColors.colocation : AppColors.echange;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm, horizontal: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: coloc ? AppColors.colocationLight : AppColors.echangeLight,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.savings_outlined, size: 18, color: accent),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700, color: accent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 /// Anneau de progression autour du score (AppBar)
 class _ScoreRing extends StatelessWidget {
