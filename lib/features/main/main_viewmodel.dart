@@ -4,6 +4,7 @@ import '../../app/app.locator.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/message_service.dart';
+import '../../services/notification_service.dart';
 import '../../services/profile_service.dart';
 import '../../shared/models/enums.dart';
 
@@ -12,14 +13,17 @@ import '../../shared/models/enums.dart';
 class MainViewModel extends BaseViewModel {
   final ProfileService _profile;
   final MessageService _messages;
+  final NotificationService _notifications;
   final ChatSocketService _socket;
 
   MainViewModel(
       {ProfileService? profileService,
       MessageService? messageService,
+      NotificationService? notificationService,
       ChatSocketService? chatSocketService})
       : _profile = profileService ?? locator<ProfileService>(),
         _messages = messageService ?? locator<MessageService>(),
+        _notifications = notificationService ?? locator<NotificationService>(),
         _socket = chatSocketService ?? locator<ChatSocketService>();
 
   /// Rôle par défaut le temps de lire le token (évite un écran vide)
@@ -30,6 +34,9 @@ class MainViewModel extends BaseViewModel {
   /// Badge de l'onglet Messages : nombre de CONVERSATIONS avec des
   /// messages non lus (pas le total de messages — convention WhatsApp).
   int conversationsNonLues = 0;
+
+  /// Badge de l'onglet Alertes (propriétaire) : notifications non lues
+  int notificationsNonLues = 0;
 
   /// Compteurs incrémentés à chaque ouverture de l'onglet Accueil / Messages.
   /// Servent de clé aux vues correspondantes pour forcer un rechargement :
@@ -98,6 +105,16 @@ class MainViewModel extends BaseViewModel {
       notifyListeners();
     } on ApiException {
       // silencieux
+    }
+    // Badge Alertes : uniquement pour le proprio/admin (seuls rôles
+    // avec l'onglet) — inutile de charger pour les autres.
+    if (role == UserRole.PROPRIETAIRE || role == UserRole.ADMIN) {
+      try {
+        notificationsNonLues = await _notifications.getUnreadCount();
+        notifyListeners();
+      } on ApiException {
+        // silencieux
+      }
     }
   }
 }

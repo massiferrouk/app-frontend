@@ -43,6 +43,7 @@ class MainView extends StackedView<MainViewModel> {
         currentIndex: viewModel.currentIndex,
         onTap: viewModel.setIndex,
         messagesBadge: viewModel.conversationsNonLues,
+        alertesBadge: viewModel.notificationsNonLues,
       ),
     );
   }

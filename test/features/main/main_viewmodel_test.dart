@@ -4,6 +4,7 @@ import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/main/main_viewmodel.dart';
 import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/message_service.dart';
+import 'package:studup_app/services/notification_service.dart';
 import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/shared/models/conversation_summary.dart';
 import 'package:studup_app/shared/models/enums.dart';
@@ -15,10 +16,13 @@ class MockMessageService extends Mock implements MessageService {}
 
 class MockChatSocketService extends Mock implements ChatSocketService {}
 
+class MockNotificationService extends Mock implements NotificationService {}
+
 void main() {
   late MockProfileService profile;
   late MockMessageService messages;
   late MockChatSocketService socket;
+  late MockNotificationService notifications;
   late MainViewModel viewModel;
 
   ConversationSummary buildConv({required int unread}) => ConversationSummary(
@@ -37,14 +41,17 @@ void main() {
     profile = MockProfileService();
     messages = MockMessageService();
     socket = MockChatSocketService();
-    // Par défaut : aucune conversation (le badge reste à 0)
+    notifications = MockNotificationService();
+    // Par défaut : aucune conversation ni notification (badges à 0)
     when(() => messages.getConversations()).thenAnswer((_) async => []);
+    when(() => notifications.getUnreadCount()).thenAnswer((_) async => 0);
     when(() => profile.currentUserId()).thenAnswer((_) async => 'moi');
     when(() => socket.subscribeToUserMessages(any(), any()))
         .thenAnswer((_) {});
     viewModel = MainViewModel(
       profileService: profile,
       messageService: messages,
+      notificationService: notifications,
       chatSocketService: socket,
     );
   });
@@ -129,6 +136,28 @@ void main() {
       await viewModel.init();
 
       expect(viewModel.conversationsNonLues, 0); // pas de crash
+    });
+
+    test('proprio : badge Alertes chargé avec les notifs non lues (APP-102)',
+        () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.PROPRIETAIRE);
+      when(() => notifications.getUnreadCount()).thenAnswer((_) async => 4);
+
+      await viewModel.init();
+
+      expect(viewModel.notificationsNonLues, 4);
+    });
+
+    test('alternant : pas d\'appel au compteur de notifs (pas d\'onglet Alertes)',
+        () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+
+      await viewModel.init();
+
+      verifyNever(() => notifications.getUnreadCount());
+      expect(viewModel.notificationsNonLues, 0);
     });
 
     test('init s\'abonne au topic personnel de l\'utilisateur', () async {

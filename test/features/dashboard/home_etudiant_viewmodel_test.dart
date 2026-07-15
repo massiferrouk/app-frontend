@@ -5,6 +5,7 @@ import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/dashboard/home_etudiant_viewmodel.dart';
 import 'package:studup_app/services/accord_service.dart';
 import 'package:studup_app/services/logement_service.dart';
+import 'package:studup_app/services/notification_service.dart';
 import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/logement.dart';
@@ -15,9 +16,12 @@ class MockAccordService extends Mock implements AccordService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
+class MockNotificationService extends Mock implements NotificationService {}
+
 void main() {
   late MockLogementService logementService;
   late MockAccordService accordService;
+  late MockNotificationService notificationService;
   late HomeEtudiantViewModel viewModel;
 
   Logement logement(String id) => Logement.fromJson({
@@ -50,11 +54,27 @@ void main() {
   setUp(() {
     logementService = MockLogementService();
     accordService = MockAccordService();
+    notificationService = MockNotificationService();
+    // Badge cloche : le load() rafraîchit aussi le compteur non-lues
+    when(() => notificationService.getUnreadCount())
+        .thenAnswer((_) async => 3);
     viewModel = HomeEtudiantViewModel(
       logementService: logementService,
       accordService: accordService,
+      notificationService: notificationService,
       navigationService: MockNavigationService(),
     );
+  });
+
+  test('load rafraîchit le compteur de notifications non lues (APP-102)',
+      () async {
+    when(() => logementService.search()).thenAnswer(
+        (_) async => (logements: <Logement>[], hasNext: false));
+    when(() => accordService.getMesAccords()).thenAnswer((_) async => []);
+
+    await viewModel.load();
+
+    expect(viewModel.unreadCount, 3);
   });
 
   test('charge vedettes (max 5) et accords en cours uniquement', () async {

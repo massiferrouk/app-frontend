@@ -39,8 +39,23 @@ class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
-        Text('Bonjour 👋',
-            style: Theme.of(context).textTheme.headlineMedium),
+        Row(
+          children: [
+            Expanded(
+              child: Text('Bonjour 👋',
+                  style: Theme.of(context).textTheme.headlineMedium),
+            ),
+            Badge(
+              label: Text('${viewModel.unreadCount}'),
+              isLabelVisible: viewModel.unreadCount > 0,
+              backgroundColor: AppColors.error,
+              child: IconButton(
+                onPressed: viewModel.goToNotifications,
+                icon: const Icon(Icons.notifications_outlined, size: 26),
+              ),
+            ),
+          ],
+        ),
         Text('Trouve ton prochain logement',
             style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: AppSpacing.md),
