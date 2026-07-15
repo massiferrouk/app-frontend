@@ -4,15 +4,24 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/recherche/recherche_viewmodel.dart';
 import 'package:studup_app/services/logement_service.dart';
+import 'package:studup_app/services/matching_service.dart';
+import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/logement.dart';
+import 'package:studup_app/shared/models/matching_suggestion.dart';
 
 class MockLogementService extends Mock implements LogementService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
+class MockMatchingService extends Mock implements MatchingService {}
+
+class MockProfileService extends Mock implements ProfileService {}
+
 void main() {
   late MockLogementService logementService;
+  late MockMatchingService matchingService;
+  late MockProfileService profileService;
   late RechercheViewModel viewModel;
 
   Logement build(String id) => Logement.fromJson({
@@ -42,14 +51,102 @@ void main() {
         )).thenAnswer((_) async => (logements: logements, hasNext: hasNext));
   }
 
+  MatchingSuggestion buildSuggestion({
+    String villeA = 'Lyon',
+    String villeB = 'Paris',
+    int economie = 0,
+  }) =>
+      MatchingSuggestion.fromJson({
+        'profileId': 'p-1',
+        'userId': 'u-1',
+        'prenom': 'Thomas',
+        'nom': 'Durand',
+        'villeA': villeA,
+        'villeB': villeB,
+        'score': 0.75,
+        'scorePercent': 75,
+        'typePropose': 'ECHANGE_PARTIEL',
+        'isMatchActif': true,
+        'nbSemainesEchange': 3,
+        'nbSemainesColocation': 0,
+        'nbSemainesChevauchement': 1,
+        'semaines': const [],
+        'economieMensuelle': economie,
+      });
+
   setUpAll(() => registerFallbackValue(LogementType.STUDIO));
 
   setUp(() {
     logementService = MockLogementService();
+    matchingService = MockMatchingService();
+    profileService = MockProfileService();
+    // Par défaut : étudiant (pas de carte matching)
+    when(() => profileService.currentRole())
+        .thenAnswer((_) async => UserRole.ETUDIANT);
     viewModel = RechercheViewModel(
       logementService: logementService,
+      matchingService: matchingService,
+      profileService: profileService,
       navigationService: MockNavigationService(),
     );
+  });
+
+  group('carte matching dans la recherche (APP-104)', () {
+    test('alternant + ville avec matchs : compte et meilleure économie',
+        () async {
+      stubSearch(logements: []);
+      when(() => profileService.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+      when(() => matchingService.getSuggestions()).thenAnswer((_) async => [
+            buildSuggestion(villeA: 'Marseille', economie: 225),
+            buildSuggestion(villeB: 'marseille', economie: 450), // casse ≠
+            buildSuggestion(villeA: 'Bordeaux', economie: 900), // hors ville
+          ]);
+      viewModel.villeController.text = 'Marseille';
+
+      await viewModel.search();
+
+      expect(viewModel.matchsCompatibles, 2);
+      expect(viewModel.economieMaxMatchs, 450);
+      expect(viewModel.villeMatchs, 'Marseille');
+    });
+
+    test('étudiant : jamais d\'appel au matching', () async {
+      stubSearch(logements: []);
+      viewModel.villeController.text = 'Marseille';
+
+      await viewModel.search();
+
+      expect(viewModel.matchsCompatibles, 0);
+      verifyNever(() => matchingService.getSuggestions());
+    });
+
+    test('ville vide : pas de carte', () async {
+      stubSearch(logements: []);
+      when(() => profileService.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+
+      await viewModel.search();
+
+      expect(viewModel.matchsCompatibles, 0);
+      verifyNever(() => matchingService.getSuggestions());
+    });
+
+    test('erreur matching silencieuse : les résultats restent affichés',
+        () async {
+      stubSearch(logements: [build('l1')]);
+      when(() => profileService.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+      when(() => matchingService.getSuggestions()).thenThrow(
+          const ApiException(
+              code: 'NOT_FOUND', message: 'Pas de profil', statusCode: 404));
+      viewModel.villeController.text = 'Marseille';
+
+      await viewModel.search();
+
+      expect(viewModel.resultats, hasLength(1));
+      expect(viewModel.matchsCompatibles, 0);
+    });
   });
 
   group('search', () {

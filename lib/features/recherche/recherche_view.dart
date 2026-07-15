@@ -14,7 +14,11 @@ import 'recherche_viewmodel.dart';
 class RechercheView extends StackedView<RechercheViewModel> {
   final bool standalone;
 
-  const RechercheView({super.key, this.standalone = false});
+  /// Bascule sur l'onglet Matches (carte matching, APP-104).
+  /// null = pas de carte (étudiants, écran empilé sans shell).
+  final VoidCallback? onSeeMatches;
+
+  const RechercheView({super.key, this.standalone = false, this.onSeeMatches});
 
   @override
   Widget builder(
@@ -135,16 +139,22 @@ class RechercheView extends StackedView<RechercheViewModel> {
       );
     }
 
+    // Carte matching éventuelle, en tête de liste (APP-104)
+    final promo = _matchingPromo(viewModel);
+
     if (viewModel.resultats.isEmpty) {
       // Liste vide mais rafraîchissable : un ListView (scrollable) permet le
       // pull-to-refresh même sans résultat (tirer vers le bas pour réessayer).
+      // La carte matching reste affichée : "aucune annonce mais 3 alternants
+      // compatibles" est exactement le message différenciant de StudUp.
       return RefreshIndicator(
         onRefresh: viewModel.search,
         color: AppColors.echange,
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.xl),
           children: [
-            const SizedBox(height: 80),
+            ?promo,
+            const SizedBox(height: 60),
             const Icon(Icons.search_off,
                 size: 48, color: AppColors.textTertiary),
             const SizedBox(height: AppSpacing.md),
@@ -174,10 +184,14 @@ class RechercheView extends StackedView<RechercheViewModel> {
         color: AppColors.echange,
         child: ListView.builder(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          itemCount:
-              viewModel.resultats.length + (viewModel.hasNext ? 1 : 0),
+          // +1 pour la carte matching en tête si présente
+          itemCount: (promo != null ? 1 : 0) +
+              viewModel.resultats.length +
+              (viewModel.hasNext ? 1 : 0),
           itemBuilder: (context, index) {
-            if (index >= viewModel.resultats.length) {
+            if (promo != null && index == 0) return promo;
+            final i = promo != null ? index - 1 : index;
+            if (i >= viewModel.resultats.length) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(AppSpacing.md),
@@ -186,12 +200,25 @@ class RechercheView extends StackedView<RechercheViewModel> {
                 ),
               );
             }
-            final l = viewModel.resultats[index];
+            final l = viewModel.resultats[i];
             return _ResultCard(
                 logement: l, onTap: () => viewModel.goToDetail(l));
           },
         ),
       ),
+    );
+  }
+
+  /// Carte "X alternants compatibles cherchent aussi à {ville}" — le pont
+  /// entre la recherche classique et le matching (APP-104).
+  /// null si rien à promouvoir (pas alternant, pas de matchs, pas de shell).
+  Widget? _matchingPromo(RechercheViewModel viewModel) {
+    if (viewModel.matchsCompatibles == 0 || onSeeMatches == null) return null;
+    return _MatchingPromoCard(
+      nbMatchs: viewModel.matchsCompatibles,
+      ville: viewModel.villeMatchs,
+      economieMax: viewModel.economieMaxMatchs,
+      onTap: onSeeMatches!,
     );
   }
 
@@ -201,6 +228,72 @@ class RechercheView extends StackedView<RechercheViewModel> {
 
   @override
   void onViewModelReady(RechercheViewModel viewModel) => viewModel.search();
+}
+
+/// Carte promo matching injectée dans les résultats de recherche
+class _MatchingPromoCard extends StatelessWidget {
+  final int nbMatchs;
+  final String ville;
+  final int economieMax;
+  final VoidCallback onTap;
+
+  const _MatchingPromoCard({
+    required this.nbMatchs,
+    required this.ville,
+    required this.economieMax,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pluriel = nbMatchs > 1;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.echangeLight,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          border: Border.all(color: AppColors.echange),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.swap_horiz, color: AppColors.echange, size: 28),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$nbMatchs alternant${pluriel ? 's' : ''} compatible'
+                    '${pluriel ? 's' : ''} avec ton rythme '
+                    '${pluriel ? 'cherchent' : 'cherche'} aussi à $ville',
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    economieMax > 0
+                        ? 'Économise jusqu\'à ≈ $economieMax €/mois '
+                            'avec un échange'
+                        : 'Découvre l\'échange de logements entre alternants',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.echange),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.echange),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ─── Widgets internes ─────────────────────────────────────────────
