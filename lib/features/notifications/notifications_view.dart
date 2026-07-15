@@ -105,7 +105,16 @@ class NotificationsView extends StackedView<NotificationsViewModel> {
                 final n = viewModel.notifications[index];
                 return _NotificationTile(
                   notification: n,
-                  onTap: () => viewModel.markAsRead(n),
+                  onTap: () async {
+                    // Marque lue + ouvre l'écran ciblé par le deepLink
+                    final error = await viewModel.ouvrirNotification(n);
+                    if (error != null && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(error),
+                        backgroundColor: AppColors.error,
+                      ));
+                    }
+                  },
                 );
               },
             ),
