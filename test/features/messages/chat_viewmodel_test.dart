@@ -122,6 +122,32 @@ void main() {
       expect(viewModel.inputController.text, isEmpty);
     });
 
+    test(
+        'écho WebSocket arrivé AVANT la réponse REST : pas de doublon '
+        'chez l\'émetteur (APP-102)', () async {
+      when(() => messageService.getHistory('conv-1'))
+          .thenAnswer((_) async => []);
+
+      final viewModel = makeViewModel();
+      await viewModel.init();
+
+      final sent = buildMessage(id: 'm-new', senderId: 'moi');
+      // Reproduit la course réelle : le backend broadcast le message
+      // pendant le traitement du POST, donc l'écho STOMP est injecté
+      // avant que sendMessage ne retourne sa réponse.
+      when(() => messageService.sendMessage('lui', 'Salut !'))
+          .thenAnswer((_) async {
+        viewModel.onMessageReceived(sent);
+        return sent;
+      });
+
+      viewModel.inputController.text = 'Salut !';
+      await viewModel.send();
+
+      expect(viewModel.messages, hasLength(1)); // et pas 2
+      expect(viewModel.messages.single.id, 'm-new');
+    });
+
     test('message vide : aucun envoi', () async {
       when(() => messageService.getHistory('conv-1'))
           .thenAnswer((_) async => []);
