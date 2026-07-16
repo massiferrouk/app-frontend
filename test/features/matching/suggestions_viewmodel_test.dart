@@ -24,6 +24,7 @@ void main() {
     required double score,
     required AccordType type,
     required bool actif,
+    int economie = 0,
   }) =>
       MatchingSuggestion(
         profileId: 'p-$prenom',
@@ -41,6 +42,7 @@ void main() {
         nbSemainesEchange: 3,
         nbSemainesColocation: 0,
         nbSemainesChevauchement: 1,
+        economieMensuelle: economie,
       );
 
   late MockNavigationService navigationService;
@@ -53,6 +55,113 @@ void main() {
       logementService: MockLogementService(),
       navigationService: navigationService,
     );
+  });
+
+  group('refonte écran Matches (APP-107)', () {
+    test('economieMax : la meilleure économie parmi tous les matchs',
+        () async {
+      when(() => matchingService.getSuggestions()).thenAnswer((_) async => [
+            build(
+                prenom: 'A',
+                score: 0.9,
+                type: AccordType.ECHANGE_TOTAL,
+                actif: true,
+                economie: 225),
+            build(
+                prenom: 'B',
+                score: 0.7,
+                type: AccordType.ECHANGE_PARTIEL,
+                actif: true,
+                economie: 450),
+          ]);
+      await viewModel.load();
+
+      expect(viewModel.economieMax, 450);
+    });
+
+    test('meilleurMatch : le meilleur actif, retiré des autres', () async {
+      when(() => matchingService.getSuggestions()).thenAnswer((_) async => [
+            build(
+                prenom: 'Potentiel',
+                score: 0.99,
+                type: AccordType.ECHANGE_TOTAL,
+                actif: false),
+            build(
+                prenom: 'ActifFort',
+                score: 0.92,
+                type: AccordType.ECHANGE_TOTAL,
+                actif: true),
+            build(
+                prenom: 'ActifFaible',
+                score: 0.65,
+                type: AccordType.ECHANGE_PARTIEL,
+                actif: true),
+          ]);
+      await viewModel.load();
+
+      expect(viewModel.meilleurMatch!.prenom, 'ActifFort');
+      expect(viewModel.autresSuggestions, hasLength(2));
+      expect(viewModel.autresSuggestions.map((s) => s.prenom),
+          isNot(contains('ActifFort')));
+    });
+
+    test('aucun match actif : pas de meilleur match', () async {
+      when(() => matchingService.getSuggestions()).thenAnswer((_) async => [
+            build(
+                prenom: 'Potentiel',
+                score: 0.99,
+                type: AccordType.ECHANGE_TOTAL,
+                actif: false),
+          ]);
+      await viewModel.load();
+
+      expect(viewModel.meilleurMatch, isNull);
+      expect(viewModel.autresSuggestions, hasLength(1));
+    });
+
+    test('re-tap sur le même filtre : retour à tous', () async {
+      when(() => matchingService.getSuggestions()).thenAnswer((_) async => [
+            build(
+                prenom: 'A',
+                score: 0.9,
+                type: AccordType.ECHANGE_TOTAL,
+                actif: true),
+            build(
+                prenom: 'B',
+                score: 0.7,
+                type: AccordType.ECHANGE_PARTIEL,
+                actif: false),
+          ]);
+      await viewModel.load();
+
+      viewModel.setFilter(SuggestionFilter.actifs);
+      expect(viewModel.suggestions, hasLength(1));
+
+      viewModel.setFilter(SuggestionFilter.actifs); // re-tap
+      expect(viewModel.filter, SuggestionFilter.tous);
+      expect(viewModel.suggestions, hasLength(2));
+    });
+
+    test('filtre potentiels : le meilleur match disparaît', () async {
+      when(() => matchingService.getSuggestions()).thenAnswer((_) async => [
+            build(
+                prenom: 'Actif',
+                score: 0.9,
+                type: AccordType.ECHANGE_TOTAL,
+                actif: true),
+            build(
+                prenom: 'Potentiel',
+                score: 0.7,
+                type: AccordType.ECHANGE_PARTIEL,
+                actif: false),
+          ]);
+      await viewModel.load();
+
+      viewModel.setFilter(SuggestionFilter.potentiels);
+
+      expect(viewModel.meilleurMatch, isNull);
+      expect(viewModel.autresSuggestions.single.prenom, 'Potentiel');
+    });
   });
 
   test('publierLogement : ouvre la publication puis recharge (APP-106)',

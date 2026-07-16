@@ -224,25 +224,34 @@ class MatchCard extends StatelessWidget {
                     const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
+                        // Action principale : la compatibilité est le cœur
+                        // du parcours — contacter vient après l'avoir vue
                         Expanded(
-                          child: OutlinedButton(
+                          flex: 3,
+                          child: ElevatedButton(
                             onPressed: onSeeCalendar,
-                            style: OutlinedButton.styleFrom(
-                                minimumSize: const Size.fromHeight(40)),
-                            child: const Text('Voir calendrier',
+                            style: ElevatedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(44),
+                                backgroundColor: isPotentiel
+                                    ? AppColors.textPrimary
+                                    : accent),
+                            child: const Text('Voir la compatibilité',
                                 style: TextStyle(fontSize: 13)),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
-                          child: ElevatedButton(
+                          flex: 2,
+                          child: OutlinedButton.icon(
                             onPressed: onContact,
-                            style: ElevatedButton.styleFrom(
-                                minimumSize: const Size.fromHeight(40),
-                                backgroundColor: isPotentiel
-                                    ? AppColors.textPrimary
-                                    : accent),
-                            child: const Text('Contacter',
+                            icon: const Icon(Icons.chat_bubble_outline,
+                                size: 16),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(44),
+                              foregroundColor: AppColors.textPrimary,
+                              side: const BorderSide(color: AppColors.border),
+                            ),
+                            label: const Text('Contacter',
                                 style: TextStyle(fontSize: 13)),
                           ),
                         ),

@@ -97,9 +97,32 @@ class SuggestionsViewModel extends BaseViewModel {
     }
   }
 
+  /// Tap sur une tuile : filtre — re-tap : retour à « tous »
+  /// (même comportement que les tuiles de l'écran Compatibilité).
   void setFilter(SuggestionFilter f) {
-    filter = f;
+    filter = (filter == f) ? SuggestionFilter.tous : f;
     notifyListeners();
+  }
+
+  /// Meilleure économie mensuelle parmi tous les matchs (0 = aucune) —
+  /// affichée en sous-titre de l'écran (APP-107).
+  int get economieMax =>
+      _all.fold(0, (max, s) => s.economieMensuelle > max ? s.economieMensuelle : max);
+
+  /// Le match mis en avant : le meilleur match ACTIF, hors filtre
+  /// « potentiels ». null s'il n'y a aucun match actif.
+  MatchingSuggestion? get meilleurMatch {
+    if (filter == SuggestionFilter.potentiels) return null;
+    final tries = suggestions;
+    if (tries.isEmpty || !tries.first.isMatchActif) return null;
+    return tries.first;
+  }
+
+  /// Les matchs affichés en cartes compactes (tous sauf le meilleur)
+  List<MatchingSuggestion> get autresSuggestions {
+    final meilleur = meilleurMatch;
+    if (meilleur == null) return suggestions;
+    return suggestions.where((s) => s != meilleur).toList();
   }
 
   /// Suggestions filtrées ET ordonnées : matchs actifs d'abord,
