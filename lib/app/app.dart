@@ -15,6 +15,7 @@ import '../features/messages/chat_view.dart';
 import '../features/main/main_view.dart';
 import '../features/logements/mes_logements_view.dart';
 import '../features/notifications/notifications_view.dart';
+import '../features/onboarding/onboarding_view.dart';
 import '../features/recherche/recherche_view.dart';
 import '../features/startup/startup_view.dart';
 import '../services/accord_service.dart';
@@ -26,6 +27,7 @@ import '../services/logement_service.dart';
 import '../services/matching_service.dart';
 import '../services/message_service.dart';
 import '../services/notification_service.dart';
+import '../services/onboarding_service.dart';
 import '../services/profile_service.dart';
 import '../services/review_service.dart';
 import '../services/token_storage_service.dart';
@@ -39,6 +41,7 @@ import '../services/token_storage_service.dart';
 @StackedApp(
   routes: [
     MaterialRoute(page: StartupView, initial: true),
+    MaterialRoute(page: OnboardingView),
     MaterialRoute(page: LoginView),
     MaterialRoute(page: RegisterView),
     MaterialRoute(page: ProfilCreationView),
@@ -74,6 +77,7 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: ReviewService),
     LazySingleton(classType: MessageService),
     LazySingleton(classType: ChatSocketService),
+    LazySingleton(classType: OnboardingService),
     // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )

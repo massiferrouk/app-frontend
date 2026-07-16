@@ -22,6 +22,7 @@ import '../services/logement_service.dart';
 import '../services/matching_service.dart';
 import '../services/message_service.dart';
 import '../services/notification_service.dart';
+import '../services/onboarding_service.dart';
 import '../services/profile_service.dart';
 import '../services/review_service.dart';
 import '../services/token_storage_service.dart';
@@ -55,4 +56,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => ReviewService());
   locator.registerLazySingleton(() => MessageService());
   locator.registerLazySingleton(() => ChatSocketService());
+  locator.registerLazySingleton(() => OnboardingService());
 }
