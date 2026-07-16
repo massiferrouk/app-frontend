@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
+import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/matching/suggestions_viewmodel.dart';
 import 'package:studup_app/services/logement_service.dart';
@@ -42,13 +43,29 @@ void main() {
         nbSemainesChevauchement: 1,
       );
 
+  late MockNavigationService navigationService;
+
   setUp(() {
     matchingService = MockMatchingService();
+    navigationService = MockNavigationService();
     viewModel = SuggestionsViewModel(
       matchingService: matchingService,
       logementService: MockLogementService(),
-      navigationService: MockNavigationService(),
+      navigationService: navigationService,
     );
+  });
+
+  test('publierLogement : ouvre la publication puis recharge (APP-106)',
+      () async {
+    when(() => navigationService.navigateTo(any()))
+        .thenAnswer((_) async => null);
+    when(() => matchingService.getSuggestions()).thenAnswer((_) async => []);
+
+    await viewModel.publierLogement();
+
+    verify(() => navigationService.navigateTo(Routes.ajouterLogementView))
+        .called(1);
+    verify(() => matchingService.getSuggestions()).called(1);
   });
 
   group('SuggestionsViewModel', () {

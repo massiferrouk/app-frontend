@@ -17,12 +17,17 @@ class MatchCard extends StatelessWidget {
   /// null si aucun logement à afficher (match potentiel).
   final VoidCallback? onTap;
 
+  /// CTA « Publier mon logement » des matchs potentiels (APP-106).
+  /// Affiché uniquement quand c'est MON logement qui manque.
+  final VoidCallback? onPublier;
+
   const MatchCard({
     super.key,
     required this.suggestion,
     this.onSeeCalendar,
     this.onContact,
     this.onTap,
+    this.onPublier,
   });
 
   /// Couleur d'accent selon le type d'accord proposé
@@ -193,6 +198,26 @@ class MatchCard extends StatelessWidget {
                               fontStyle: FontStyle.italic,
                               color: AppColors.textSecondary),
                         ),
+                      ),
+                    ],
+
+                    // CTA de déblocage : MON logement manque → je peux agir
+                    // tout de suite (boucle de croissance, APP-106)
+                    if (isPotentiel &&
+                        suggestion.logementAId == null &&
+                        onPublier != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      OutlinedButton.icon(
+                        onPressed: onPublier,
+                        icon: const Icon(Icons.add_home_outlined, size: 18),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(40),
+                          foregroundColor: AppColors.echange,
+                          side: const BorderSide(color: AppColors.echange),
+                        ),
+                        label: const Text(
+                            'Publier mon logement pour débloquer ce match',
+                            style: TextStyle(fontSize: 13)),
                       ),
                     ],
 

@@ -123,12 +123,31 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                   coloc: s.typePropose == AccordType.COLOCATION_TOURNANTE,
                 ),
               )
-            else if (s.logementAId == null || s.logementBId == null)
+            else if (s.logementAId == null)
+              // MON logement manque : CTA direct vers la publication (APP-106)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                    0, AppSpacing.screenPadding, AppSpacing.md),
+                child: OutlinedButton.icon(
+                  onPressed: viewModel.publierLogement,
+                  icon: const Icon(Icons.add_home_outlined, size: 18),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    foregroundColor: AppColors.echange,
+                    side: const BorderSide(color: AppColors.echange),
+                  ),
+                  label: const Text(
+                      'Publier mon logement pour estimer mes économies',
+                      style: TextStyle(fontSize: 13)),
+                ),
+              )
+            else if (s.logementBId == null)
+              // SON logement manque : je ne peux rien publier pour lui
               Padding(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
                     0, AppSpacing.screenPadding, AppSpacing.md),
                 child: Text(
-                  'Publie ton logement pour estimer tes économies',
+                  '${s.displayName} n\'a pas encore publié son logement',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 12,
