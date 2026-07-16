@@ -1,9 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:stacked/stacked.dart';
+import 'package:stacked_services/stacked_services.dart';
 
 import '../../app/app.locator.dart';
+import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/accord_service.dart';
+import '../../services/matching_service.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/semaine_compatibilite.dart';
@@ -12,12 +15,39 @@ import '../../shared/models/semaine_compatibilite.dart';
 /// L'affichage n'appelle pas le réseau (données dans la suggestion),
 /// seule la proposition d'accord fait un POST.
 class CompatibiliteViewModel extends BaseViewModel {
-  final MatchingSuggestion suggestion;
+  /// Mutable : rafraîchie après publication d'un logement (APP-106) —
+  /// le match peut devenir actif et l'économie apparaître.
+  MatchingSuggestion suggestion;
+
   final AccordService _accords;
+  final MatchingService _matching;
+  final NavigationService _nav;
 
   CompatibiliteViewModel(
-      {required this.suggestion, AccordService? accordService})
-      : _accords = accordService ?? locator<AccordService>();
+      {required this.suggestion,
+      AccordService? accordService,
+      MatchingService? matchingService,
+      NavigationService? navigationService})
+      : _accords = accordService ?? locator<AccordService>(),
+        _matching = matchingService ?? locator<MatchingService>(),
+        _nav = navigationService ?? locator<NavigationService>();
+
+  /// CTA « Publier mon logement » (APP-106) : ouvre la publication puis
+  /// recharge la suggestion — sans quoi l'écran garderait les anciennes
+  /// données passées en argument de route.
+  Future<void> publierLogement() async {
+    await _nav.navigateTo(Routes.ajouterLogementView);
+    try {
+      final suggestions = await _matching.getSuggestions();
+      final maj = suggestions.where((s) => s.userId == suggestion.userId);
+      if (maj.isNotEmpty) {
+        suggestion = maj.first;
+        notifyListeners();
+      }
+    } on ApiException {
+      // silencieux : l'écran garde les données actuelles
+    }
+  }
 
   /// true si le type d'accord est un échange (nécessite les 2 logements).
   bool get _estEchange =>

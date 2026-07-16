@@ -74,6 +74,13 @@ class SuggestionsViewModel extends BaseViewModel {
     );
   }
 
+  /// CTA des matchs potentiels (APP-106) : ouvre la publication de logement,
+  /// puis recharge — le match peut devenir actif et l'économie apparaître.
+  Future<void> publierLogement() async {
+    await _nav.navigateTo(Routes.ajouterLogementView);
+    await load();
+  }
+
   List<MatchingSuggestion> _all = [];
   String? errorMessage;
   SuggestionFilter filter = SuggestionFilter.tous;

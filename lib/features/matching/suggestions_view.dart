@@ -120,6 +120,8 @@ class SuggestionsView extends StackedView<SuggestionsViewModel> {
                   suggestion: s,
                   onSeeCalendar: () => viewModel.goToCompatibilite(s),
                   onContact: () => viewModel.goToChat(s),
+                  // CTA de déblocage des matchs potentiels (APP-106)
+                  onPublier: viewModel.publierLogement,
                   // Tap sur la carte → détail du logement de l'autre alternant
                   // (seulement s'il en a publié un).
                   onTap: s.logementBId != null

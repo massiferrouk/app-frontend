@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stacked_services/stacked_services.dart';
+import 'package:studup_app/app/app.router.dart';
+import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/services/accord_service.dart';
+import 'package:studup_app/services/matching_service.dart';
 import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/features/matching/compatibilite_viewmodel.dart';
 import 'package:studup_app/shared/models/enums.dart';
@@ -8,6 +12,10 @@ import 'package:studup_app/shared/models/matching_suggestion.dart';
 import 'package:studup_app/shared/models/semaine_compatibilite.dart';
 
 class MockAccordService extends Mock implements AccordService {}
+
+class MockMatchingService extends Mock implements MatchingService {}
+
+class MockNavigationService extends Mock implements NavigationService {}
 
 void main() {
   // Match actif : les deux logements sont publiés (IDs non nuls).
@@ -64,7 +72,7 @@ void main() {
   group('CompatibiliteViewModel', () {
     test('parse les semaines du payload suggestions', () {
       final viewModel =
-          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService());
+          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
 
       expect(viewModel.suggestion.semaines, hasLength(3));
       expect(viewModel.suggestion.semaines[0].type,
@@ -75,7 +83,7 @@ void main() {
 
     test('groupe les semaines par mois', () {
       final viewModel =
-          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService());
+          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
 
       final groupes = viewModel.semainesParMois;
 
@@ -85,7 +93,7 @@ void main() {
 
     test('note explicative selon le type de semaine', () {
       final viewModel =
-          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService());
+          CompatibiliteViewModel(suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
       final semaines = viewModel.suggestion.semaines;
 
       expect(viewModel.noteFor(semaines[0]), contains('libèrent'));
@@ -95,7 +103,7 @@ void main() {
 
     test('explication complète par type pour la bottom sheet (APP-100)', () {
       final viewModel = CompatibiliteViewModel(
-          suggestion: buildSuggestion(), accordService: MockAccordService());
+          suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
 
       // L'échange mentionne le prénom du match pour personnaliser
       expect(viewModel.explicationFor(CompatibiliteType.ECHANGE),
@@ -110,7 +118,7 @@ void main() {
 
     test('économie mensuelle parsée et formatée (APP-103)', () {
       final viewModel = CompatibiliteViewModel(
-          suggestion: buildSuggestion(), accordService: MockAccordService());
+          suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
 
       expect(viewModel.suggestion.economieMensuelle, 225);
       expect(viewModel.suggestion.hasEconomie, isTrue);
@@ -120,7 +128,7 @@ void main() {
     test('pas de loyer connu : aucune économie affichable (APP-103)', () {
       final viewModel = CompatibiliteViewModel(
           suggestion: buildSuggestion(actif: false),
-          accordService: MockAccordService());
+          accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
 
       expect(viewModel.suggestion.hasEconomie, isFalse);
     });
@@ -128,7 +136,7 @@ void main() {
     test('toggleFiltre ne garde que les semaines du type choisi (APP-100)',
         () {
       final viewModel = CompatibiliteViewModel(
-          suggestion: buildSuggestion(), accordService: MockAccordService());
+          suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
 
       viewModel.toggleFiltre(CompatibiliteType.COLOCATION);
       final filtrees =
@@ -145,7 +153,7 @@ void main() {
     test('isSemaineCourante détecte le lundi de la semaine en cours (APP-100)',
         () {
       final viewModel = CompatibiliteViewModel(
-          suggestion: buildSuggestion(), accordService: MockAccordService());
+          suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
 
       final now = DateTime.now();
       final lundi = DateTime(now.year, now.month, now.day - (now.weekday - 1));
@@ -168,6 +176,51 @@ void main() {
     });
   });
 
+  group('publierLogement (APP-106)', () {
+    test('ouvre la publication puis rafraîchit la suggestion', () async {
+      final matching = MockMatchingService();
+      final nav = MockNavigationService();
+      when(() => nav.navigateTo(any())).thenAnswer((_) async => null);
+      // Au retour : le match est devenu actif, avec une économie
+      when(() => matching.getSuggestions())
+          .thenAnswer((_) async => [buildSuggestion()]);
+
+      final viewModel = CompatibiliteViewModel(
+        suggestion: buildSuggestion(actif: false),
+        accordService: MockAccordService(),
+        matchingService: matching,
+        navigationService: nav,
+      );
+      expect(viewModel.suggestion.hasEconomie, isFalse);
+
+      await viewModel.publierLogement();
+
+      verify(() => nav.navigateTo(Routes.ajouterLogementView)).called(1);
+      expect(viewModel.suggestion.isMatchActif, isTrue);
+      expect(viewModel.suggestion.economieMensuelle, 225);
+    });
+
+    test('erreur au rafraîchissement : la suggestion actuelle est conservée',
+        () async {
+      final matching = MockMatchingService();
+      final nav = MockNavigationService();
+      when(() => nav.navigateTo(any())).thenAnswer((_) async => null);
+      when(() => matching.getSuggestions()).thenThrow(const ApiException(
+          code: 'NETWORK_ERROR', message: 'Hors ligne', statusCode: 0));
+
+      final viewModel = CompatibiliteViewModel(
+        suggestion: buildSuggestion(actif: false),
+        accordService: MockAccordService(),
+        matchingService: matching,
+        navigationService: nav,
+      );
+
+      await viewModel.publierLogement(); // ne doit pas planter
+
+      expect(viewModel.suggestion.isMatchActif, isFalse);
+    });
+  });
+
   group('proposerAccord', () {
     late MockAccordService accordService;
     late CompatibiliteViewModel viewModel;
@@ -177,6 +230,8 @@ void main() {
       viewModel = CompatibiliteViewModel(
         suggestion: buildSuggestion(),
         accordService: accordService,
+        matchingService: MockMatchingService(),
+        navigationService: MockNavigationService(),
       );
     });
 
@@ -222,6 +277,8 @@ void main() {
       viewModel = CompatibiliteViewModel(
         suggestion: buildSuggestion(actif: false),
         accordService: accordService,
+        matchingService: MockMatchingService(),
+        navigationService: MockNavigationService(),
       );
 
       final error = await viewModel.proposerAccord();
