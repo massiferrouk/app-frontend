@@ -97,16 +97,20 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: _StatTile(
-                      value: s.nbSemainesChevauchement,
-                      label: 'à gérer',
-                      color: AppColors.chevauchement,
-                      background: AppColors.chevauchementLight,
+                      // Semaines neutres = chacun chez soi (APP-108).
+                      // Calculé depuis la liste : total - échange - coloc.
+                      value: s.semaines.length -
+                          s.nbSemainesEchange -
+                          s.nbSemainesColocation,
+                      label: 'chacun chez soi',
+                      color: AppColors.textSecondary,
+                      background: AppColors.surfaceDark,
                       selected:
-                          viewModel.filtre == CompatibiliteType.CHEVAUCHEMENT,
+                          viewModel.filtre == CompatibiliteType.INCOMPATIBLE,
                       dimmed: viewModel.filtre != null &&
-                          viewModel.filtre != CompatibiliteType.CHEVAUCHEMENT,
+                          viewModel.filtre != CompatibiliteType.INCOMPATIBLE,
                       onTap: () => viewModel
-                          .toggleFiltre(CompatibiliteType.CHEVAUCHEMENT),
+                          .toggleFiltre(CompatibiliteType.INCOMPATIBLE),
                     ),
                   ),
                 ],
@@ -601,7 +605,7 @@ class _Legende extends StatelessWidget {
       children: [
         _LegendeItem(color: AppColors.echange, label: 'Échange de logements'),
         _LegendeItem(color: AppColors.colocation, label: 'Même ville, coloc'),
-        _LegendeItem(color: AppColors.chevauchement, label: 'À gérer entre vous'),
+        _LegendeItem(color: AppColors.textTertiary, label: 'Chacun chez soi'),
       ],
     );
   }
