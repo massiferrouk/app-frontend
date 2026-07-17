@@ -331,8 +331,13 @@ class _PhotosRow extends StatelessWidget {
                         width: 84,
                         height: 84,
                         child: kIsWeb
-                            ? Image.network(photo.path, fit: BoxFit.cover)
-                            : Image.file(File(photo.path), fit: BoxFit.cover),
+                            ? Image.network(photo.path,
+                                fit: BoxFit.cover,
+                                semanticLabel: 'Aperçu d\'une photo sélectionnée')
+                            : Image.file(File(photo.path),
+                                fit: BoxFit.cover,
+                                semanticLabel:
+                                    'Aperçu d\'une photo sélectionnée'),
                       ),
                     ),
                   ),

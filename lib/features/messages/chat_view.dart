@@ -160,6 +160,7 @@ class _InputBar extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           IconButton(
+            tooltip: 'Envoyer le message',
             onPressed: viewModel.sending ? null : viewModel.send,
             style: IconButton.styleFrom(
               backgroundColor: AppColors.echange,

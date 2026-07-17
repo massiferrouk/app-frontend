@@ -37,6 +37,7 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
                         style: Theme.of(context).textTheme.headlineMedium),
                   ),
                   IconButton(
+                    tooltip: 'Ajouter un logement',
                     onPressed: viewModel.goToAjouter,
                     icon: const Icon(Icons.add_circle_outline, size: 28),
                   ),
@@ -56,6 +57,7 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
         title: const Text('Mes logements'),
         actions: [
           IconButton(
+            tooltip: 'Ajouter un logement',
             onPressed: viewModel.goToAjouter,
             icon: const Icon(Icons.add_circle_outline),
           ),
@@ -235,7 +237,9 @@ class _LogementCard extends StatelessWidget {
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(logement.photoUrls.first,
-                            fit: BoxFit.cover),
+                            fit: BoxFit.cover,
+                            semanticLabel:
+                                'Photo du logement à ${logement.ville}'),
                       )
                     : const Icon(Icons.apartment,
                         color: AppColors.textTertiary),

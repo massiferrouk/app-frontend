@@ -100,6 +100,9 @@ class AvisView extends StackedView<AvisViewModel> {
                 children: List.generate(5, (i) {
                   final star = i + 1;
                   return IconButton(
+                    // Accessibilité (APP-112) : chaque étoile annonce la note
+                    // qu'elle attribue au lecteur d'écran
+                    tooltip: 'Noter $star sur 5',
                     onPressed: () => viewModel.setRating(star),
                     iconSize: 40,
                     icon: Icon(

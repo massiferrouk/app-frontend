@@ -64,6 +64,7 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
               isLabelVisible: viewModel.unreadCount > 0,
               backgroundColor: AppColors.error,
               child: IconButton(
+                tooltip: 'Notifications',
                 onPressed: viewModel.goToNotifications,
                 icon: const Icon(Icons.notifications_outlined, size: 26),
               ),

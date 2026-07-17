@@ -50,6 +50,7 @@ class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
               isLabelVisible: viewModel.unreadCount > 0,
               backgroundColor: AppColors.error,
               child: IconButton(
+                tooltip: 'Notifications',
                 onPressed: viewModel.goToNotifications,
                 icon: const Icon(Icons.notifications_outlined, size: 26),
               ),
@@ -197,6 +198,7 @@ class _VedetteCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(logement.photoUrls.first,
                           fit: BoxFit.cover,
+                          semanticLabel: 'Photo du logement à ${logement.ville}',
                           errorBuilder: (_, _, _) => const Icon(
                               Icons.apartment,
                               color: AppColors.textTertiary)))

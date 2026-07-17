@@ -51,6 +51,7 @@ class RechercheView extends StackedView<RechercheViewModel> {
                 hintText: 'Ville (Paris, Lyon…)',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 suffixIcon: IconButton(
+                  tooltip: 'Lancer la recherche',
                   icon: const Icon(Icons.arrow_forward, size: 20),
                   onPressed: viewModel.search,
                 ),
@@ -359,6 +360,7 @@ class _ResultCard extends StatelessWidget {
                 child: logement.photoUrls.isNotEmpty
                     ? Image.network(logement.photoUrls.first,
                         fit: BoxFit.cover,
+                        semanticLabel: 'Photo du logement à ${logement.ville}',
                         errorBuilder: (_, _, _) => Container(
                             color: AppColors.surfaceDark,
                             child: const Icon(Icons.apartment,
