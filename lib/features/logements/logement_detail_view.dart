@@ -218,20 +218,27 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
             itemCount: urls.length,
             itemBuilder: (context, index) => GestureDetector(
               onTap: () => _openFullScreen(context, index),
-              child: CachedNetworkImage(
-                imageUrl: urls[index],
-                fit: BoxFit.cover,
-                width: double.infinity,
-                placeholder: (_, _) => Container(
-                  color: AppColors.surfaceDark,
-                  child: const Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.echange, strokeWidth: 2)),
-                ),
-                errorWidget: (_, _, _) => Container(
-                  color: AppColors.surfaceDark,
-                  child: const Icon(Icons.broken_image_outlined,
-                      color: AppColors.textTertiary),
+              // Accessibilité (APP-112) : CachedNetworkImage n'expose pas de
+              // semanticLabel natif — on l'annonce via Semantics, avec la
+              // position de la photo dans le carrousel
+              child: Semantics(
+                image: true,
+                label: 'Photo ${index + 1} sur ${urls.length} du logement',
+                child: CachedNetworkImage(
+                  imageUrl: urls[index],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: (_, _) => Container(
+                    color: AppColors.surfaceDark,
+                    child: const Center(
+                        child: CircularProgressIndicator(
+                            color: AppColors.echange, strokeWidth: 2)),
+                  ),
+                  errorWidget: (_, _, _) => Container(
+                    color: AppColors.surfaceDark,
+                    child: const Icon(Icons.broken_image_outlined,
+                        color: AppColors.textTertiary),
+                  ),
                 ),
               ),
             ),
@@ -319,9 +326,13 @@ class _FullScreenGallery extends StatelessWidget {
           minScale: 1,
           maxScale: 4,
           child: Center(
-            child: CachedNetworkImage(
-              imageUrl: photoUrls[index],
-              fit: BoxFit.contain,
+            child: Semantics(
+              image: true,
+              label: 'Photo ${index + 1} sur ${photoUrls.length}, plein écran',
+              child: CachedNetworkImage(
+                imageUrl: photoUrls[index],
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),
