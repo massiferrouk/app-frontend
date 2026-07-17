@@ -9,6 +9,7 @@ import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/features/matching/compatibilite_viewmodel.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/matching_suggestion.dart';
+import 'package:studup_app/shared/models/scenario.dart';
 import 'package:studup_app/shared/models/semaine_compatibilite.dart';
 
 class MockAccordService extends Mock implements AccordService {}
@@ -41,6 +42,22 @@ void main() {
         'logementAId': actif ? 'log-a' : null,
         'logementBId': actif ? 'log-b' : null,
         'economieMensuelle': actif ? 225 : 0,
+        'scenarios': actif
+            ? const []
+            : const [
+                {
+                  'type': 'RELAIS',
+                  'message': 'Vos rythmes sont inversés : un seul logement…',
+                  'economieMensuelle': 350,
+                  'action': 'CONTACTER',
+                },
+                {
+                  'type': 'TON_LOGEMENT_MANQUE',
+                  'message': 'Publie ton logement à Paris…',
+                  'economieMensuelle': 0,
+                  'action': 'PUBLIER_LOGEMENT',
+                },
+              ],
         'semaines': const [
           {
             'semaine': '2026-07-27',
@@ -131,6 +148,45 @@ void main() {
           accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
 
       expect(viewModel.suggestion.hasEconomie, isFalse);
+    });
+
+    test('scénarios parsés, triés, avec action typée (APP-109)', () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(actif: false),
+          accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
+      final s = viewModel.suggestion;
+
+      expect(s.scenarios, hasLength(2));
+      // Le premier de la liste backend = scénario principal
+      expect(s.scenarioPrincipal!.type, 'RELAIS');
+      expect(s.scenarioPrincipal!.action, ScenarioAction.contacter);
+      expect(s.scenarioPrincipal!.economieMensuelle, 350);
+      expect(s.scenarios[1].action, ScenarioAction.publierLogement);
+    });
+
+    test('match actif : aucun scénario, affichage standard (APP-109)', () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(),
+          accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
+
+      expect(viewModel.suggestion.scenarios, isEmpty);
+      expect(viewModel.suggestion.scenarioPrincipal, isNull);
+    });
+
+    test('contacter : ouvre le chat avec le match (APP-109)', () {
+      final nav = MockNavigationService();
+      when(() => nav.navigateTo(any(), arguments: any(named: 'arguments')))
+          .thenAnswer((_) async => null);
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(actif: false),
+          accordService: MockAccordService(),
+          matchingService: MockMatchingService(),
+          navigationService: nav);
+
+      viewModel.contacter();
+
+      verify(() => nav.navigateTo(Routes.chatView,
+          arguments: any(named: 'arguments'))).called(1);
     });
 
     test('toggleFiltre ne garde que les semaines du type choisi (APP-100)',

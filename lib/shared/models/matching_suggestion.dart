@@ -1,4 +1,5 @@
 import 'enums.dart';
+import 'scenario.dart';
 import 'semaine_compatibilite.dart';
 
 /// Miroir de MatchingSuggestionResponse backend — un match proposé.
@@ -32,6 +33,10 @@ class MatchingSuggestion {
   /// entiers (APP-103). 0 = pas calculable (loyers inconnus).
   final int economieMensuelle;
 
+  /// Scénarios d'arrangement possibles, triés par priorité — le premier
+  /// est le scénario principal affiché sur la match card (APP-109).
+  final List<Scenario> scenarios;
+
   const MatchingSuggestion({
     required this.profileId,
     required this.userId,
@@ -52,6 +57,7 @@ class MatchingSuggestion {
     this.logementAId,
     this.logementBId,
     this.economieMensuelle = 0,
+    this.scenarios = const [],
   });
 
   factory MatchingSuggestion.fromJson(Map<String, dynamic> json) {
@@ -79,8 +85,15 @@ class MatchingSuggestion {
       logementAId: json['logementAId'] as String?,
       logementBId: json['logementBId'] as String?,
       economieMensuelle: (json['economieMensuelle'] as num? ?? 0).round(),
+      scenarios: (json['scenarios'] as List? ?? [])
+          .map((e) => Scenario.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
+
+  /// Le scénario prioritaire à montrer sur la match card (null si aucun)
+  Scenario? get scenarioPrincipal =>
+      scenarios.isEmpty ? null : scenarios.first;
 
   /// true si une économie chiffrée peut être affichée
   bool get hasEconomie => economieMensuelle > 0;

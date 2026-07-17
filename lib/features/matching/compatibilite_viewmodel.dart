@@ -7,6 +7,7 @@ import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/accord_service.dart';
 import '../../services/matching_service.dart';
+import '../../shared/models/conversation_summary.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/semaine_compatibilite.dart';
@@ -47,6 +48,23 @@ class CompatibiliteViewModel extends BaseViewModel {
     } on ApiException {
       // silencieux : l'écran garde les données actuelles
     }
+  }
+
+  /// CTA « Contacter » d'un scénario (APP-109) → chat avec le match
+  /// (conversationId vide = conversation créée au premier message)
+  void contacter() {
+    _nav.navigateTo(
+      Routes.chatView,
+      arguments: ChatViewArguments(
+        conversation: ConversationSummary(
+          conversationId: '',
+          partnerId: suggestion.userId,
+          partnerName: suggestion.displayName,
+          lastMessage: '',
+          unreadCount: 0,
+        ),
+      ),
+    );
   }
 
   /// true si le type d'accord est un échange (nécessite les 2 logements).

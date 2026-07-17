@@ -4,6 +4,7 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/matching_suggestion.dart';
+import '../../shared/models/scenario.dart';
 import 'suggestions_viewmodel.dart';
 import '../../shared/widgets/match_card.dart';
 
@@ -168,7 +169,13 @@ class SuggestionsView extends StackedView<SuggestionsViewModel> {
               suggestion: s,
               onTap: () => viewModel.goToCompatibilite(s),
               onContact: () => viewModel.goToChat(s),
-              onPublier: s.logementAId == null && !s.isMatchActif
+              // CTA publier piloté par le scénario principal (APP-109),
+              // repli sur l'ancienne règle si le backend n'en envoie pas
+              onPublier: !s.isMatchActif &&
+                      (s.scenarioPrincipal != null
+                          ? s.scenarioPrincipal!.action ==
+                              ScenarioAction.publierLogement
+                          : s.logementAId == null)
                   ? viewModel.publierLogement
                   : null,
             ),
