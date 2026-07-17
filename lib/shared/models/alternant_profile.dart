@@ -16,6 +16,9 @@ class AlternantProfile {
   final DateTime dateFin;
   final RythmeAlternance rythme;
 
+  /// Première semaine du cycle : école ou entreprise (APP-110)
+  final PremiereSemaine premiereSemaine;
+
   const AlternantProfile({
     required this.id,
     required this.userId,
@@ -26,6 +29,7 @@ class AlternantProfile {
     required this.dateDebut,
     required this.dateFin,
     required this.rythme,
+    required this.premiereSemaine,
   });
 
   factory AlternantProfile.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,12 @@ class AlternantProfile {
       dateDebut: DateTime.parse(json['dateDebut'] as String),
       dateFin: DateTime.parse(json['dateFin'] as String),
       rythme: RythmeAlternance.fromJson(json['rythme'] as String),
+      // Défensif : un backend pas encore migré n'envoie pas le champ —
+      // on retombe alors sur l'ordre historique du rythme
+      premiereSemaine: json['premiereSemaine'] != null
+          ? PremiereSemaine.fromJson(json['premiereSemaine'] as String)
+          : PremiereSemaine.defaultFor(
+              RythmeAlternance.fromJson(json['rythme'] as String)),
     );
   }
 
@@ -53,6 +63,7 @@ class AlternantProfile {
         'dateDebut': toIsoDate(dateDebut),
         'dateFin': toIsoDate(dateFin),
         'rythme': rythme.toJson(),
+        'premiereSemaine': premiereSemaine.toJson(),
       };
 
   /// LocalDate backend = date sans heure : "2026-09-01"

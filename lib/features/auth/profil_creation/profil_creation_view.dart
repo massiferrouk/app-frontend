@@ -71,11 +71,34 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<RythmeAlternance>(
                 initialValue: viewModel.selectedRythme,
-                items: RythmeAlternance.values
+                // selectable : AUTRE n'est plus proposé (APP-110)
+                items: RythmeAlternance.selectable
                     .map((r) =>
                         DropdownMenuItem(value: r, child: Text(r.label)))
                     .toList(),
                 onChanged: viewModel.selectRythme,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // ─── Première semaine (APP-110) ─────────────────
+              // L'ordre de départ inverse tout le calendrier : « 3 semaines
+              // entreprise puis 1 école » ≠ « 1 école puis 3 entreprise »
+              Text('Ta première semaine d\'alternance',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.sm),
+              SegmentedButton<PremiereSemaine>(
+                segments: PremiereSemaine.values
+                    .map((p) => ButtonSegment(
+                          value: p,
+                          label: Text(p.label),
+                          icon: Icon(p == PremiereSemaine.ECOLE
+                              ? Icons.school_outlined
+                              : Icons.business_outlined),
+                        ))
+                    .toList(),
+                selected: {viewModel.selectedPremiereSemaine},
+                onSelectionChanged: (selection) =>
+                    viewModel.selectPremiereSemaine(selection.first),
               ),
               const SizedBox(height: AppSpacing.lg),
 
