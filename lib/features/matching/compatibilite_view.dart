@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/matching_suggestion.dart';
+import '../../shared/models/scenario.dart';
 import '../../shared/models/semaine_compatibilite.dart';
 import 'compatibilite_viewmodel.dart';
 
@@ -126,27 +127,34 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                   label: s.economieLabel,
                   coloc: s.typePropose == AccordType.COLOCATION_TOURNANTE,
                 ),
-              )
-            else if (s.logementAId == null)
-              // MON logement manque : CTA direct vers la publication (APP-106)
+              ),
+
+            // ─── Vos options : les scénarios du moteur (APP-109) ─
+            if (s.scenarios.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
                     0, AppSpacing.screenPadding, AppSpacing.md),
-                child: OutlinedButton.icon(
-                  onPressed: viewModel.publierLogement,
-                  icon: const Icon(Icons.add_home_outlined, size: 18),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
-                    foregroundColor: AppColors.echange,
-                    side: const BorderSide(color: AppColors.echange),
-                  ),
-                  label: const Text(
-                      'Publier mon logement pour estimer mes économies',
-                      style: TextStyle(fontSize: 13)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('VOS OPTIONS',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: AppColors.textTertiary)),
+                    const SizedBox(height: AppSpacing.sm),
+                    for (final sc in s.scenarios)
+                      _ScenarioCard(
+                        scenario: sc,
+                        onPublier: viewModel.publierLogement,
+                        onContacter: viewModel.contacter,
+                      ),
+                  ],
                 ),
               )
-            else if (s.logementBId == null)
-              // SON logement manque : je ne peux rien publier pour lui
+            else if (!s.hasEconomie && s.logementBId == null)
+              // Repli sans scénarios : SON logement manque
               Padding(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
                     0, AppSpacing.screenPadding, AppSpacing.md),
@@ -298,6 +306,85 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
     };
 
 // ─── Widgets internes ─────────────────────────────────────────────
+
+/// Carte d'un scénario d'arrangement (section « Vos options », APP-109) :
+/// icône selon le type, message du moteur, économie et bouton d'action.
+class _ScenarioCard extends StatelessWidget {
+  final Scenario scenario;
+  final VoidCallback onPublier;
+  final VoidCallback onContacter;
+
+  const _ScenarioCard({
+    required this.scenario,
+    required this.onPublier,
+    required this.onContacter,
+  });
+
+  IconData get _icon => switch (scenario.type) {
+        'RELAIS' => Icons.autorenew,
+        'REEQUILIBRER' => Icons.balance_outlined,
+        'COLOC_UNE_VILLE' => Icons.group_outlined,
+        'TON_LOGEMENT_MANQUE' || 'AUCUN_LOGEMENT' => Icons.add_home_outlined,
+        'SON_LOGEMENT_MANQUE' => Icons.chat_bubble_outline,
+        _ => Icons.lightbulb_outline,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(_icon, size: 20, color: AppColors.echange),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(scenario.message,
+                    style: const TextStyle(fontSize: 13, height: 1.4)),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              if (scenario.hasEconomie)
+                Text('≈ ${scenario.economieMensuelle} €/mois économisés',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.echange)),
+              const Spacer(),
+              if (scenario.action == ScenarioAction.publierLogement)
+                TextButton.icon(
+                  onPressed: onPublier,
+                  icon: const Icon(Icons.add_home_outlined, size: 16),
+                  label: const Text('Publier mon logement',
+                      style: TextStyle(fontSize: 12)),
+                )
+              else if (scenario.action == ScenarioAction.contacter)
+                TextButton.icon(
+                  onPressed: onContacter,
+                  icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                  label: const Text('En discuter',
+                      style: TextStyle(fontSize: 12)),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 /// Bandeau d'économie estimée — vert pour l'échange, bleu pour la coloc
 class _EconomieBanner extends StatelessWidget {

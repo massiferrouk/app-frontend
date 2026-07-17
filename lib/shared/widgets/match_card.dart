@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../models/enums.dart';
 import '../models/matching_suggestion.dart';
+import '../models/scenario.dart';
 
 /// Carte d'un match — 4 variantes selon le type :
 /// ÉCHANGE TOTAL (bordure verte), ÉCHANGE PARTIEL (orange),
@@ -44,6 +45,18 @@ class MatchCard extends StatelessWidget {
         AccordType.COLOCATION_TOURNANTE => AppColors.colocationLight,
         _ => AppColors.surface,
       };
+
+  /// Message affiché sur un match potentiel : le scénario principal du
+  /// moteur (APP-109), sinon l'ancien message générique du backend.
+  String? get _messagePotentiel =>
+      suggestion.scenarioPrincipal?.message ??
+      suggestion.messageMatchPotentiel;
+
+  /// Le CTA « Publier » ne s'affiche que si le scénario le propose —
+  /// repli sur l'ancienne règle (mon logement manque) sans scénarios.
+  bool get _peutPublier => suggestion.scenarioPrincipal != null
+      ? suggestion.scenarioPrincipal!.action == ScenarioAction.publierLogement
+      : suggestion.logementAId == null;
 
   @override
   Widget build(BuildContext context) {
@@ -180,9 +193,9 @@ class MatchCard extends StatelessWidget {
                       ),
                     ],
 
-                    // Message match potentiel ("Si tu publies un logement...")
-                    if (isPotentiel &&
-                        suggestion.messageMatchPotentiel != null) ...[
+                    // Scénario principal du moteur (APP-109), avec repli sur
+                    // l'ancien message générique si le backend n'en envoie pas
+                    if (isPotentiel && _messagePotentiel != null) ...[
                       const SizedBox(height: AppSpacing.sm),
                       Container(
                         width: double.infinity,
@@ -192,7 +205,7 @@ class MatchCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          suggestion.messageMatchPotentiel!,
+                          _messagePotentiel!,
                           style: const TextStyle(
                               fontSize: 12,
                               fontStyle: FontStyle.italic,
@@ -201,11 +214,9 @@ class MatchCard extends StatelessWidget {
                       ),
                     ],
 
-                    // CTA de déblocage : MON logement manque → je peux agir
-                    // tout de suite (boucle de croissance, APP-106)
-                    if (isPotentiel &&
-                        suggestion.logementAId == null &&
-                        onPublier != null) ...[
+                    // CTA de déblocage : uniquement quand le scénario dit
+                    // que JE peux agir en publiant (APP-106 / APP-109)
+                    if (isPotentiel && _peutPublier && onPublier != null) ...[
                       const SizedBox(height: AppSpacing.sm),
                       OutlinedButton.icon(
                         onPressed: onPublier,
