@@ -71,7 +71,8 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<RythmeAlternance>(
                 initialValue: viewModel.selectedRythme,
-                items: RythmeAlternance.values
+                // selectable : AUTRE n'est plus proposé (APP-110)
+                items: RythmeAlternance.selectable
                     .map((r) =>
                         DropdownMenuItem(value: r, child: Text(r.label)))
                     .toList(),

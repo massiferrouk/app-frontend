@@ -34,6 +34,12 @@ enum RythmeAlternance {
   static RythmeAlternance fromJson(String value) => values.byName(value);
   String toJson() => name;
 
+  /// Rythmes proposés à la saisie (APP-110) : AUTRE est retiré du choix —
+  /// il générait un calendrier 1/1 par défaut incohérent avec la réalité.
+  /// La valeur reste dans l'enum pour LIRE les profils historiques.
+  static List<RythmeAlternance> get selectable =>
+      values.where((r) => r != AUTRE).toList();
+
   /// Libellé affichable dans les dropdowns
   String get label => switch (this) {
         SEMAINE_1_1 => '1 semaine / 1 semaine',

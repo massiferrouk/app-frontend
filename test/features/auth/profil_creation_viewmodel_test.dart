@@ -54,6 +54,15 @@ void main() {
     viewModel.setDateFin(DateTime(2027, 8, 31));
   }
 
+  group('rythmes proposés', () {
+    test('AUTRE est retiré du choix (APP-110), les 4 rythmes définis restent',
+        () {
+      expect(RythmeAlternance.selectable,
+          isNot(contains(RythmeAlternance.AUTRE)));
+      expect(RythmeAlternance.selectable, hasLength(4));
+    });
+  });
+
   group('validation', () {
     test('champ requis manquant : erreur, aucun appel réseau', () async {
       await viewModel.submit();
