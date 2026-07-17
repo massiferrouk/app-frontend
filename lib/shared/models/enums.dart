@@ -26,6 +26,7 @@ enum UserRole {
 
 enum RythmeAlternance {
   SEMAINE_1_1,
+  SEMAINE_2_2,
   SEMAINE_3_1,
   MOIS_1_1,
   AUTRE;
@@ -36,10 +37,32 @@ enum RythmeAlternance {
   /// Libellé affichable dans les dropdowns
   String get label => switch (this) {
         SEMAINE_1_1 => '1 semaine / 1 semaine',
+        SEMAINE_2_2 => '2 semaines / 2 semaines',
         SEMAINE_3_1 => '3 semaines / 1 semaine',
         MOIS_1_1 => '1 mois / 1 mois',
         AUTRE => 'Autre rythme',
       };
+}
+
+/// Ordre de départ du cycle d'alternance (APP-110).
+/// Sans lui, les rythmes inversés (ex. 1 sem école PUIS 3 entreprise)
+/// génèrent un calendrier faux côté backend.
+enum PremiereSemaine {
+  ECOLE,
+  ENTREPRISE;
+
+  static PremiereSemaine fromJson(String value) => values.byName(value);
+  String toJson() => name;
+
+  String get label => switch (this) {
+        ECOLE => 'École',
+        ENTREPRISE => 'Entreprise',
+      };
+
+  /// Défaut aligné sur l'ordre historique du backend :
+  /// le 3-1 commençait par l'entreprise, tous les autres par l'école.
+  static PremiereSemaine defaultFor(RythmeAlternance rythme) =>
+      rythme == RythmeAlternance.SEMAINE_3_1 ? ENTREPRISE : ECOLE;
 }
 
 // ─── Accords ────────────────────────────────────────────────────

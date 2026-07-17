@@ -57,6 +57,7 @@ class ProfileService {
     required DateTime dateDebut,
     required DateTime dateFin,
     required RythmeAlternance rythme,
+    required PremiereSemaine premiereSemaine,
   }) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/profile/alternant',
@@ -68,6 +69,8 @@ class ProfileService {
         'dateDebut': AlternantProfile.toIsoDate(dateDebut),
         'dateFin': AlternantProfile.toIsoDate(dateFin),
         'rythme': rythme.toJson(),
+        // Ordre de départ du cycle — pilote le générateur de calendrier (APP-110)
+        'premiereSemaine': premiereSemaine.toJson(),
       },
     );
     return AlternantProfile.fromJson(data);

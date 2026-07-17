@@ -95,6 +95,7 @@ void main() {
         dateDebut: DateTime(2026, 9, 1),
         dateFin: DateTime(2027, 8, 31),
         rythme: RythmeAlternance.SEMAINE_3_1,
+        premiereSemaine: PremiereSemaine.ENTREPRISE,
       );
 
       expect(profile.villeA, 'Paris');
@@ -109,6 +110,7 @@ void main() {
       expect(sent['dateDebut'], '2026-09-01');
       expect(sent['dateFin'], '2027-08-31');
       expect(sent['rythme'], 'SEMAINE_3_1');
+      expect(sent['premiereSemaine'], 'ENTREPRISE');
     });
   });
 

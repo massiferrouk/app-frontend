@@ -25,6 +25,12 @@ class ProfilCreationViewModel extends BaseViewModel {
   final entrepriseController = TextEditingController();
 
   RythmeAlternance selectedRythme = RythmeAlternance.SEMAINE_1_1;
+
+  // Première semaine du cycle : école ou entreprise (APP-110).
+  // C'est ce champ qui permet les rythmes inversés (ex. 1 école PUIS 3
+  // entreprise) — sans lui le calendrier généré serait faux.
+  PremiereSemaine selectedPremiereSemaine = PremiereSemaine.ECOLE;
+
   DateTime? dateDebut;
   DateTime? dateFin;
 
@@ -33,6 +39,14 @@ class ProfilCreationViewModel extends BaseViewModel {
   void selectRythme(RythmeAlternance? rythme) {
     if (rythme == null) return;
     selectedRythme = rythme;
+    // Changer de rythme réaligne le défaut (le 3-1 démarre le plus souvent
+    // en entreprise) — l'utilisateur peut toujours choisir l'inverse après
+    selectedPremiereSemaine = PremiereSemaine.defaultFor(rythme);
+    notifyListeners();
+  }
+
+  void selectPremiereSemaine(PremiereSemaine premiereSemaine) {
+    selectedPremiereSemaine = premiereSemaine;
     notifyListeners();
   }
 
@@ -94,6 +108,7 @@ class ProfilCreationViewModel extends BaseViewModel {
         dateDebut: dateDebut!,
         dateFin: dateFin!,
         rythme: selectedRythme,
+        premiereSemaine: selectedPremiereSemaine,
       );
       // Profil créé (+ calendrier généré côté backend) → accueil
       await _nav.clearStackAndShow(Routes.mainView);
