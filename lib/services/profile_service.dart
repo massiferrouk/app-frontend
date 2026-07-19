@@ -76,6 +76,34 @@ class ProfileService {
     return AlternantProfile.fromJson(data);
   }
 
+  /// PUT /profile/alternant — modifie le profil existant de l'utilisateur.
+  /// Le backend régénère tout le calendrier et invalide le cache de matching.
+  Future<AlternantProfile> updateAlternantProfile({
+    required String villeA,
+    required String villeB,
+    required String ecole,
+    required String entreprise,
+    required DateTime dateDebut,
+    required DateTime dateFin,
+    required RythmeAlternance rythme,
+    required PremiereSemaine premiereSemaine,
+  }) async {
+    final data = await _api.put<Map<String, dynamic>>(
+      '/profile/alternant',
+      data: {
+        'villeA': villeA,
+        'villeB': villeB,
+        'ecole': ecole,
+        'entreprise': entreprise,
+        'dateDebut': AlternantProfile.toIsoDate(dateDebut),
+        'dateFin': AlternantProfile.toIsoDate(dateFin),
+        'rythme': rythme.toJson(),
+        'premiereSemaine': premiereSemaine.toJson(),
+      },
+    );
+    return AlternantProfile.fromJson(data);
+  }
+
   /// true si l'utilisateur connecté est un ALTERNANT sans profil :
   /// il doit alors passer par le formulaire de création.
   /// En cas d'erreur réseau, false : on ne bloque jamais l'entrée

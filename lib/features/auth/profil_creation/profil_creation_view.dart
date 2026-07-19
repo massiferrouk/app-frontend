@@ -4,13 +4,17 @@ import 'package:stacked/stacked.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../shared/models/alternant_profile.dart';
 import '../../../shared/models/enums.dart';
 import 'profil_creation_viewmodel.dart';
 
-/// Formulaire de création du profil alternant :
-/// villes, école, entreprise, rythme, période d'alternance.
+/// Formulaire de création — ou de modification (APP-117 · A-04) — du profil
+/// alternant : villes, école, entreprise, rythme, période d'alternance.
 class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
-  const ProfilCreationView({super.key});
+  /// Profil à modifier — null pour une création (parcours d'inscription).
+  final AlternantProfile? profile;
+
+  const ProfilCreationView({super.key, this.profile});
 
   @override
   Widget builder(
@@ -21,8 +25,11 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Mon profil alternant'),
-        automaticallyImplyLeading: false, // pas de retour : étape obligatoire
+        title: Text(viewModel.isEdition
+            ? 'Modifier mon alternance'
+            : 'Mon profil alternant'),
+        // Création = étape obligatoire (pas de retour) ; édition = retour permis
+        automaticallyImplyLeading: viewModel.isEdition,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -31,7 +38,10 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Ces informations alimentent le calcul de tes matchs.',
+                viewModel.isEdition
+                    ? 'Corrige tes informations. Ton calendrier et tes matchs '
+                        'seront recalculés automatiquement.'
+                    : 'Ces informations alimentent le calcul de tes matchs.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -152,7 +162,9 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Créer mon profil'),
+                    : Text(viewModel.isEdition
+                        ? 'Enregistrer'
+                        : 'Créer mon profil'),
               ),
             ],
           ),
@@ -178,7 +190,7 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
 
   @override
   ProfilCreationViewModel viewModelBuilder(BuildContext context) =>
-      ProfilCreationViewModel();
+      ProfilCreationViewModel(existingProfile: profile);
 }
 
 /// Champ date cliquable affichant la valeur choisie

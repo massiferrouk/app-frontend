@@ -8,6 +8,7 @@ import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/services/review_service.dart';
+import 'package:studup_app/shared/models/alternant_profile.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/reputation_score.dart';
 import 'package:studup_app/shared/models/user.dart';
@@ -42,6 +43,19 @@ void main() {
     isVerified: true,
   );
 
+  final fakeAlternantProfile = AlternantProfile(
+    id: 'profile-1',
+    userId: 'user-1',
+    villeA: 'Paris',
+    villeB: 'Lyon',
+    ecole: 'YNOV Paris',
+    entreprise: 'ACME Lyon',
+    dateDebut: DateTime(2026, 9, 1),
+    dateFin: DateTime(2027, 8, 31),
+    rythme: RythmeAlternance.SEMAINE_1_1,
+    premiereSemaine: PremiereSemaine.ECOLE,
+  );
+
   setUp(() {
     profileService = MockProfileService();
     logementService = MockLogementService();
@@ -49,6 +63,9 @@ void main() {
     authService = MockAuthService();
     socketService = MockChatSocketService();
     nav = MockNavigationService();
+    // Défaut : pas de profil alternant chargé (surchargé au besoin)
+    when(() => profileService.getMyAlternantProfile())
+        .thenAnswer((_) async => null);
     viewModel = ProfilViewModel(
       profileService: profileService,
       logementService: logementService,
@@ -75,12 +92,17 @@ void main() {
           .thenAnswer((_) async => []);
       when(() => logementService.getMesLogements())
           .thenAnswer((_) async => []);
+      // Alternant : son profil d'alternance est aussi chargé (APP-117 · A-04)
+      when(() => profileService.getMyAlternantProfile())
+          .thenAnswer((_) async => fakeAlternantProfile);
 
       await viewModel.load();
 
       expect(viewModel.user!.fullName, 'Alice Martin');
       expect(viewModel.isAlternant, isTrue);
       expect(viewModel.reputation!.badge, 'Fiable');
+      expect(viewModel.alternantProfile!.rythme,
+          RythmeAlternance.SEMAINE_1_1);
     });
 
     test('échec des enrichissements : profil affiché quand même', () async {
@@ -110,6 +132,39 @@ void main() {
 
       expect(viewModel.user, isNull);
       expect(viewModel.errorMessage, 'Hors ligne');
+    });
+  });
+
+  group('goToEditAlternance', () {
+    test('sans profil chargé : ne navigue pas', () async {
+      await viewModel.goToEditAlternance();
+
+      verifyNever(() => nav.navigateTo(any(),
+          arguments: any(named: 'arguments')));
+    });
+
+    test('profil modifié (retour true) : recharge le profil', () async {
+      // Pré-charge un profil alternant
+      when(() => profileService.getMe()).thenAnswer((_) async => user);
+      when(() => logementService.getReputation(any()))
+          .thenThrow(const ApiException(
+              code: 'NOT_FOUND', message: 'x', statusCode: 404));
+      when(() => reviewService.getReviewsForUser(any()))
+          .thenAnswer((_) async => []);
+      when(() => logementService.getMesLogements())
+          .thenAnswer((_) async => []);
+      when(() => profileService.getMyAlternantProfile())
+          .thenAnswer((_) async => fakeAlternantProfile);
+      await viewModel.load();
+
+      // La modification renvoie true → on doit recharger (getMe rappelé)
+      when(() => nav.navigateTo(any(), arguments: any(named: 'arguments')))
+          .thenAnswer((_) async => true);
+
+      await viewModel.goToEditAlternance();
+
+      // getMe : 1x au load initial + 1x au rechargement
+      verify(() => profileService.getMe()).called(2);
     });
   });
 

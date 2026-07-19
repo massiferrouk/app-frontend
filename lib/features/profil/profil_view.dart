@@ -4,6 +4,7 @@ import 'package:stacked/stacked.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../shared/models/alternant_profile.dart';
 import '../../shared/models/logement.dart';
 import '../../shared/models/review.dart';
 import 'profil_viewmodel.dart';
@@ -134,6 +135,27 @@ class ProfilView extends StackedView<ProfilViewModel> {
           ),
           const SizedBox(height: AppSpacing.lg),
 
+          // ─── Mon alternance (APP-117 · A-04) ────────────────
+          // Affiché + modifiable pour l'alternant : rythme, villes, dates…
+          // qu'il a pu saisir par erreur à l'inscription.
+          if (viewModel.isAlternant && viewModel.alternantProfile != null) ...[
+            Row(
+              children: [
+                Text('Mon alternance',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: viewModel.goToEditAlternance,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Modifier'),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _AlternanceCard(profile: viewModel.alternantProfile!),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+
           // ─── Mes logements ──────────────────────────────────
           // Toujours affiché pour l'alternant (dont la nav n'a plus d'onglet
           // Logement) : il peut y ajouter/gérer son logement. Pour les autres
@@ -237,6 +259,89 @@ class _Badge extends StatelessWidget {
       child: Text(label,
           style: TextStyle(
               fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+    );
+  }
+}
+
+/// Carte récapitulative de l'alternance (rythme, villes, dates).
+class _AlternanceCard extends StatelessWidget {
+  final AlternantProfile profile;
+
+  const _AlternanceCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final df = DateFormat('dd/MM/yyyy');
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          _InfoRow(
+              icon: Icons.sync_alt, label: 'Rythme', value: profile.rythme.label),
+          _InfoRow(
+              icon: Icons.school_outlined,
+              label: 'École',
+              value: '${profile.ecole} · ${profile.villeA}'),
+          _InfoRow(
+              icon: Icons.business_outlined,
+              label: 'Entreprise',
+              value: '${profile.entreprise} · ${profile.villeB}'),
+          _InfoRow(
+              icon: Icons.flag_outlined,
+              label: 'Commence par',
+              value: profile.premiereSemaine.label),
+          _InfoRow(
+              icon: Icons.date_range_outlined,
+              label: 'Période',
+              value: '${df.format(profile.dateDebut)} → '
+                  '${df.format(profile.dateFin)}',
+              isLast: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isLast;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: AppSpacing.md),
+          SizedBox(
+            width: 96,
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textTertiary)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
     );
   }
 }

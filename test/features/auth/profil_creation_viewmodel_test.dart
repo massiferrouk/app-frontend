@@ -217,4 +217,88 @@ void main() {
       verifyNever(() => nav.clearStackAndShow(any()));
     });
   });
+
+  // ─── Mode édition (APP-117 · A-04) ──────────────────────────────────
+  group('édition', () {
+    ProfilCreationViewModel makeEditVm() => ProfilCreationViewModel(
+          existingProfile: fakeProfile,
+          profileService: profile,
+          navigationService: nav,
+        );
+
+    test('pré-remplit le formulaire depuis le profil existant', () {
+      final vm = makeEditVm();
+
+      expect(vm.isEdition, isTrue);
+      expect(vm.villeAController.text, 'Paris');
+      expect(vm.villeBController.text, 'Lyon');
+      expect(vm.ecoleController.text, 'YNOV Paris');
+      expect(vm.entrepriseController.text, 'ACME Lyon');
+      expect(vm.selectedRythme, RythmeAlternance.SEMAINE_3_1);
+      expect(vm.selectedPremiereSemaine, PremiereSemaine.ENTREPRISE);
+      expect(vm.dateDebut, DateTime(2026, 9, 1));
+      expect(vm.dateFin, DateTime(2027, 8, 31));
+    });
+
+    test('succès : appelle updateAlternantProfile puis revient (result true)',
+        () async {
+      final vm = makeEditVm();
+      // L'utilisateur corrige sa ville d'école
+      vm.villeAController.text = 'Bordeaux';
+
+      when(() => profile.updateAlternantProfile(
+            villeA: any(named: 'villeA'),
+            villeB: any(named: 'villeB'),
+            ecole: any(named: 'ecole'),
+            entreprise: any(named: 'entreprise'),
+            dateDebut: any(named: 'dateDebut'),
+            dateFin: any(named: 'dateFin'),
+            rythme: any(named: 'rythme'),
+            premiereSemaine: any(named: 'premiereSemaine'),
+          )).thenAnswer((_) async => fakeProfile);
+      when(() => nav.back(result: any(named: 'result'))).thenReturn(true);
+
+      await vm.submit();
+
+      expect(vm.errorMessage, isNull);
+      verify(() => profile.updateAlternantProfile(
+            villeA: 'Bordeaux',
+            villeB: 'Lyon',
+            ecole: 'YNOV Paris',
+            entreprise: 'ACME Lyon',
+            dateDebut: DateTime(2026, 9, 1),
+            dateFin: DateTime(2027, 8, 31),
+            rythme: RythmeAlternance.SEMAINE_3_1,
+            premiereSemaine: PremiereSemaine.ENTREPRISE,
+          )).called(1);
+      // Retour au profil avec signal de mise à jour ; jamais createAlternant
+      verify(() => nav.back(result: true)).called(1);
+      verifyNever(() => nav.clearStackAndShow(any()));
+    });
+
+    test('erreur backend en édition : message affiché, pas de retour',
+        () async {
+      final vm = makeEditVm();
+
+      when(() => profile.updateAlternantProfile(
+            villeA: any(named: 'villeA'),
+            villeB: any(named: 'villeB'),
+            ecole: any(named: 'ecole'),
+            entreprise: any(named: 'entreprise'),
+            dateDebut: any(named: 'dateDebut'),
+            dateFin: any(named: 'dateFin'),
+            rythme: any(named: 'rythme'),
+            premiereSemaine: any(named: 'premiereSemaine'),
+          )).thenThrow(const ApiException(
+        code: 'VALIDATION_ERROR',
+        message: 'Dates invalides',
+        statusCode: 400,
+      ));
+
+      await vm.submit();
+
+      expect(vm.errorMessage, 'Dates invalides');
+      verifyNever(() => nav.back(result: any(named: 'result')));
+    });
+  });
 }

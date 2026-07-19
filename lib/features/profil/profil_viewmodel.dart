@@ -9,6 +9,7 @@ import '../../services/chat_socket_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/review_service.dart';
+import '../../shared/models/alternant_profile.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
 import '../../shared/models/reputation_score.dart';
@@ -39,6 +40,7 @@ class ProfilViewModel extends BaseViewModel {
         _nav = navigationService ?? locator<NavigationService>();
 
   User? user;
+  AlternantProfile? alternantProfile;
   ReputationScore? reputation;
   List<Review> avisRecus = [];
   List<Logement> logements = [];
@@ -59,6 +61,11 @@ class ProfilViewModel extends BaseViewModel {
     }
 
     // Enrichissements — chacun peut échouer sans bloquer
+    if (isAlternant) {
+      try {
+        alternantProfile = await _profile.getMyAlternantProfile();
+      } on ApiException {/* profil pas encore rempli */}
+    }
     try {
       reputation = await _logements.getReputation(user!.id);
     } on ApiException {/* pas encore de score */}
@@ -73,6 +80,17 @@ class ProfilViewModel extends BaseViewModel {
   }
 
   void goToCalendrier() => _nav.navigateTo(Routes.monCalendrierView);
+
+  /// Ouvre le formulaire en mode édition, pré-rempli avec le profil actuel.
+  /// Au retour d'une modification, on recharge (calendrier/matchs recalculés).
+  Future<void> goToEditAlternance() async {
+    if (alternantProfile == null) return;
+    final updated = await _nav.navigateTo(
+      Routes.profilCreationView,
+      arguments: ProfilCreationViewArguments(profile: alternantProfile),
+    );
+    if (updated == true) await load();
+  }
 
   /// Ouvre le détail d'un de mes logements (données passées en argument).
   void goToLogementDetail(Logement logement) => _nav.navigateTo(
