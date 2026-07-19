@@ -58,6 +58,9 @@ void main() {
     when(() => profileService.currentUserId())
         .thenAnswer((_) async => 'moi');
     when(() => messageService.markAsRead(any())).thenAnswer((_) async {});
+    // Par défaut : aucune conversation existante (ouverture "Contacter")
+    when(() => messageService.getConversations())
+        .thenAnswer((_) async => []);
   });
 
   group('init', () {
@@ -86,6 +89,41 @@ void main() {
       verify(() => messageService.markAsRead('m-recu')).called(1);
       verifyNever(() => messageService.markAsRead('m-moi'));
       verifyNever(() => messageService.markAsRead('m-lu'));
+    });
+
+    test(
+        'ouverture via "Contacter" (id vide) mais conversation existante : '
+        'charge l\'historique (A-02)', () async {
+      const viaContacter = ConversationSummary(
+        conversationId: '', // ouverture depuis le bouton « Contacter »
+        partnerId: 'lui',
+        partnerName: 'Thomas D.',
+        lastMessage: '',
+        unreadCount: 0,
+      );
+      // Une conversation avec ce partenaire existe déjà côté serveur
+      when(() => messageService.getConversations()).thenAnswer((_) async => [
+            const ConversationSummary(
+              conversationId: 'conv-existante',
+              partnerId: 'lui',
+              partnerName: 'Thomas D.',
+              lastMessage: 'Salut',
+              unreadCount: 0,
+            ),
+          ]);
+      when(() => messageService.getHistory('conv-existante'))
+          .thenAnswer((_) async => [buildMessage(id: 'ancien')]);
+
+      final viewModel = makeViewModel(viaContacter);
+      await viewModel.init();
+
+      // Plus de chat vide : l'historique de la conversation existante est chargé
+      expect(viewModel.messages.map((m) => m.id), ['ancien']);
+      verify(() => messageService.getHistory('conv-existante')).called(1);
+      // …et on s'abonne bien au temps réel sur cette conversation
+      verify(() =>
+              socketService.subscribeToConversation('conv-existante', any()))
+          .called(1);
     });
 
     test('nouvelle conversation (id vide) : aucun chargement', () async {

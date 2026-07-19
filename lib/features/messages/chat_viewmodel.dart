@@ -28,7 +28,15 @@ class ChatViewModel extends BaseViewModel {
   /// Conversation à laquelle on est abonné en temps réel
   String? _subscribedConversationId;
 
+  /// Id de conversation effectif. Vide à l'ouverture via « Contacter » ;
+  /// résolu depuis le partenaire si une conversation existe déjà (A-02).
+  String _conversationId = '';
+
   final inputController = TextEditingController();
+
+  /// Vrai tant que `init()` n'a pas fini (résolution + chargement historique).
+  /// Évite de faire clignoter l'état vide « Dis bonjour » avant l'historique.
+  bool initializing = true;
 
   /// Messages du plus ancien au plus récent (ordre d'affichage du chat)
   List<ChatMessage> messages = [];
@@ -40,9 +48,31 @@ class ChatViewModel extends BaseViewModel {
 
   Future<void> init() async {
     currentUserId = await _profile.currentUserId();
+    _conversationId = conversation.conversationId;
+    await _resolveExistingConversation();
     await load();
+    initializing = false;
+    notifyListeners();
     _markUnreadAsRead();
-    _subscribeIfPossible(conversation.conversationId);
+    _subscribeIfPossible(_conversationId);
+  }
+
+  /// Ouverture via « Contacter » (id vide) : si une conversation existe déjà
+  /// avec ce partenaire, on la retrouve pour charger son historique au lieu
+  /// d'afficher un chat vide « Dites bonjour à… » (anomalie A-02).
+  Future<void> _resolveExistingConversation() async {
+    if (_conversationId.isNotEmpty || conversation.partnerId == null) return;
+    try {
+      final convs = await _messages.getConversations();
+      for (final c in convs) {
+        if (c.partnerId == conversation.partnerId) {
+          _conversationId = c.conversationId;
+          break;
+        }
+      }
+    } on ApiException {
+      // silencieux : on démarre alors une nouvelle conversation
+    }
   }
 
   /// Abonnement temps réel — dès qu'on connaît l'id de la conversation
@@ -56,14 +86,14 @@ class ChatViewModel extends BaseViewModel {
   }
 
   Future<void> load() async {
-    // Nouvelle conversation (bouton "Contacter") : pas encore d'historique.
-    // La conversation sera créée côté backend au premier message envoyé.
-    if (conversation.conversationId.isEmpty) return;
+    // Vraiment nouvelle conversation (aucune existante avec ce partenaire) :
+    // pas encore d'historique. Elle sera créée au premier message envoyé.
+    if (_conversationId.isEmpty) return;
 
     setBusy(true);
     try {
       // Le backend renvoie du plus récent au plus ancien : on inverse
-      final history = await _messages.getHistory(conversation.conversationId);
+      final history = await _messages.getHistory(_conversationId);
       messages = history.reversed.toList();
       errorMessage = null;
     } on ApiException catch (e) {
@@ -106,7 +136,8 @@ class ChatViewModel extends BaseViewModel {
       inputController.clear();
       errorMessage = null;
       // Nouvelle conversation : le backend vient de la créer,
-      // on peut maintenant s'abonner au temps réel
+      // on retient son id et on s'abonne au temps réel
+      _conversationId = sent.conversationId;
       _subscribeIfPossible(sent.conversationId);
     } on ApiException catch (e) {
       errorMessage = e.message;
