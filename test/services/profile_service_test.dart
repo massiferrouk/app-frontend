@@ -114,6 +114,37 @@ void main() {
     });
   });
 
+  group('updateAlternantProfile', () {
+    test('envoie un PUT avec les bonnes données et parse la réponse',
+        () async {
+      when(() => api.put<Map<String, dynamic>>('/profile/alternant',
+              data: any(named: 'data')))
+          .thenAnswer((_) async => profileJson);
+
+      final profile = await service.updateAlternantProfile(
+        villeA: 'Bordeaux',
+        villeB: 'Lyon',
+        ecole: 'YNOV Bordeaux',
+        entreprise: 'ACME Lyon',
+        dateDebut: DateTime(2026, 9, 1),
+        dateFin: DateTime(2027, 8, 31),
+        rythme: RythmeAlternance.SEMAINE_3_1,
+        premiereSemaine: PremiereSemaine.ENTREPRISE,
+      );
+
+      expect(profile.villeB, 'Lyon');
+
+      final sent = verify(() => api.put<Map<String, dynamic>>(
+              '/profile/alternant',
+              data: captureAny(named: 'data')))
+          .captured
+          .single as Map<String, dynamic>;
+      expect(sent['villeA'], 'Bordeaux');
+      expect(sent['dateDebut'], '2026-09-01');
+      expect(sent['premiereSemaine'], 'ENTREPRISE');
+    });
+  });
+
   group('getMyAlternantProfile', () {
     test('retourne le profil quand il existe', () async {
       when(() => tokens.getAccessToken())

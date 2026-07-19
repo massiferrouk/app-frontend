@@ -35,7 +35,10 @@ class ChatView extends StackedView<ChatViewModel> {
   }
 
   Widget _buildMessages(BuildContext context, ChatViewModel viewModel) {
-    if (viewModel.isBusy && viewModel.messages.isEmpty) {
+    // Spinner pendant toute l'initialisation (résolution conversation +
+    // chargement historique) pour ne pas faire clignoter l'état vide.
+    if (viewModel.messages.isEmpty &&
+        (viewModel.initializing || viewModel.isBusy)) {
       return const Center(
           child: CircularProgressIndicator(color: AppColors.echange));
     }

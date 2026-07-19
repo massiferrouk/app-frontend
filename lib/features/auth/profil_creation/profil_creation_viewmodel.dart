@@ -7,17 +7,41 @@ import '../../../app/app.router.dart';
 import '../../../core/api/api_exception.dart';
 import '../../../core/utils/validators.dart';
 import '../../../services/profile_service.dart';
+import '../../../shared/models/alternant_profile.dart';
 import '../../../shared/models/enums.dart';
 
-/// Logique du formulaire de création de profil alternant.
+/// Logique du formulaire de création — et de modification (APP-117 · A-04) —
+/// du profil alternant. En mode édition, [existingProfile] pré-remplit le
+/// formulaire et l'envoi passe par PUT au lieu de POST.
 class ProfilCreationViewModel extends BaseViewModel {
   final ProfileService _profile;
   final NavigationService _nav;
 
-  ProfilCreationViewModel(
-      {ProfileService? profileService, NavigationService? navigationService})
-      : _profile = profileService ?? locator<ProfileService>(),
-        _nav = navigationService ?? locator<NavigationService>();
+  /// Profil déjà existant à modifier — null en création.
+  final AlternantProfile? existingProfile;
+
+  ProfilCreationViewModel({
+    this.existingProfile,
+    ProfileService? profileService,
+    NavigationService? navigationService,
+  })  : _profile = profileService ?? locator<ProfileService>(),
+        _nav = navigationService ?? locator<NavigationService>() {
+    // Pré-remplissage en mode édition (les controllers sont déjà initialisés
+    // car ce sont des champs, donc évalués avant ce corps de constructeur).
+    final p = existingProfile;
+    if (p != null) {
+      villeAController.text = p.villeA;
+      villeBController.text = p.villeB;
+      ecoleController.text = p.ecole;
+      entrepriseController.text = p.entreprise;
+      selectedRythme = p.rythme;
+      selectedPremiereSemaine = p.premiereSemaine;
+      dateDebut = p.dateDebut;
+      dateFin = p.dateFin;
+    }
+  }
+
+  bool get isEdition => existingProfile != null;
 
   final villeAController = TextEditingController();
   final villeBController = TextEditingController();
@@ -100,18 +124,34 @@ class ProfilCreationViewModel extends BaseViewModel {
 
     setBusy(true);
     try {
-      await _profile.createAlternantProfile(
-        villeA: villeAController.text.trim(),
-        villeB: villeBController.text.trim(),
-        ecole: ecoleController.text.trim(),
-        entreprise: entrepriseController.text.trim(),
-        dateDebut: dateDebut!,
-        dateFin: dateFin!,
-        rythme: selectedRythme,
-        premiereSemaine: selectedPremiereSemaine,
-      );
-      // Profil créé (+ calendrier généré côté backend) → accueil
-      await _nav.clearStackAndShow(Routes.mainView);
+      if (isEdition) {
+        await _profile.updateAlternantProfile(
+          villeA: villeAController.text.trim(),
+          villeB: villeBController.text.trim(),
+          ecole: ecoleController.text.trim(),
+          entreprise: entrepriseController.text.trim(),
+          dateDebut: dateDebut!,
+          dateFin: dateFin!,
+          rythme: selectedRythme,
+          premiereSemaine: selectedPremiereSemaine,
+        );
+        // Modifié (+ calendrier régénéré côté backend) → retour au profil,
+        // qui se recharge. On renvoie true pour signaler la mise à jour.
+        _nav.back(result: true);
+      } else {
+        await _profile.createAlternantProfile(
+          villeA: villeAController.text.trim(),
+          villeB: villeBController.text.trim(),
+          ecole: ecoleController.text.trim(),
+          entreprise: entrepriseController.text.trim(),
+          dateDebut: dateDebut!,
+          dateFin: dateFin!,
+          rythme: selectedRythme,
+          premiereSemaine: selectedPremiereSemaine,
+        );
+        // Profil créé (+ calendrier généré côté backend) → accueil
+        await _nav.clearStackAndShow(Routes.mainView);
+      }
     } on ApiException catch (e) {
       errorMessage = e.message;
     } finally {
