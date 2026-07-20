@@ -62,6 +62,26 @@ class AuthService {
     );
   }
 
+  // ─── Rafraîchissement de session ──────────────────────────────
+
+  /// Force une nouvelle paire de tokens (POST /auth/refresh) et la sauvegarde.
+  /// Utilisé après un changement de rôle : le backend relit le rôle en base au
+  /// moment de générer le token, donc le nouveau token porte le rôle à jour, et
+  /// le menu du bas se met à jour au prochain rendu (APP-117).
+  Future<void> refreshSession() async {
+    final refreshToken = await _tokens.getRefreshToken();
+    if (refreshToken == null) return;
+    final data = await _api.post<Map<String, dynamic>>(
+      '/auth/refresh',
+      data: {'refreshToken': refreshToken},
+    );
+    final auth = AuthResponse.fromJson(data);
+    await _tokens.saveTokens(
+      accessToken: auth.accessToken,
+      refreshToken: auth.refreshToken,
+    );
+  }
+
   // ─── Déconnexion ──────────────────────────────────────────────
 
   /// Révoque la session côté serveur (blacklist JTI + refresh révoqué)

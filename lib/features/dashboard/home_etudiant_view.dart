@@ -4,7 +4,7 @@ import 'package:stacked/stacked.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../shared/models/logement.dart';
+import '../../shared/widgets/logement_card.dart';
 import 'home_etudiant_viewmodel.dart';
 
 /// Dashboard étudiant — onglet Accueil.
@@ -85,6 +85,41 @@ class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
+        // ─── Carte de bienvenue (APP-117) : compte neuf/inactif ───
+        // Une seule carte avec un CTA clair, plutôt qu'une check-list scolaire.
+        if (viewModel.isNouveau) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.echangeLight,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.home_outlined,
+                    size: 28, color: AppColors.echange),
+                const SizedBox(height: AppSpacing.sm),
+                Text('Trouve ton logement étudiant',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text(
+                    'Parcours les annonces et contacte directement '
+                    'les propriétaires.',
+                    style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: AppSpacing.md),
+                ElevatedButton.icon(
+                  onPressed: onSearch,
+                  icon: const Icon(Icons.search),
+                  label: const Text('Rechercher'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+
         // ─── Accords en cours ────────────────────────────────
         if (viewModel.accordsEnCours.isNotEmpty) ...[
           Text('Mes accords en cours',
@@ -132,9 +167,21 @@ class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
           const SizedBox(height: AppSpacing.lg),
         ],
 
-        // ─── Logements en vedette ────────────────────────────
-        Text('Derniers logements publiés',
-            style: Theme.of(context).textTheme.titleMedium),
+        // ─── Aperçu des annonces (APP-117) ───────────────────
+        // L'accueil ne montre qu'un aperçu (3 annonces) : l'écran Recherche
+        // est l'outil complet (filtres, tri, scroll infini). D'où « Voir tout ».
+        Row(
+          children: [
+            Expanded(
+              child: Text('Dernières annonces',
+                  style: Theme.of(context).textTheme.titleMedium),
+            ),
+            TextButton(
+              onPressed: onSearch,
+              child: const Text('Voir tout'),
+            ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.sm),
         if (viewModel.vedettes.isEmpty)
           Container(
@@ -144,15 +191,25 @@ class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
               borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
               border: Border.all(color: AppColors.border),
             ),
-            child: Text(
-              viewModel.errorMessage ??
-                  'Aucun logement publié pour l\'instant.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall,
+            child: Column(
+              children: [
+                Text(
+                  viewModel.errorMessage ??
+                      'Aucun logement publié pour l\'instant.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                OutlinedButton.icon(
+                  onPressed: onSearch,
+                  icon: const Icon(Icons.search),
+                  label: const Text('Rechercher un logement'),
+                ),
+              ],
             ),
           )
         else
-          ...viewModel.vedettes.map((l) => _VedetteCard(
+          ...viewModel.vedettes.map((l) => LogementCard(
               logement: l, onTap: () => viewModel.goToDetail(l))),
       ],
     );
@@ -166,64 +223,5 @@ class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
   void onViewModelReady(HomeEtudiantViewModel viewModel) => viewModel.load();
 }
 
-class _VedetteCard extends StatelessWidget {
-  final Logement logement;
-  final VoidCallback onTap;
-
-  const _VedetteCard({required this.logement, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceDark,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: logement.photoUrls.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(logement.photoUrls.first,
-                          fit: BoxFit.cover,
-                          semanticLabel: 'Photo du logement à ${logement.ville}',
-                          errorBuilder: (_, _, _) => const Icon(
-                              Icons.apartment,
-                              color: AppColors.textTertiary)))
-                  : const Icon(Icons.apartment,
-                      color: AppColors.textTertiary),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                      '${logement.type.label} · ${logement.ville}',
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600)),
-                  Text(
-                      '${logement.loyer.toStringAsFixed(0)} € / mois · ${logement.surface.toStringAsFixed(0)} m²',
-                      style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// La carte d'annonce vit dans shared/widgets/logement_card.dart (LogementCard),
+// partagée avec l'écran Recherche.

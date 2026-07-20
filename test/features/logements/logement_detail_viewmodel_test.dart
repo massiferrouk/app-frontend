@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/logements/logement_detail_viewmodel.dart';
+import 'package:studup_app/services/candidature_service.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/services/matching_service.dart';
 import 'package:studup_app/services/profile_service.dart';
@@ -19,6 +20,8 @@ class MockProfileService extends Mock implements ProfileService {}
 class MockNavigationService extends Mock implements NavigationService {}
 
 class MockMatchingService extends Mock implements MatchingService {}
+
+class MockCandidatureService extends Mock implements CandidatureService {}
 
 void main() {
   late MockLogementService logementService;
@@ -88,11 +91,16 @@ void main() {
     // Rechargement du logement complet dans loadExtras
     when(() => logementService.getLogement('log-1'))
         .thenAnswer((_) async => logement);
+    // APP-117 : loadExtras vérifie si l'annonce est déjà suivie
+    final candidatureService = MockCandidatureService();
+    when(() => candidatureService.getMesCandidatures())
+        .thenAnswer((_) async => []);
     viewModel = LogementDetailViewModel(
       logement: logement,
       logementService: logementService,
       matchingService: matchingService,
       profileService: profileService,
+      candidatureService: candidatureService,
       navigationService: MockNavigationService(),
     );
   });

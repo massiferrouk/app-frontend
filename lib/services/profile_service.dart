@@ -45,6 +45,16 @@ class ProfileService {
     return User.fromJson(data);
   }
 
+  /// PATCH /users/me/role — change le mode du compte (étudiant ⇄ alternant).
+  /// Le backend refuse tout ce qui touche propriétaire ou admin (APP-117).
+  Future<User> changeMode(UserRole role) async {
+    final data = await _api.patch<Map<String, dynamic>>(
+      '/users/me/role',
+      data: {'role': role.toJson()},
+    );
+    return User.fromJson(data);
+  }
+
   // ─── Profil alternant ──────────────────────────────────────────
 
   /// POST /profile/alternant — crée le profil de l'utilisateur connecté.

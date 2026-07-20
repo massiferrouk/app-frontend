@@ -9,8 +9,14 @@ import '../../shared/models/enums.dart';
 import 'mes_accords_viewmodel.dart';
 
 /// Mes accords — tabs par statut, actions accepter/refuser/annuler.
+///
+/// [standalone] = true : écran empilé avec AppBar (accès depuis le Profil).
+/// Depuis APP-117, l'étudiant n'a plus d'onglet Accords — les accords formels
+/// sont devenus rares (décision « messagerie-first »), on y accède par le Profil.
 class MesAccordsView extends StackedView<MesAccordsViewModel> {
-  const MesAccordsView({super.key});
+  final bool standalone;
+
+  const MesAccordsView({super.key, this.standalone = false});
 
   @override
   Widget builder(
@@ -18,16 +24,18 @@ class MesAccordsView extends StackedView<MesAccordsViewModel> {
     MesAccordsViewModel viewModel,
     Widget? child,
   ) {
-    return SafeArea(
+    final content = SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                AppSpacing.md, AppSpacing.screenPadding, AppSpacing.sm),
-            child: Text('Mes accords',
-                style: Theme.of(context).textTheme.headlineMedium),
-          ),
+          // Titre interne masqué en mode standalone (l'AppBar le porte déjà)
+          if (!standalone)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                  AppSpacing.md, AppSpacing.screenPadding, AppSpacing.sm),
+              child: Text('Mes accords',
+                  style: Theme.of(context).textTheme.headlineMedium),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenPadding),
@@ -54,6 +62,14 @@ class MesAccordsView extends StackedView<MesAccordsViewModel> {
           Expanded(child: _buildList(context, viewModel)),
         ],
       ),
+    );
+
+    if (!standalone) return content;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('Mes accords')),
+      body: content,
     );
   }
 

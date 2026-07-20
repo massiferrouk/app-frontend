@@ -69,7 +69,7 @@ void main() {
   test('load rafraîchit le compteur de notifications non lues (APP-102)',
       () async {
     when(() => logementService.search()).thenAnswer(
-        (_) async => (logements: <Logement>[], hasNext: false));
+        (_) async => (logements: <Logement>[], hasNext: false, total: 0));
     when(() => accordService.getMesAccords()).thenAnswer((_) async => []);
 
     await viewModel.load();
@@ -77,10 +77,12 @@ void main() {
     expect(viewModel.unreadCount, 3);
   });
 
-  test('charge vedettes (max 5) et accords en cours uniquement', () async {
+  test('charge un aperçu de 3 annonces et les accords en cours uniquement',
+      () async {
     when(() => logementService.search()).thenAnswer((_) async => (
           logements: List.generate(8, (i) => logement('l$i')),
           hasNext: true,
+          total: 8,
         ));
     when(() => accordService.getMesAccords()).thenAnswer((_) async => [
           accord(AccordStatut.EN_COURS),
@@ -90,14 +92,16 @@ void main() {
 
     await viewModel.load();
 
-    expect(viewModel.vedettes, hasLength(5));
+    // Aperçu limité à 3 : la liste complète est sur l'écran Recherche
+    expect(viewModel.vedettes, hasLength(3));
     expect(viewModel.accordsEnCours.map((a) => a.statut),
         [AccordStatut.EN_COURS, AccordStatut.EN_ATTENTE]);
   });
 
   test('échec des accords : les vedettes s\'affichent quand même', () async {
     when(() => logementService.search())
-        .thenAnswer((_) async => (logements: [logement('l1')], hasNext: false));
+        .thenAnswer((_) async =>
+            (logements: [logement('l1')], hasNext: false, total: 1));
     when(() => accordService.getMesAccords()).thenThrow(const ApiException(
         code: 'ERROR', message: 'Erreur', statusCode: 500));
 
@@ -105,5 +109,22 @@ void main() {
 
     expect(viewModel.vedettes, hasLength(1));
     expect(viewModel.accordsEnCours, isEmpty);
+  });
+
+  test('isNouveau : true sans accord en cours, false sinon (APP-117)',
+      () async {
+    when(() => logementService.search())
+        .thenAnswer((_) async => (logements: <Logement>[], hasNext: false, total: 0));
+
+    // Aucun accord → compte « neuf » → bloc « Bien démarrer » affiché
+    when(() => accordService.getMesAccords()).thenAnswer((_) async => []);
+    await viewModel.load();
+    expect(viewModel.isNouveau, isTrue);
+
+    // Un accord en cours → plus « neuf »
+    when(() => accordService.getMesAccords())
+        .thenAnswer((_) async => [accord(AccordStatut.EN_COURS)]);
+    await viewModel.load();
+    expect(viewModel.isNouveau, isFalse);
   });
 }

@@ -27,12 +27,15 @@ class LogementService {
   /// GET /logements — recherche publique avec filtres (logements ACTIF
   /// uniquement). Retourne la page + l'indicateur hasNext pour
   /// l'infinite scroll.
-  Future<({List<Logement> logements, bool hasNext})> search({
+  /// [tri] : pertinence (défaut) | prix_asc | prix_desc | surface_desc.
+  /// [total] permet d'afficher « X logements » sans attendre toutes les pages.
+  Future<({List<Logement> logements, bool hasNext, int total})> search({
     String? ville,
     double? loyerMax,
     double? surfaceMin,
     bool? meuble,
     LogementType? type,
+    String? tri,
     int page = 0,
   }) async {
     final data = await _api.get<Map<String, dynamic>>(
@@ -43,6 +46,7 @@ class LogementService {
         'surface_min': ?surfaceMin,
         'meuble': ?meuble,
         'type': ?type?.toJson(),
+        'tri': ?tri,
         'page': page,
       },
     );
@@ -51,6 +55,7 @@ class LogementService {
           .map((e) => Logement.fromJson(e as Map<String, dynamic>))
           .toList(),
       hasNext: data['hasNext'] as bool? ?? false,
+      total: (data['totalElements'] as num? ?? 0).toInt(),
     );
   }
 

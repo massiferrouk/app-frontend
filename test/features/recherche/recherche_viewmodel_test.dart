@@ -47,8 +47,10 @@ void main() {
           surfaceMin: any(named: 'surfaceMin'),
           meuble: any(named: 'meuble'),
           type: any(named: 'type'),
+          tri: any(named: 'tri'),
           page: any(named: 'page'),
-        )).thenAnswer((_) async => (logements: logements, hasNext: hasNext));
+        )).thenAnswer((_) async =>
+        (logements: logements, hasNext: hasNext, total: logements.length));
   }
 
   MatchingSuggestion buildSuggestion({
@@ -174,6 +176,7 @@ void main() {
             surfaceMin: null,
             meuble: true,
             type: LogementType.T1,
+            tri: 'pertinence',
             page: 0,
           )).called(1);
     });
@@ -195,6 +198,7 @@ void main() {
             surfaceMin: any(named: 'surfaceMin'),
             meuble: any(named: 'meuble'),
             type: any(named: 'type'),
+            tri: any(named: 'tri'),
             page: any(named: 'page'),
           )).thenThrow(const ApiException(
           code: 'NETWORK_ERROR', message: 'Hors ligne', statusCode: 0));
@@ -230,8 +234,61 @@ void main() {
             surfaceMin: any(named: 'surfaceMin'),
             meuble: any(named: 'meuble'),
             type: any(named: 'type'),
+            tri: any(named: 'tri'),
             page: any(named: 'page'),
           ));
+    });
+  });
+
+  group('tri et réinitialisation (APP-117)', () {
+    test('setTri relance la recherche avec le tri demandé', () async {
+      stubSearch(logements: [build('l1')]);
+
+      viewModel.setTri('prix_asc');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(viewModel.tri, 'prix_asc');
+      expect(viewModel.triLabel, 'Prix croissant');
+      verify(() => logementService.search(
+            ville: any(named: 'ville'),
+            loyerMax: any(named: 'loyerMax'),
+            surfaceMin: any(named: 'surfaceMin'),
+            meuble: any(named: 'meuble'),
+            type: any(named: 'type'),
+            tri: 'prix_asc',
+            page: any(named: 'page'),
+          )).called(1);
+    });
+
+    test('le total remonte pour l\'en-tête de résultats', () async {
+      stubSearch(logements: [build('l1'), build('l2')]);
+      viewModel.villeController.text = 'Paris';
+
+      await viewModel.search();
+
+      expect(viewModel.totalResultats, 2);
+      expect(viewModel.resultatsLabel, '2 logements à Paris');
+    });
+
+    test('hasFiltresActifs + resetFiltres remettent tout à zéro', () async {
+      stubSearch(logements: []);
+      viewModel.villeController.text = 'Lyon';
+      viewModel.loyerMax = 700;
+      viewModel.meubleUniquement = true;
+      viewModel.type = LogementType.T1;
+      viewModel.tri = 'prix_desc';
+
+      expect(viewModel.hasFiltresActifs, isTrue);
+
+      viewModel.resetFiltres();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(viewModel.villeController.text, isEmpty);
+      expect(viewModel.loyerMax, isNull);
+      expect(viewModel.meubleUniquement, isFalse);
+      expect(viewModel.type, isNull);
+      expect(viewModel.tri, 'pertinence');
+      expect(viewModel.hasFiltresActifs, isFalse);
     });
   });
 }

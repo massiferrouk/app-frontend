@@ -183,4 +183,80 @@ void main() {
       verify(() => nav.clearStackAndShow(any())).called(1);
     });
   });
+
+  group('changeMode (APP-117)', () {
+    test('canChangeMode/otherStudentMode selon le rôle', () {
+      viewModel.user = user; // ALTERNANT
+      expect(viewModel.canChangeMode, isTrue);
+      expect(viewModel.otherStudentMode, UserRole.ETUDIANT);
+
+      viewModel.user = const User(
+          id: 'u2',
+          email: 'e@e.fr',
+          firstName: 'E',
+          lastName: 'T',
+          role: UserRole.ETUDIANT,
+          isVerified: true);
+      expect(viewModel.canChangeMode, isTrue);
+      expect(viewModel.otherStudentMode, UserRole.ALTERNANT);
+
+      // Un propriétaire ne peut pas changer de mode
+      viewModel.user = const User(
+          id: 'u3',
+          email: 'p@p.fr',
+          firstName: 'P',
+          lastName: 'R',
+          role: UserRole.PROPRIETAIRE,
+          isVerified: true);
+      expect(viewModel.canChangeMode, isFalse);
+      expect(viewModel.otherStudentMode, isNull);
+    });
+
+    test('passe en étudiant : change le mode, rafraîchit, relance le menu',
+        () async {
+      when(() => profileService.changeMode(UserRole.ETUDIANT))
+          .thenAnswer((_) async => user);
+      when(() => authService.refreshSession()).thenAnswer((_) async {});
+      when(() => nav.clearStackAndShow(any())).thenAnswer((_) async => null);
+
+      await viewModel.changeMode(UserRole.ETUDIANT);
+
+      verify(() => profileService.changeMode(UserRole.ETUDIANT)).called(1);
+      verify(() => authService.refreshSession()).called(1);
+      verify(() => nav.clearStackAndShow(any())).called(1);
+      verifyNever(() => nav.navigateTo(any()));
+    });
+
+    test('passe en alternant sans profil : emmène au formulaire', () async {
+      when(() => profileService.changeMode(UserRole.ALTERNANT))
+          .thenAnswer((_) async => user);
+      when(() => authService.refreshSession()).thenAnswer((_) async {});
+      // getMyAlternantProfile → null (défaut du setUp) : pas encore de profil
+      when(() => nav.navigateTo(any())).thenAnswer((_) async => null);
+
+      await viewModel.changeMode(UserRole.ALTERNANT);
+
+      verify(() => profileService.changeMode(UserRole.ALTERNANT)).called(1);
+      verify(() => authService.refreshSession()).called(1);
+      verify(() => nav.navigateTo(any())).called(1);
+      verifyNever(() => nav.clearStackAndShow(any()));
+    });
+
+    test('erreur backend : message affiché, pas de refresh ni navigation',
+        () async {
+      when(() => profileService.changeMode(UserRole.ALTERNANT)).thenThrow(
+          const ApiException(
+              code: 'INVALID_ARGUMENT',
+              message: 'Le changement de mode n\'est possible '
+                  'qu\'entre étudiant et alternant.',
+              statusCode: 400));
+
+      await viewModel.changeMode(UserRole.ALTERNANT);
+
+      expect(viewModel.errorMessage, contains('étudiant et alternant'));
+      verifyNever(() => authService.refreshSession());
+      verifyNever(() => nav.clearStackAndShow(any()));
+      verifyNever(() => nav.navigateTo(any()));
+    });
+  });
 }

@@ -23,7 +23,7 @@ void main() {
       expect(find.text('Profil'), findsOneWidget);
     });
 
-    testWidgets('étudiant : Recherche et Accords à la place de Matches',
+    testWidgets('étudiant : Recherche et Candidatures à la place de Matches',
         (tester) async {
       await tester.pumpWidget(wrap(StudUpBottomNav(
         role: UserRole.ETUDIANT,
@@ -32,7 +32,9 @@ void main() {
       )));
 
       expect(find.text('Recherche'), findsOneWidget);
-      expect(find.text('Accords'), findsOneWidget);
+      // APP-117 : Candidatures a remplacé Accords (toujours vide côté étudiant)
+      expect(find.text('Candidatures'), findsOneWidget);
+      expect(find.text('Accords'), findsNothing);
       expect(find.text('Matches'), findsNothing);
     });
 

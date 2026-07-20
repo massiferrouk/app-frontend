@@ -4,7 +4,7 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/enums.dart';
-import '../../shared/models/logement.dart';
+import '../../shared/widgets/logement_card.dart';
 import 'recherche_viewmodel.dart';
 
 /// Recherche de logements.
@@ -103,6 +103,53 @@ class RechercheView extends StackedView<RechercheViewModel> {
           ),
           const SizedBox(height: AppSpacing.sm),
 
+          // ─── En-tête résultats : compteur + tri + reset (APP-117) ──
+          // C'est ce qui distingue la Recherche de l'aperçu de l'accueil :
+          // on sait combien il y a de résultats et on peut les ordonner.
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(viewModel.resultatsLabel,
+                      style: Theme.of(context).textTheme.bodySmall),
+                ),
+                if (viewModel.hasFiltresActifs)
+                  TextButton(
+                    onPressed: viewModel.resetFiltres,
+                    child: const Text('Réinitialiser'),
+                  ),
+                // Chip de tri → ouvre une bottom sheet (pattern mobile),
+                // pas un menu déroulant (pattern desktop).
+                InkWell(
+                  onTap: () => _showTriSheet(context, viewModel),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusChip),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.swap_vert,
+                            size: 16, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Text(viewModel.triLabel,
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           Expanded(child: _buildResults(context, viewModel)),
         ],
       ),
@@ -115,6 +162,60 @@ class RechercheView extends StackedView<RechercheViewModel> {
       appBar: AppBar(title: const Text('Rechercher un logement')),
       body: content,
     );
+  }
+
+  /// Choix du tri en bottom sheet : grandes zones tactiles, coche sur l'option
+  /// active, poignée de glissement — le standard mobile (vs menu déroulant).
+  Future<void> _showTriSheet(
+      BuildContext context, RechercheViewModel viewModel) async {
+    final choix = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Poignée de glissement
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                  AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.sm),
+              child: Text('Trier par',
+                  style: Theme.of(context).textTheme.titleMedium),
+            ),
+            for (final e in RechercheViewModel.trisDisponibles.entries)
+              ListTile(
+                title: Text(e.value,
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: viewModel.tri == e.key
+                            ? FontWeight.w600
+                            : FontWeight.w400)),
+                trailing: viewModel.tri == e.key
+                    ? const Icon(Icons.check, color: AppColors.echange)
+                    : null,
+                onTap: () => Navigator.pop(sheetContext, e.key),
+              ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+    if (choix != null && choix != viewModel.tri) viewModel.setTri(choix);
   }
 
   Widget _buildResults(BuildContext context, RechercheViewModel viewModel) {
@@ -202,7 +303,7 @@ class RechercheView extends StackedView<RechercheViewModel> {
               );
             }
             final l = viewModel.resultats[i];
-            return _ResultCard(
+            return LogementCard(
                 logement: l, onTap: () => viewModel.goToDetail(l));
           },
         ),
@@ -329,101 +430,5 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _ResultCard extends StatelessWidget {
-  final Logement logement;
-  final VoidCallback onTap;
-
-  const _ResultCard({required this.logement, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            // Photo
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSpacing.radiusCard),
-                bottomLeft: Radius.circular(AppSpacing.radiusCard),
-              ),
-              child: SizedBox(
-                width: 100,
-                height: 100,
-                child: logement.photoUrls.isNotEmpty
-                    ? Image.network(logement.photoUrls.first,
-                        fit: BoxFit.cover,
-                        semanticLabel: 'Photo du logement à ${logement.ville}',
-                        errorBuilder: (_, _, _) => Container(
-                            color: AppColors.surfaceDark,
-                            child: const Icon(Icons.apartment,
-                                color: AppColors.textTertiary)))
-                    : Container(
-                        color: AppColors.surfaceDark,
-                        child: const Icon(Icons.apartment,
-                            color: AppColors.textTertiary)),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        '${logement.loyer.toStringAsFixed(0)} € / mois',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700)),
-                    Text(
-                        '${logement.type.label} · ${logement.surface.toStringAsFixed(0)} m² · ${logement.ville}',
-                        style: Theme.of(context).textTheme.bodySmall),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: AppSpacing.xs,
-                      children: [
-                        if (logement.isMeuble)
-                          const _MiniBadge(label: 'Meublé'),
-                        if (logement.isVerified)
-                          const _MiniBadge(
-                              label: 'Vérifié ✓',
-                              color: AppColors.echange),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _MiniBadge(
-      {required this.label, this.color = AppColors.textSecondary});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(label, style: TextStyle(fontSize: 10, color: color)),
-    );
-  }
-}
+// La carte d'annonce vit désormais dans shared/widgets/logement_card.dart
+// (LogementCard), partagée avec l'accueil étudiant.
