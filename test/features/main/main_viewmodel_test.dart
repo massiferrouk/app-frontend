@@ -98,6 +98,21 @@ void main() {
 
       expect(viewModel.messagesReloadKey, before + 1);
     });
+
+    // APP-117 : sans ce compteur, une candidature créée depuis une annonce
+    // n'apparaissait jamais dans l'onglet (les onglets d'un IndexedStack
+    // restent montés, donc load() n'était rappelé qu'au relancement de l'app).
+    test('ouvrir l\'onglet Candidatures incrémente candidaturesReloadKey '
+        '(étudiant)', () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.ETUDIANT);
+      await viewModel.init();
+      final before = viewModel.candidaturesReloadKey;
+
+      viewModel.setIndex(2); // étudiant : index 2 = Candidatures
+
+      expect(viewModel.candidaturesReloadKey, before + 1);
+    });
   });
 
   group('badge Messages (APP-102)', () {

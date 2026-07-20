@@ -303,17 +303,17 @@ class _CompactMatchCard extends StatelessWidget {
           border: Border.all(color: AppColors.border),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
-                  radius: 22,
+                  radius: 26,
                   backgroundColor:
-                      actif ? AppColors.echangeLight : AppColors.surface,
+                      actif ? AppColors.echangeLight : AppColors.surfaceDark,
                   child: Text(suggestion.initials,
                       style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: accent)),
                 ),
@@ -324,37 +324,87 @@ class _CompactMatchCard extends StatelessWidget {
                     children: [
                       Text(suggestion.displayName,
                           style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${suggestion.villeA} ⇄ ${suggestion.villeB} · '
-                        '${suggestion.typePropose.label}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
+                              fontSize: 16, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          const Icon(Icons.swap_horiz,
+                              size: 15, color: AppColors.textTertiary),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                                '${suggestion.villeA} ⇄ ${suggestion.villeB}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall),
+                          ),
+                        ],
                       ),
-                      if (suggestion.hasEconomie) ...[
-                        const SizedBox(height: 2),
-                        Text(suggestion.economieLabel,
-                            style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.echange)),
-                      ],
                     ],
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                Text('${suggestion.scorePercent}%',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: accent)),
+                // Anneau de score — repère visuel fort du match
+                Container(
+                  width: 52,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color:
+                        actif ? AppColors.echangeLight : AppColors.surfaceDark,
+                  ),
+                  child: Text('${suggestion.scorePercent}%',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: accent)),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Statut + type d'arrangement, en pastilles
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              children: [
+                _MatchTag(
+                  label: actif ? 'Match actif' : 'Match potentiel',
+                  color: actif ? AppColors.echange : AppColors.textSecondary,
+                  background:
+                      actif ? AppColors.echangeLight : AppColors.surfaceDark,
+                ),
+                _MatchTag(
+                  label: suggestion.typePropose.label,
+                  color: AppColors.colocation,
+                  background: AppColors.colocationLight,
+                ),
               ],
             ),
 
-            // Actions : contacter (discret) + déblocage des potentiels
+            // Économie mise en valeur (le cœur de la proposition)
+            if (suggestion.hasEconomie) ...[
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  const Icon(Icons.savings_outlined,
+                      size: 18, color: AppColors.echange),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(suggestion.economieLabel,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.echange)),
+                ],
+              ),
+            ],
+
+            const SizedBox(height: AppSpacing.md),
+            const Divider(height: 1),
             const SizedBox(height: AppSpacing.sm),
+
+            // Actions : déblocage des potentiels + contacter
             Row(
               children: [
                 if (onPublier != null)
@@ -363,7 +413,7 @@ class _CompactMatchCard extends StatelessWidget {
                       onPressed: onPublier,
                       icon: const Icon(Icons.add_home_outlined, size: 16),
                       style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(38),
+                        minimumSize: const Size.fromHeight(40),
                         foregroundColor: AppColors.echange,
                         side: const BorderSide(color: AppColors.echange),
                       ),
@@ -376,17 +426,39 @@ class _CompactMatchCard extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 TextButton.icon(
                   onPressed: onContact,
-                  icon: const Icon(Icons.chat_bubble_outline,
-                      size: 16, color: AppColors.textSecondary),
-                  label: const Text('Contacter',
-                      style: TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary)),
+                  icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                  label: const Text('Contacter'),
                 ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Pastille (statut du match, type d'arrangement). L'info n'est jamais portée
+/// par la seule couleur : le libellé texte l'accompagne toujours (OPQUAST).
+class _MatchTag extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color background;
+
+  const _MatchTag(
+      {required this.label, required this.color, required this.background});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
     );
   }
 }

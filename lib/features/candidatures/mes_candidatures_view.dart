@@ -85,7 +85,7 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
         const SizedBox(height: AppSpacing.md),
 
         if (viewModel.isEmpty)
-          Expanded(child: _etatVide(context))
+          Expanded(child: _etatVide(context, viewModel))
         else ...[
           _filtres(context, viewModel),
           const SizedBox(height: AppSpacing.sm),
@@ -168,8 +168,9 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
                 IconButton(
                   tooltip: 'Retirer du suivi',
                   onPressed: () => _retirer(context, viewModel, c),
+                  // Action destructive → rouge (convention mobile)
                   icon: const Icon(Icons.delete_outline,
-                      size: 20, color: AppColors.textTertiary),
+                      size: 20, color: AppColors.error),
                 ),
               ],
             ),
@@ -179,36 +180,42 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
     );
   }
 
-  Widget _etatVide(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      children: [
-        const SizedBox(height: 60),
-        const Icon(Icons.fact_check_outlined,
-            size: 48, color: AppColors.textTertiary),
-        const SizedBox(height: AppSpacing.md),
-        Text('Tu ne suis encore aucune annonce.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-            'Quand tu contactes un propriétaire, l\'annonce arrive ici '
-            'automatiquement. Tu peux aussi suivre une annonce depuis son détail.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall),
-        // Pas de bouton en mode empilé : il n'y a pas d'onglet Recherche
-        // vers lequel basculer depuis un écran poussé.
-        if (onSearch != null) ...[
-          const SizedBox(height: AppSpacing.lg),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: onSearch,
-              icon: const Icon(Icons.search),
-              label: const Text('Rechercher un logement'),
+  /// État vide, mais rafraîchissable : le ListView reste scrollable pour que
+  /// le pull-to-refresh fonctionne même sans aucune candidature.
+  Widget _etatVide(BuildContext context, MesCandidaturesViewModel viewModel) {
+    return RefreshIndicator(
+      onRefresh: viewModel.load,
+      color: AppColors.echange,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        children: [
+          const SizedBox(height: 60),
+          const Icon(Icons.fact_check_outlined,
+              size: 48, color: AppColors.textTertiary),
+          const SizedBox(height: AppSpacing.md),
+          Text('Tu ne suis encore aucune annonce.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+              'Quand tu contactes un propriétaire, l\'annonce arrive ici '
+              'automatiquement. Tu peux aussi suivre une annonce depuis son détail.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall),
+          // Pas de bouton en mode empilé : il n'y a pas d'onglet Recherche
+          // vers lequel basculer depuis un écran poussé.
+          if (onSearch != null) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: onSearch,
+                icon: const Icon(Icons.search),
+                label: const Text('Rechercher un logement'),
+              ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -285,6 +292,9 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
               onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text('Annuler')),
           ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white),
               onPressed: () => Navigator.pop(dialogContext, true),
               child: const Text('Retirer')),
         ],

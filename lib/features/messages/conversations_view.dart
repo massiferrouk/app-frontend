@@ -27,6 +27,19 @@ class ConversationsView extends StackedView<ConversationsViewModel> {
             child: Text('Messages',
                 style: Theme.of(context).textTheme.headlineMedium),
           ),
+          // Recherche par contact — dès qu'il y a plusieurs conversations
+          if (viewModel.afficheRecherche)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+                  AppSpacing.screenPadding, AppSpacing.sm),
+              child: TextField(
+                onChanged: viewModel.setQuery,
+                decoration: const InputDecoration(
+                  hintText: 'Rechercher un contact',
+                  prefixIcon: Icon(Icons.search, size: 20),
+                ),
+              ),
+            ),
           Expanded(child: _buildList(context, viewModel)),
         ],
       ),
@@ -55,37 +68,59 @@ class ConversationsView extends StackedView<ConversationsViewModel> {
       );
     }
 
+    // Aucune conversation du tout — état vide guidé
+    if (viewModel.conversations.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: viewModel.load,
+        color: AppColors.echange,
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          children: [
+            const SizedBox(height: 80),
+            const Icon(Icons.chat_bubble_outline,
+                size: 48, color: AppColors.textTertiary),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Aucune conversation pour l\'instant.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Contacte un propriétaire depuis une annonce, ou un alternant '
+              'depuis tes matches, pour démarrer une discussion.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Filtre de recherche actif mais aucun résultat
+    final items = viewModel.conversationsFiltrees;
+    if (items.isEmpty) {
+      return Center(
+        child: Text('Aucun contact ne correspond à ta recherche.',
+            style: Theme.of(context).textTheme.bodySmall),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: viewModel.load,
       color: AppColors.echange,
-      child: viewModel.conversations.isEmpty
-          ? ListView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              children: [
-                const SizedBox(height: 80),
-                const Icon(Icons.chat_bubble_outline,
-                    size: 48, color: AppColors.textTertiary),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Aucune conversation.\n'
-                  'Contacte un match pour démarrer !',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            )
-          : ListView.separated(
-              itemCount: viewModel.conversations.length,
-              separatorBuilder: (_, _) => const Divider(
-                  height: 1, indent: AppSpacing.screenPadding + 52),
-              itemBuilder: (context, index) {
-                final c = viewModel.conversations[index];
-                return _ConversationTile(
-                  conversation: c,
-                  onTap: () => viewModel.openConversation(c),
-                );
-              },
-            ),
+      child: ListView.separated(
+        itemCount: items.length,
+        separatorBuilder: (_, _) => const Divider(
+            height: 1, indent: AppSpacing.screenPadding + 64),
+        itemBuilder: (context, index) {
+          final c = items[index];
+          return _ConversationTile(
+            conversation: c,
+            onTap: () => viewModel.openConversation(c),
+          );
+        },
+      ),
     );
   }
 
@@ -106,23 +141,22 @@ class _ConversationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasUnread = conversation.unreadCount > 0;
+    final preview = conversation.lastMessage.trim();
 
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenPadding, vertical: 4),
+          horizontal: AppSpacing.screenPadding, vertical: 6),
       leading: CircleAvatar(
-        radius: 22,
+        radius: 26,
         backgroundColor:
             hasUnread ? AppColors.echangeLight : AppColors.surfaceDark,
         child: Text(
-          conversation.partnerName.isNotEmpty
-              ? conversation.partnerName[0].toUpperCase()
-              : '?',
+          _initials(conversation.partnerName),
           style: TextStyle(
+            fontSize: 15,
             fontWeight: FontWeight.w700,
-            color:
-                hasUnread ? AppColors.echange : AppColors.textPrimary,
+            color: hasUnread ? AppColors.echange : AppColors.textPrimary,
           ),
         ),
       ),
@@ -134,14 +168,18 @@ class _ConversationTile extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        conversation.lastMessage,
+        // Jamais de ligne vide : à défaut de message, une invite claire.
+        preview.isEmpty ? 'Nouvelle conversation — dis bonjour 👋' : preview,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 13,
-          color:
-              hasUnread ? AppColors.textPrimary : AppColors.textSecondary,
-          fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+          fontStyle: preview.isEmpty ? FontStyle.italic : FontStyle.normal,
+          color: preview.isEmpty
+              ? AppColors.textTertiary
+              : (hasUnread ? AppColors.textPrimary : AppColors.textSecondary),
+          fontWeight:
+              (preview.isNotEmpty && hasUnread) ? FontWeight.w600 : FontWeight.w400,
         ),
       ),
       trailing: Column(
@@ -175,6 +213,19 @@ class _ConversationTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Initiales sur 2 lettres (« Léa Martin » → « LM », « Léa » → « L »).
+  static String _initials(String name) {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return (parts[0].characters.first + parts[1].characters.first)
+        .toUpperCase();
   }
 
   static String _formatTime(DateTime date) {

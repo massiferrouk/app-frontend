@@ -20,6 +20,14 @@ enum UserRole {
 
   static UserRole fromJson(String value) => values.byName(value);
   String toJson() => name;
+
+  /// Libellé lisible (le badge affichait la valeur brute « ETUDIANT »).
+  String get label => switch (this) {
+        ALTERNANT => 'Alternant',
+        ETUDIANT => 'Étudiant',
+        PROPRIETAIRE => 'Propriétaire',
+        ADMIN => 'Admin',
+      };
 }
 
 // ─── Rythme d'alternance ────────────────────────────────────────

@@ -46,6 +46,7 @@ class MainViewModel extends BaseViewModel {
   int homeReloadKey = 0;
   int messagesReloadKey = 0;
   int rechercheReloadKey = 0;
+  int candidaturesReloadKey = 0;
 
   /// Index de l'onglet Messages selon le rôle (voir _pagesForRole).
   int get _messagesTabIndex =>
@@ -57,6 +58,9 @@ class MainViewModel extends BaseViewModel {
         UserRole.ETUDIANT => 1,
         _ => -1,
       };
+
+  /// Index de l'onglet Candidatures : étudiant uniquement (APP-117).
+  int get _candidaturesTabIndex => role == UserRole.ETUDIANT ? 2 : -1;
 
   /// userId abonné au topic personnel — pour se désabonner au dispose
   String? _subscribedUserId;
@@ -90,6 +94,7 @@ class MainViewModel extends BaseViewModel {
     if (index == 0) homeReloadKey++;
     if (index == _messagesTabIndex) messagesReloadKey++;
     if (index == _rechercheTabIndex) rechercheReloadKey++;
+    if (index == _candidaturesTabIndex) candidaturesReloadKey++;
     notifyListeners();
     // Chaque changement d'onglet rafraîchit le badge : en quittant
     // Messages il retombe à zéro, ailleurs il capte les nouveautés.

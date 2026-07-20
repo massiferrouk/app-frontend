@@ -5,6 +5,7 @@ import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/auth_service.dart';
+import '../../services/candidature_service.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/profile_service.dart';
@@ -21,6 +22,7 @@ class ProfilViewModel extends BaseViewModel {
   final ProfileService _profile;
   final LogementService _logements;
   final ReviewService _reviews;
+  final CandidatureService _candidatures;
   final AuthService _auth;
   final ChatSocketService _socket;
   final NavigationService _nav;
@@ -29,12 +31,14 @@ class ProfilViewModel extends BaseViewModel {
     ProfileService? profileService,
     LogementService? logementService,
     ReviewService? reviewService,
+    CandidatureService? candidatureService,
     AuthService? authService,
     ChatSocketService? chatSocketService,
     NavigationService? navigationService,
   })  : _profile = profileService ?? locator<ProfileService>(),
         _logements = logementService ?? locator<LogementService>(),
         _reviews = reviewService ?? locator<ReviewService>(),
+        _candidatures = candidatureService ?? locator<CandidatureService>(),
         _auth = authService ?? locator<AuthService>(),
         _socket = chatSocketService ?? locator<ChatSocketService>(),
         _nav = navigationService ?? locator<NavigationService>();
@@ -44,6 +48,11 @@ class ProfilViewModel extends BaseViewModel {
   ReputationScore? reputation;
   List<Review> avisRecus = [];
   List<Logement> logements = [];
+
+  /// Résumé des candidatures pour la carte du profil (APP-117).
+  int nbCandidatures = 0;
+  int nbCandidaturesContactees = 0;
+
   String? errorMessage;
 
   bool get isAlternant => user?.role == UserRole.ALTERNANT;
@@ -121,6 +130,14 @@ class ProfilViewModel extends BaseViewModel {
     try {
       logements = await _logements.getMesLogements();
     } on ApiException {/* section vide */}
+    // Résumé des candidatures (APP-117) — pour la carte du profil
+    try {
+      final candidatures = await _candidatures.getMesCandidatures();
+      nbCandidatures = candidatures.length;
+      nbCandidaturesContactees = candidatures
+          .where((c) => c.statut != CandidatureStatut.A_CONTACTER)
+          .length;
+    } on ApiException {/* carte masquée */}
 
     setBusy(false);
   }

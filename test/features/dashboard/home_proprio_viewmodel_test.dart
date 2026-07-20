@@ -3,12 +3,16 @@ import 'package:mocktail/mocktail.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/dashboard/home_proprio_viewmodel.dart';
 import 'package:studup_app/services/dashboard_service.dart';
+import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/shared/models/proprietaire_dashboard.dart';
 
 class MockDashboardService extends Mock implements DashboardService {}
 
+class MockLogementService extends Mock implements LogementService {}
+
 void main() {
   late MockDashboardService dashboardService;
+  late MockLogementService logementService;
   late HomeProprioViewModel viewModel;
 
   Map<String, dynamic> logementJson(
@@ -25,7 +29,14 @@ void main() {
 
   setUp(() {
     dashboardService = MockDashboardService();
-    viewModel = HomeProprioViewModel(dashboardService: dashboardService);
+    logementService = MockLogementService();
+    viewModel = HomeProprioViewModel(
+      dashboardService: dashboardService,
+      logementService: logementService,
+    );
+    // L'aperçu de l'accueil charge la liste complète des logements (photos) ;
+    // les tests portent sur les KPIs/alertes, une liste vide suffit ici.
+    when(() => logementService.getMesLogements()).thenAnswer((_) async => []);
   });
 
   test('charge les KPIs', () async {

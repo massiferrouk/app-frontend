@@ -20,6 +20,9 @@ class ConversationsViewModel extends BaseViewModel {
   List<ConversationSummary> conversations = [];
   String? errorMessage;
 
+  /// Filtre de recherche par nom de contact (vide = tout afficher)
+  String query = '';
+
   Future<void> load() async {
     setBusy(true);
     try {
@@ -31,6 +34,23 @@ class ConversationsViewModel extends BaseViewModel {
       setBusy(false);
     }
   }
+
+  void setQuery(String q) {
+    query = q;
+    notifyListeners();
+  }
+
+  /// Conversations visibles selon le filtre de recherche
+  List<ConversationSummary> get conversationsFiltrees {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return conversations;
+    return conversations
+        .where((c) => c.partnerName.toLowerCase().contains(q))
+        .toList();
+  }
+
+  /// true dès qu'on a au moins 2 conversations (on affiche alors la recherche)
+  bool get afficheRecherche => conversations.length >= 2;
 
   /// Ouvre le chat, recharge au retour (les non-lus ont changé)
   Future<void> openConversation(ConversationSummary conversation) async {
