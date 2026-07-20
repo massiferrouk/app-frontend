@@ -11,11 +11,21 @@ import 'mes_candidatures_viewmodel.dart';
 /// Mes candidatures — onglet de l'étudiant (APP-117).
 /// Remplace le Trello : la liste des annonces suivies, avec un statut que
 /// l'utilisateur fait évoluer lui-même.
+/// [standalone] = true : écran empilé avec AppBar. L'alternant y accède depuis
+/// son Profil (sa bottom nav est pleine), alors que l'étudiant a un onglet
+/// dédié. Un alternant cherche aussi une location classique : il crée donc des
+/// candidatures et doit pouvoir les consulter (APP-117).
 class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
-  /// Bascule sur l'onglet Recherche (état vide).
+  /// Bascule sur l'onglet Recherche (état vide). null en mode empilé.
   final VoidCallback? onSearch;
 
-  const MesCandidaturesView({super.key, this.onSearch});
+  final bool standalone;
+
+  const MesCandidaturesView({
+    super.key,
+    this.onSearch,
+    this.standalone = false,
+  });
 
   @override
   Widget builder(
@@ -23,7 +33,15 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
     MesCandidaturesViewModel viewModel,
     Widget? child,
   ) {
-    return SafeArea(child: _buildBody(context, viewModel));
+    final content = SafeArea(child: _buildBody(context, viewModel));
+
+    if (!standalone) return content;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('Mes candidatures')),
+      body: content,
+    );
   }
 
   Widget _buildBody(BuildContext context, MesCandidaturesViewModel viewModel) {
@@ -50,12 +68,14 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-              AppSpacing.md, AppSpacing.screenPadding, AppSpacing.xs),
-          child: Text('Mes candidatures',
-              style: Theme.of(context).textTheme.headlineMedium),
-        ),
+        // Titre interne masqué en mode empilé (l'AppBar le porte déjà)
+        if (!standalone)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+                AppSpacing.md, AppSpacing.screenPadding, AppSpacing.xs),
+            child: Text('Mes candidatures',
+                style: Theme.of(context).textTheme.headlineMedium),
+          ),
         Padding(
           padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenPadding),
@@ -176,14 +196,18 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
             'automatiquement. Tu peux aussi suivre une annonce depuis son détail.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: AppSpacing.lg),
-        Center(
-          child: ElevatedButton.icon(
-            onPressed: onSearch,
-            icon: const Icon(Icons.search),
-            label: const Text('Rechercher un logement'),
+        // Pas de bouton en mode empilé : il n'y a pas d'onglet Recherche
+        // vers lequel basculer depuis un écran poussé.
+        if (onSearch != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: onSearch,
+              icon: const Icon(Icons.search),
+              label: const Text('Rechercher un logement'),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

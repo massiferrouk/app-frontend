@@ -9,6 +9,7 @@ import '../features/accords/accord_detail_view.dart';
 import '../features/accords/mes_accords_view.dart';
 import '../features/avis/avis_view.dart';
 import '../features/calendrier/mon_calendrier_view.dart';
+import '../features/candidatures/mes_candidatures_view.dart';
 import '../features/logements/ajouter_logement_view.dart';
 import '../features/logements/logement_detail_view.dart';
 import '../features/matching/compatibilite_view.dart';
@@ -57,6 +58,7 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: RechercheView),
     MaterialRoute(page: MesLogementsView),
     MaterialRoute(page: MesAccordsView),
+    MaterialRoute(page: MesCandidaturesView),
     MaterialRoute(page: AvisView),
     MaterialRoute(page: ChatView),
     // Les prochains écrans seront ajoutés ici

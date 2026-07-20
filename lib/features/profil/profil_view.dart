@@ -232,6 +232,16 @@ class ProfilView extends StackedView<ProfilViewModel> {
           ],
 
           // ─── Actions ────────────────────────────────────────
+          // APP-117 : l'alternant n'a pas d'onglet Candidatures (nav pleine),
+          // alors qu'il cherche aussi une location classique → accès ici.
+          if (viewModel.isAlternant) ...[
+            OutlinedButton.icon(
+              onPressed: viewModel.goToMesCandidatures,
+              icon: const Icon(Icons.fact_check_outlined),
+              label: const Text('Mes candidatures'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           // APP-117 : plus d'onglet Accords — l'accès se fait ici.
           OutlinedButton.icon(
             onPressed: viewModel.goToMesAccords,
