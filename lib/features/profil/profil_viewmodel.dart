@@ -135,6 +135,14 @@ class ProfilViewModel extends BaseViewModel {
         arguments: const MesAccordsViewArguments(standalone: true),
       );
 
+  /// Mes candidatures (APP-117). L'étudiant a un onglet dédié ; l'alternant,
+  /// dont la bottom nav est pleine, y accède ici — il cherche lui aussi une
+  /// location classique et crée donc des candidatures.
+  void goToMesCandidatures() => _nav.navigateTo(
+        Routes.mesCandidaturesView,
+        arguments: const MesCandidaturesViewArguments(standalone: true),
+      );
+
   /// Ouvre le formulaire en mode édition, pré-rempli avec le profil actuel.
   /// Au retour d'une modification, on recharge (calendrier/matchs recalculés).
   Future<void> goToEditAlternance() async {
