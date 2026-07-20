@@ -152,6 +152,20 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                       icon: const Icon(Icons.chat_bubble_outline),
                       label: const Text('Contacter'),
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // Suivi de candidature (APP-117) : repérer une annonce sans
+                    // encore contacter. Contacter l'ajoute automatiquement.
+                    OutlinedButton.icon(
+                      onPressed: viewModel.isSuivi
+                          ? null
+                          : () => _suivre(context, viewModel),
+                      icon: Icon(viewModel.isSuivi
+                          ? Icons.bookmark_added_outlined
+                          : Icons.bookmark_border),
+                      label: Text(viewModel.isSuivi
+                          ? 'Dans mes candidatures'
+                          : 'Suivre cette annonce'),
+                    ),
                   ],
                 ],
               ),
@@ -160,6 +174,14 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
         ),
       ),
     );
+  }
+
+  Future<void> _suivre(
+      BuildContext context, LogementDetailViewModel viewModel) async {
+    final erreur = await viewModel.suivre();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(erreur ?? 'Ajoutée à tes candidatures')));
   }
 
   @override

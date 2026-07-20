@@ -5,6 +5,7 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/alternant_profile.dart';
+import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
 import '../../shared/models/review.dart';
 import 'profil_viewmodel.dart';
@@ -191,7 +192,53 @@ class ProfilView extends StackedView<ProfilViewModel> {
             const SizedBox(height: AppSpacing.lg),
           ],
 
+          // ─── Mon mode (APP-117) : étudiant ⇄ alternant ──────
+          // Réservé aux comptes étudiant/alternant (le propriétaire ne la voit
+          // pas : devenir bailleur = un autre compte).
+          if (viewModel.canChangeMode) ...[
+            Text('Mon mode sur StudUp',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.role == UserRole.ALTERNANT
+                        ? 'Tu es en mode alternant (échange de logement selon ton rythme).'
+                        : 'Tu es en mode étudiant (recherche de logement classique).',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  OutlinedButton.icon(
+                    onPressed: viewModel.isBusy
+                        ? null
+                        : () => _confirmChangeMode(context, viewModel),
+                    icon: const Icon(Icons.swap_horiz),
+                    label: Text(user.role == UserRole.ALTERNANT
+                        ? 'Passer en mode étudiant'
+                        : 'Passer en mode alternant'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+
           // ─── Actions ────────────────────────────────────────
+          // APP-117 : plus d'onglet Accords — l'accès se fait ici.
+          OutlinedButton.icon(
+            onPressed: viewModel.goToMesAccords,
+            icon: const Icon(Icons.description_outlined),
+            label: const Text('Mes accords'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           if (viewModel.isAlternant) ...[
             OutlinedButton.icon(
               onPressed: viewModel.goToCalendrier,
@@ -229,6 +276,33 @@ class ProfilView extends StackedView<ProfilViewModel> {
       ),
     );
     if (confirmed == true) await viewModel.logout();
+  }
+
+  Future<void> _confirmChangeMode(
+      BuildContext context, ProfilViewModel viewModel) async {
+    final target = viewModel.otherStudentMode;
+    if (target == null) return;
+    final becomeAlternant = target == UserRole.ALTERNANT;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(becomeAlternant
+            ? 'Passer en mode alternant ?'
+            : 'Passer en mode étudiant ?'),
+        content: Text(becomeAlternant
+            ? 'On te demandera de renseigner ton alternance (villes, rythme) juste après.'
+            : 'Tu repasses en simple recherche de logement. Ton profil d\'alternance est conservé.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Confirmer')),
+        ],
+      ),
+    );
+    if (confirmed == true) await viewModel.changeMode(target);
   }
 
   @override

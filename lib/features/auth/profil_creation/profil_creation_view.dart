@@ -46,6 +46,13 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
+              // APP-117 (A-07) : avertissement si un accord vivant existe — on
+              // autorise la modif mais on explique qu'elle n'affecte pas l'accord.
+              if (viewModel.isEdition && viewModel.hasLivingAccord) ...[
+                const _AccordWarningBanner(),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
               // ─── Villes ─────────────────────────────────────
               TextField(
                 controller: viewModel.villeAController,
@@ -189,8 +196,45 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
   }
 
   @override
+  void onViewModelReady(ProfilCreationViewModel viewModel) => viewModel.init();
+
+  @override
   ProfilCreationViewModel viewModelBuilder(BuildContext context) =>
       ProfilCreationViewModel(existingProfile: profile);
+}
+
+/// Bandeau d'avertissement (APP-117 · A-07) affiché en édition quand
+/// l'utilisateur a un accord vivant. Orange = avertissement (design system).
+class _AccordWarningBanner extends StatelessWidget {
+  const _AccordWarningBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.chevauchementLight,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: AppColors.chevauchement),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline,
+              size: 20, color: AppColors.chevauchement),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              'Tu as un accord en cours. Le modifier ici ne changera pas cet '
+              'accord (il est déjà figé) — seuls tes futurs matchs seront '
+              'recalculés.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Champ date cliquable affichant la valeur choisie

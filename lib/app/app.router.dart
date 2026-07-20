@@ -6,16 +6,17 @@
 // **************************************************************************
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'package:flutter/material.dart' as _i18;
+import 'package:flutter/material.dart' as _i19;
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart' as _i1;
-import 'package:stacked_services/stacked_services.dart' as _i24;
+import 'package:stacked_services/stacked_services.dart' as _i25;
 import 'package:studup_app/features/accords/accord_detail_view.dart' as _i12;
+import 'package:studup_app/features/accords/mes_accords_view.dart' as _i16;
 import 'package:studup_app/features/auth/login/login_view.dart' as _i4;
 import 'package:studup_app/features/auth/profil_creation/profil_creation_view.dart'
     as _i6;
 import 'package:studup_app/features/auth/register/register_view.dart' as _i5;
-import 'package:studup_app/features/avis/avis_view.dart' as _i16;
+import 'package:studup_app/features/avis/avis_view.dart' as _i17;
 import 'package:studup_app/features/calendrier/mon_calendrier_view.dart' as _i8;
 import 'package:studup_app/features/logements/ajouter_logement_view.dart'
     as _i10;
@@ -24,17 +25,17 @@ import 'package:studup_app/features/logements/logement_detail_view.dart'
 import 'package:studup_app/features/logements/mes_logements_view.dart' as _i15;
 import 'package:studup_app/features/main/main_view.dart' as _i7;
 import 'package:studup_app/features/matching/compatibilite_view.dart' as _i9;
-import 'package:studup_app/features/messages/chat_view.dart' as _i17;
+import 'package:studup_app/features/messages/chat_view.dart' as _i18;
 import 'package:studup_app/features/notifications/notifications_view.dart'
     as _i13;
 import 'package:studup_app/features/onboarding/onboarding_view.dart' as _i3;
 import 'package:studup_app/features/recherche/recherche_view.dart' as _i14;
 import 'package:studup_app/features/startup/startup_view.dart' as _i2;
-import 'package:studup_app/shared/models/accord.dart' as _i22;
-import 'package:studup_app/shared/models/alternant_profile.dart' as _i19;
-import 'package:studup_app/shared/models/conversation_summary.dart' as _i23;
-import 'package:studup_app/shared/models/logement.dart' as _i21;
-import 'package:studup_app/shared/models/matching_suggestion.dart' as _i20;
+import 'package:studup_app/shared/models/accord.dart' as _i23;
+import 'package:studup_app/shared/models/alternant_profile.dart' as _i20;
+import 'package:studup_app/shared/models/conversation_summary.dart' as _i24;
+import 'package:studup_app/shared/models/logement.dart' as _i22;
+import 'package:studup_app/shared/models/matching_suggestion.dart' as _i21;
 
 class Routes {
   static const startupView = '/';
@@ -65,6 +66,8 @@ class Routes {
 
   static const mesLogementsView = '/mes-logements-view';
 
+  static const mesAccordsView = '/mes-accords-view';
+
   static const avisView = '/avis-view';
 
   static const chatView = '/chat-view';
@@ -84,6 +87,7 @@ class Routes {
     notificationsView,
     rechercheView,
     mesLogementsView,
+    mesAccordsView,
     avisView,
     chatView,
   };
@@ -105,8 +109,9 @@ class StackedRouter extends _i1.RouterBase {
     _i1.RouteDef(Routes.notificationsView, page: _i13.NotificationsView),
     _i1.RouteDef(Routes.rechercheView, page: _i14.RechercheView),
     _i1.RouteDef(Routes.mesLogementsView, page: _i15.MesLogementsView),
-    _i1.RouteDef(Routes.avisView, page: _i16.AvisView),
-    _i1.RouteDef(Routes.chatView, page: _i17.ChatView),
+    _i1.RouteDef(Routes.mesAccordsView, page: _i16.MesAccordsView),
+    _i1.RouteDef(Routes.avisView, page: _i17.AvisView),
+    _i1.RouteDef(Routes.chatView, page: _i18.ChatView),
   ];
 
   final _pagesMap = <Type, _i1.StackedRouteFactory>{
@@ -114,7 +119,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<StartupViewArguments>(
         orElse: () => const StartupViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) => _i2.StartupView(key: args.key),
         settings: data,
       );
@@ -123,7 +128,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<OnboardingViewArguments>(
         orElse: () => const OnboardingViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) => _i3.OnboardingView(key: args.key),
         settings: data,
       );
@@ -132,7 +137,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<LoginViewArguments>(
         orElse: () => const LoginViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) => _i4.LoginView(key: args.key),
         settings: data,
       );
@@ -141,7 +146,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<RegisterViewArguments>(
         orElse: () => const RegisterViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) => _i5.RegisterView(key: args.key),
         settings: data,
       );
@@ -150,7 +155,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<ProfilCreationViewArguments>(
         orElse: () => const ProfilCreationViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) =>
             _i6.ProfilCreationView(key: args.key, profile: args.profile),
         settings: data,
@@ -160,7 +165,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<MainViewArguments>(
         orElse: () => const MainViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) => _i7.MainView(key: args.key),
         settings: data,
       );
@@ -169,14 +174,14 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<MonCalendrierViewArguments>(
         orElse: () => const MonCalendrierViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) => _i8.MonCalendrierView(key: args.key),
         settings: data,
       );
     },
     _i9.CompatibiliteView: (data) {
       final args = data.getArgs<CompatibiliteViewArguments>(nullOk: false);
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) =>
             _i9.CompatibiliteView(key: args.key, suggestion: args.suggestion),
         settings: data,
@@ -186,7 +191,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<AjouterLogementViewArguments>(
         orElse: () => const AjouterLogementViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) =>
             _i10.AjouterLogementView(key: args.key, logement: args.logement),
         settings: data,
@@ -194,7 +199,7 @@ class StackedRouter extends _i1.RouterBase {
     },
     _i11.LogementDetailView: (data) {
       final args = data.getArgs<LogementDetailViewArguments>(nullOk: false);
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) =>
             _i11.LogementDetailView(key: args.key, logement: args.logement),
         settings: data,
@@ -202,7 +207,7 @@ class StackedRouter extends _i1.RouterBase {
     },
     _i12.AccordDetailView: (data) {
       final args = data.getArgs<AccordDetailViewArguments>(nullOk: false);
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) =>
             _i12.AccordDetailView(key: args.key, accord: args.accord),
         settings: data,
@@ -212,7 +217,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<NotificationsViewArguments>(
         orElse: () => const NotificationsViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) =>
             _i13.NotificationsView(key: args.key, standalone: args.standalone),
         settings: data,
@@ -222,7 +227,7 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<RechercheViewArguments>(
         orElse: () => const RechercheViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) => _i14.RechercheView(
           key: args.key,
           standalone: args.standalone,
@@ -235,24 +240,34 @@ class StackedRouter extends _i1.RouterBase {
       final args = data.getArgs<MesLogementsViewArguments>(
         orElse: () => const MesLogementsViewArguments(),
       );
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) =>
             _i15.MesLogementsView(key: args.key, standalone: args.standalone),
         settings: data,
       );
     },
-    _i16.AvisView: (data) {
-      final args = data.getArgs<AvisViewArguments>(nullOk: false);
-      return _i18.MaterialPageRoute<dynamic>(
-        builder: (context) => _i16.AvisView(key: args.key, accord: args.accord),
+    _i16.MesAccordsView: (data) {
+      final args = data.getArgs<MesAccordsViewArguments>(
+        orElse: () => const MesAccordsViewArguments(),
+      );
+      return _i19.MaterialPageRoute<dynamic>(
+        builder: (context) =>
+            _i16.MesAccordsView(key: args.key, standalone: args.standalone),
         settings: data,
       );
     },
-    _i17.ChatView: (data) {
+    _i17.AvisView: (data) {
+      final args = data.getArgs<AvisViewArguments>(nullOk: false);
+      return _i19.MaterialPageRoute<dynamic>(
+        builder: (context) => _i17.AvisView(key: args.key, accord: args.accord),
+        settings: data,
+      );
+    },
+    _i18.ChatView: (data) {
       final args = data.getArgs<ChatViewArguments>(nullOk: false);
-      return _i18.MaterialPageRoute<dynamic>(
+      return _i19.MaterialPageRoute<dynamic>(
         builder: (context) =>
-            _i17.ChatView(key: args.key, conversation: args.conversation),
+            _i18.ChatView(key: args.key, conversation: args.conversation),
         settings: data,
       );
     },
@@ -268,7 +283,7 @@ class StackedRouter extends _i1.RouterBase {
 class StartupViewArguments {
   const StartupViewArguments({this.key});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   @override
   String toString() {
@@ -290,7 +305,7 @@ class StartupViewArguments {
 class OnboardingViewArguments {
   const OnboardingViewArguments({this.key});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   @override
   String toString() {
@@ -312,7 +327,7 @@ class OnboardingViewArguments {
 class LoginViewArguments {
   const LoginViewArguments({this.key});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   @override
   String toString() {
@@ -334,7 +349,7 @@ class LoginViewArguments {
 class RegisterViewArguments {
   const RegisterViewArguments({this.key});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   @override
   String toString() {
@@ -356,9 +371,9 @@ class RegisterViewArguments {
 class ProfilCreationViewArguments {
   const ProfilCreationViewArguments({this.key, this.profile});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
-  final _i19.AlternantProfile? profile;
+  final _i20.AlternantProfile? profile;
 
   @override
   String toString() {
@@ -380,7 +395,7 @@ class ProfilCreationViewArguments {
 class MainViewArguments {
   const MainViewArguments({this.key});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   @override
   String toString() {
@@ -402,7 +417,7 @@ class MainViewArguments {
 class MonCalendrierViewArguments {
   const MonCalendrierViewArguments({this.key});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   @override
   String toString() {
@@ -424,9 +439,9 @@ class MonCalendrierViewArguments {
 class CompatibiliteViewArguments {
   const CompatibiliteViewArguments({this.key, required this.suggestion});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
-  final _i20.MatchingSuggestion suggestion;
+  final _i21.MatchingSuggestion suggestion;
 
   @override
   String toString() {
@@ -448,9 +463,9 @@ class CompatibiliteViewArguments {
 class AjouterLogementViewArguments {
   const AjouterLogementViewArguments({this.key, this.logement});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
-  final _i21.Logement? logement;
+  final _i22.Logement? logement;
 
   @override
   String toString() {
@@ -472,9 +487,9 @@ class AjouterLogementViewArguments {
 class LogementDetailViewArguments {
   const LogementDetailViewArguments({this.key, required this.logement});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
-  final _i21.Logement logement;
+  final _i22.Logement logement;
 
   @override
   String toString() {
@@ -496,9 +511,9 @@ class LogementDetailViewArguments {
 class AccordDetailViewArguments {
   const AccordDetailViewArguments({this.key, required this.accord});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
-  final _i22.Accord accord;
+  final _i23.Accord accord;
 
   @override
   String toString() {
@@ -520,7 +535,7 @@ class AccordDetailViewArguments {
 class NotificationsViewArguments {
   const NotificationsViewArguments({this.key, this.standalone = false});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   final bool standalone;
 
@@ -548,7 +563,7 @@ class RechercheViewArguments {
     this.onSeeMatches,
   });
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   final bool standalone;
 
@@ -576,7 +591,7 @@ class RechercheViewArguments {
 class MesLogementsViewArguments {
   const MesLogementsViewArguments({this.key, this.standalone = false});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
   final bool standalone;
 
@@ -597,12 +612,36 @@ class MesLogementsViewArguments {
   }
 }
 
+class MesAccordsViewArguments {
+  const MesAccordsViewArguments({this.key, this.standalone = false});
+
+  final _i19.Key? key;
+
+  final bool standalone;
+
+  @override
+  String toString() {
+    return '{"key": "$key", "standalone": "$standalone"}';
+  }
+
+  @override
+  bool operator ==(covariant MesAccordsViewArguments other) {
+    if (identical(this, other)) return true;
+    return other.key == key && other.standalone == standalone;
+  }
+
+  @override
+  int get hashCode {
+    return key.hashCode ^ standalone.hashCode;
+  }
+}
+
 class AvisViewArguments {
   const AvisViewArguments({this.key, required this.accord});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
-  final _i22.Accord accord;
+  final _i23.Accord accord;
 
   @override
   String toString() {
@@ -624,9 +663,9 @@ class AvisViewArguments {
 class ChatViewArguments {
   const ChatViewArguments({this.key, required this.conversation});
 
-  final _i18.Key? key;
+  final _i19.Key? key;
 
-  final _i23.ConversationSummary conversation;
+  final _i24.ConversationSummary conversation;
 
   @override
   String toString() {
@@ -645,9 +684,9 @@ class ChatViewArguments {
   }
 }
 
-extension NavigatorStateExtension on _i24.NavigationService {
+extension NavigatorStateExtension on _i25.NavigationService {
   Future<dynamic> navigateToStartupView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -665,7 +704,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToOnboardingView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -683,7 +722,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToLoginView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -701,7 +740,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToRegisterView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -719,8 +758,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToProfilCreationView({
-    _i18.Key? key,
-    _i19.AlternantProfile? profile,
+    _i19.Key? key,
+    _i20.AlternantProfile? profile,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -738,7 +777,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToMainView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -756,7 +795,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToMonCalendrierView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -774,8 +813,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToCompatibiliteView({
-    _i18.Key? key,
-    required _i20.MatchingSuggestion suggestion,
+    _i19.Key? key,
+    required _i21.MatchingSuggestion suggestion,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -793,8 +832,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToAjouterLogementView({
-    _i18.Key? key,
-    _i21.Logement? logement,
+    _i19.Key? key,
+    _i22.Logement? logement,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -812,8 +851,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToLogementDetailView({
-    _i18.Key? key,
-    required _i21.Logement logement,
+    _i19.Key? key,
+    required _i22.Logement logement,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -831,8 +870,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToAccordDetailView({
-    _i18.Key? key,
-    required _i22.Accord accord,
+    _i19.Key? key,
+    required _i23.Accord accord,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -850,7 +889,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToNotificationsView({
-    _i18.Key? key,
+    _i19.Key? key,
     bool standalone = false,
     int? routerId,
     bool preventDuplicates = true,
@@ -869,7 +908,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToRechercheView({
-    _i18.Key? key,
+    _i19.Key? key,
     bool standalone = false,
     void Function()? onSeeMatches,
     int? routerId,
@@ -893,7 +932,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToMesLogementsView({
-    _i18.Key? key,
+    _i19.Key? key,
     bool standalone = false,
     int? routerId,
     bool preventDuplicates = true,
@@ -911,9 +950,28 @@ extension NavigatorStateExtension on _i24.NavigationService {
     );
   }
 
+  Future<dynamic> navigateToMesAccordsView({
+    _i19.Key? key,
+    bool standalone = false,
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  }) async {
+    return navigateTo<dynamic>(
+      Routes.mesAccordsView,
+      arguments: MesAccordsViewArguments(key: key, standalone: standalone),
+      id: routerId,
+      preventDuplicates: preventDuplicates,
+      parameters: parameters,
+      transition: transition,
+    );
+  }
+
   Future<dynamic> navigateToAvisView({
-    _i18.Key? key,
-    required _i22.Accord accord,
+    _i19.Key? key,
+    required _i23.Accord accord,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -931,8 +989,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> navigateToChatView({
-    _i18.Key? key,
-    required _i23.ConversationSummary conversation,
+    _i19.Key? key,
+    required _i24.ConversationSummary conversation,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -950,7 +1008,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithStartupView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -968,7 +1026,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithOnboardingView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -986,7 +1044,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithLoginView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1004,7 +1062,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithRegisterView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1022,8 +1080,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithProfilCreationView({
-    _i18.Key? key,
-    _i19.AlternantProfile? profile,
+    _i19.Key? key,
+    _i20.AlternantProfile? profile,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1041,7 +1099,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithMainView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1059,7 +1117,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithMonCalendrierView({
-    _i18.Key? key,
+    _i19.Key? key,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1077,8 +1135,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithCompatibiliteView({
-    _i18.Key? key,
-    required _i20.MatchingSuggestion suggestion,
+    _i19.Key? key,
+    required _i21.MatchingSuggestion suggestion,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1096,8 +1154,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithAjouterLogementView({
-    _i18.Key? key,
-    _i21.Logement? logement,
+    _i19.Key? key,
+    _i22.Logement? logement,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1115,8 +1173,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithLogementDetailView({
-    _i18.Key? key,
-    required _i21.Logement logement,
+    _i19.Key? key,
+    required _i22.Logement logement,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1134,8 +1192,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithAccordDetailView({
-    _i18.Key? key,
-    required _i22.Accord accord,
+    _i19.Key? key,
+    required _i23.Accord accord,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1153,7 +1211,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithNotificationsView({
-    _i18.Key? key,
+    _i19.Key? key,
     bool standalone = false,
     int? routerId,
     bool preventDuplicates = true,
@@ -1172,7 +1230,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithRechercheView({
-    _i18.Key? key,
+    _i19.Key? key,
     bool standalone = false,
     void Function()? onSeeMatches,
     int? routerId,
@@ -1196,7 +1254,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithMesLogementsView({
-    _i18.Key? key,
+    _i19.Key? key,
     bool standalone = false,
     int? routerId,
     bool preventDuplicates = true,
@@ -1214,9 +1272,28 @@ extension NavigatorStateExtension on _i24.NavigationService {
     );
   }
 
+  Future<dynamic> replaceWithMesAccordsView({
+    _i19.Key? key,
+    bool standalone = false,
+    int? routerId,
+    bool preventDuplicates = true,
+    Map<String, String>? parameters,
+    Widget Function(BuildContext, Animation<double>, Animation<double>, Widget)?
+    transition,
+  }) async {
+    return replaceWith<dynamic>(
+      Routes.mesAccordsView,
+      arguments: MesAccordsViewArguments(key: key, standalone: standalone),
+      id: routerId,
+      preventDuplicates: preventDuplicates,
+      parameters: parameters,
+      transition: transition,
+    );
+  }
+
   Future<dynamic> replaceWithAvisView({
-    _i18.Key? key,
-    required _i22.Accord accord,
+    _i19.Key? key,
+    required _i23.Accord accord,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1234,8 +1311,8 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }
 
   Future<dynamic> replaceWithChatView({
-    _i18.Key? key,
-    required _i23.ConversationSummary conversation,
+    _i19.Key? key,
+    required _i24.ConversationSummary conversation,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,

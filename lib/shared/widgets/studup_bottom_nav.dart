@@ -27,7 +27,10 @@ List<NavTab> navTabsForRole(UserRole role) {
       return const [
         NavTab(label: 'Accueil', icon: Icons.home_outlined),
         NavTab(label: 'Recherche', icon: Icons.search),
-        NavTab(label: 'Accords', icon: Icons.description_outlined),
+        // APP-117 : le suivi des candidatures remplace les accords, qui
+        // restaient vides pour un étudiant (aucun parcours n'en crée).
+        // « Mes accords » reste accessible depuis le Profil.
+        NavTab(label: 'Candidatures', icon: Icons.fact_check_outlined),
         NavTab(label: 'Messages', icon: Icons.chat_bubble_outline),
         NavTab(label: 'Profil', icon: Icons.person_outline),
       ];

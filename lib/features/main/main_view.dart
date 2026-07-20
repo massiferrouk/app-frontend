@@ -4,7 +4,7 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/widgets/studup_bottom_nav.dart';
-import '../accords/mes_accords_view.dart';
+import '../candidatures/mes_candidatures_view.dart';
 import '../dashboard/home_alternant_view.dart';
 import '../dashboard/home_etudiant_view.dart';
 import '../dashboard/home_proprio_view.dart';
@@ -75,7 +75,9 @@ class MainView extends StackedView<MainViewModel> {
             onAccords: () => viewModel.setIndex(2),
           ),
           _rechercheTab(viewModel),
-          const MesAccordsView(),
+          // APP-117 : suivi des candidatures (l'onglet Accords était toujours
+          // vide côté étudiant). onSearch renvoie sur l'onglet Recherche.
+          MesCandidaturesView(onSearch: () => viewModel.setIndex(1)),
           _conversationsTab(viewModel),
           const ProfilView(),
         ];

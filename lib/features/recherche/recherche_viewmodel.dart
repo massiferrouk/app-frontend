@@ -37,9 +37,26 @@ class RechercheViewModel extends BaseViewModel {
   bool meubleUniquement = false;
   LogementType? type;
 
+  // ─── Tri (APP-117) ────────────────────────────────────────────
+  // Le backend supportait déjà tri=prix_asc|prix_desc|surface_desc, mais le
+  // front ne l'exposait pas. C'est ce qui distingue vraiment la Recherche de
+  // l'aperçu de l'accueil. 'pertinence' tombe sur le tri par défaut du back.
+  static const trisDisponibles = {
+    'pertinence': 'Pertinence',
+    'prix_asc': 'Prix croissant',
+    'prix_desc': 'Prix décroissant',
+    'surface_desc': 'Surface',
+  };
+  String tri = 'pertinence';
+
+  String get triLabel => trisDisponibles[tri] ?? 'Pertinence';
+
   // ─── Résultats + pagination ───────────────────────────────────
   List<Logement> resultats = [];
   bool hasNext = false;
+
+  /// Nombre TOTAL de résultats (toutes pages) — pour l'en-tête « X logements ».
+  int totalResultats = 0;
   int _page = 0;
   bool _loadingMore = false;
   String? errorMessage;
@@ -63,6 +80,7 @@ class RechercheViewModel extends BaseViewModel {
       final result = await _runSearch(0);
       resultats = result.logements;
       hasNext = result.hasNext;
+      totalResultats = result.total;
       errorMessage = null;
     } on ApiException catch (e) {
       errorMessage = e.message;
@@ -119,14 +137,44 @@ class RechercheViewModel extends BaseViewModel {
     }
   }
 
-  Future<({List<Logement> logements, bool hasNext})> _runSearch(int page) =>
+  Future<({List<Logement> logements, bool hasNext, int total})> _runSearch(
+          int page) =>
       _logements.search(
         ville: villeController.text.trim(),
         loyerMax: loyerMax,
         meuble: meubleUniquement ? true : null,
         type: type,
+        tri: tri,
         page: page,
       );
+
+  /// Libellé de l'en-tête de résultats : « 12 logements » / « 12 logements à Paris ».
+  String get resultatsLabel {
+    if (totalResultats == 0) return '';
+    final mot = totalResultats > 1 ? 'logements' : 'logement';
+    final ville = villeController.text.trim();
+    return ville.isEmpty
+        ? '$totalResultats $mot'
+        : '$totalResultats $mot à $ville';
+  }
+
+  /// true si au moins un critère est actif → on propose « Réinitialiser ».
+  bool get hasFiltresActifs =>
+      loyerMax != null ||
+      meubleUniquement ||
+      type != null ||
+      tri != 'pertinence' ||
+      villeController.text.trim().isNotEmpty;
+
+  /// Remet la recherche à zéro (tous critères + tri) et relance.
+  void resetFiltres() {
+    villeController.clear();
+    loyerMax = null;
+    meubleUniquement = false;
+    type = null;
+    tri = 'pertinence';
+    search();
+  }
 
   // ─── Setters de filtres — chaque changement relance la recherche ──
 
@@ -142,6 +190,11 @@ class RechercheViewModel extends BaseViewModel {
 
   void setType(LogementType? value) {
     type = (type == value) ? null : value;
+    search();
+  }
+
+  void setTri(String value) {
+    tri = value;
     search();
   }
 

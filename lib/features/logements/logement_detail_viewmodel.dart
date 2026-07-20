@@ -4,6 +4,7 @@ import 'package:stacked_services/stacked_services.dart';
 import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
+import '../../services/candidature_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/matching_service.dart';
 import '../../services/profile_service.dart';
@@ -21,6 +22,7 @@ class LogementDetailViewModel extends BaseViewModel {
   final LogementService _logements;
   final MatchingService _matching;
   final ProfileService _profile;
+  final CandidatureService _candidatures;
   final NavigationService _nav;
 
   /// Logement affiché. Reçu en argument (souvent sans photos car la recherche
@@ -33,10 +35,12 @@ class LogementDetailViewModel extends BaseViewModel {
       LogementService? logementService,
       MatchingService? matchingService,
       ProfileService? profileService,
+      CandidatureService? candidatureService,
       NavigationService? navigationService})
       : _logements = logementService ?? locator<LogementService>(),
         _matching = matchingService ?? locator<MatchingService>(),
         _profile = profileService ?? locator<ProfileService>(),
+        _candidatures = candidatureService ?? locator<CandidatureService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
   List<Disponibilite> disponibilites = [];
@@ -51,8 +55,37 @@ class LogementDetailViewModel extends BaseViewModel {
   bool get canContact =>
       currentUserId != null && currentUserId != logement.ownerId;
 
+  /// true si l'annonce est déjà dans mes candidatures (APP-117)
+  bool isSuivi = false;
+
+  /// Ajoute l'annonce au suivi sans contacter (bouton « Suivre »).
+  /// Retourne null si OK, le message d'erreur sinon.
+  Future<String?> suivre() async {
+    try {
+      await _candidatures.suivre(logementId: logement.id);
+      isSuivi = true;
+      notifyListeners();
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
+
   /// Ouvre le chat avec le propriétaire (nouvelle conversation au 1er message).
-  void contacter() {
+  ///
+  /// APP-117 : contacter, c'est postuler. On enregistre donc l'annonce dans le
+  /// suivi en statut « Contacté » — c'est précisément ce qui évite le « j'ai
+  /// déjà postulé à celle-là ou pas ? ». L'échec est silencieux : le suivi ne
+  /// doit jamais empêcher d'ouvrir la conversation.
+  Future<void> contacter() async {
+    try {
+      await _candidatures.suivre(
+          logementId: logement.id, statut: CandidatureStatut.CONTACTE);
+      isSuivi = true;
+      notifyListeners();
+    } on ApiException {
+      // silencieux
+    }
     _nav.navigateTo(
       Routes.chatView,
       arguments: ChatViewArguments(
@@ -88,6 +121,13 @@ class LogementDetailViewModel extends BaseViewModel {
       reputation = await _logements.getReputation(logement.ownerId);
     } on ApiException {
       // Non bloquant : la carte propriétaire s'affiche sans score
+    }
+    // Déjà suivie ? Sert à afficher « Suivie ✓ » plutôt que « Suivre » (APP-117)
+    try {
+      final mes = await _candidatures.getMesCandidatures();
+      isSuivi = mes.any((c) => c.logement.id == logement.id);
+    } on ApiException {
+      // Non bloquant : le bouton restera sur « Suivre »
     }
     await _loadMatchAnnonceur();
     setBusy(false);

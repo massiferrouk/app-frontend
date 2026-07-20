@@ -48,6 +48,52 @@ class ProfilViewModel extends BaseViewModel {
 
   bool get isAlternant => user?.role == UserRole.ALTERNANT;
 
+  /// APP-117 : le changement de mode ne concerne que les comptes étudiant et
+  /// alternant (deux situations d'une même personne). Un propriétaire (bailleur)
+  /// ou un admin ne voit pas cette option.
+  bool get canChangeMode =>
+      user?.role == UserRole.ETUDIANT || user?.role == UserRole.ALTERNANT;
+
+  /// Le mode « opposé » vers lequel on peut basculer, null si non applicable.
+  UserRole? get otherStudentMode => switch (user?.role) {
+        UserRole.ETUDIANT => UserRole.ALTERNANT,
+        UserRole.ALTERNANT => UserRole.ETUDIANT,
+        _ => null,
+      };
+
+  /// Change le mode du compte (APP-117), puis rafraîchit la session pour que le
+  /// nouveau rôle soit dans le token (→ le menu du bas se met à jour).
+  /// - Devient alternant SANS profil d'alternance → direction le formulaire.
+  /// - Sinon → on relance l'app sur le menu, qui relit le rôle à jour.
+  Future<void> changeMode(UserRole newRole) async {
+    setBusy(true);
+    try {
+      await _profile.changeMode(newRole);
+      await _auth.refreshSession();
+    } on ApiException catch (e) {
+      errorMessage = e.message;
+      setBusy(false);
+      notifyListeners();
+      return;
+    }
+
+    // On vérifie en base (pas via le champ potentiellement périmé) s'il a déjà
+    // un profil d'alternance — il a pu être alternant, repasser étudiant, revenir.
+    if (newRole == UserRole.ALTERNANT) {
+      AlternantProfile? existing;
+      try {
+        existing = await _profile.getMyAlternantProfile();
+      } on ApiException {/* réseau : on tente quand même la création */}
+      if (existing == null) {
+        setBusy(false);
+        await _nav.navigateTo(Routes.profilCreationView);
+        return;
+      }
+    }
+
+    await _nav.clearStackAndShow(Routes.mainView);
+  }
+
   Future<void> load() async {
     setBusy(true);
     try {
@@ -80,6 +126,14 @@ class ProfilViewModel extends BaseViewModel {
   }
 
   void goToCalendrier() => _nav.navigateTo(Routes.monCalendrierView);
+
+  /// Mes accords formels (APP-117) : ils n'ont plus d'onglet dédié — les
+  /// accords sont devenus rares (décision « messagerie-first »), on y accède
+  /// donc depuis le Profil.
+  void goToMesAccords() => _nav.navigateTo(
+        Routes.mesAccordsView,
+        arguments: const MesAccordsViewArguments(standalone: true),
+      );
 
   /// Ouvre le formulaire en mode édition, pré-rempli avec le profil actuel.
   /// Au retour d'une modification, on recharge (calendrier/matchs recalculés).

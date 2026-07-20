@@ -115,6 +115,30 @@ enum AccordStatut {
       };
 }
 
+// ─── Candidatures (APP-117) ─────────────────────────────────────
+
+/// Étapes du suivi d'une annonce. Statuts pilotés par l'utilisateur.
+enum CandidatureStatut {
+  A_CONTACTER,
+  CONTACTE,
+  VISITE_PREVUE,
+  VISITEE,
+  SANS_SUITE,
+  ACCEPTEE;
+
+  static CandidatureStatut fromJson(String value) => values.byName(value);
+  String toJson() => name;
+
+  String get label => switch (this) {
+        A_CONTACTER => 'À contacter',
+        CONTACTE => 'Contacté',
+        VISITE_PREVUE => 'Visite prévue',
+        VISITEE => 'Visité',
+        SANS_SUITE => 'Sans suite',
+        ACCEPTEE => 'Acceptée',
+      };
+}
+
 // ─── Logements ──────────────────────────────────────────────────
 
 enum LogementType {

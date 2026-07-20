@@ -48,12 +48,27 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
             children: [
               const _Legende(),
               const SizedBox(height: AppSpacing.sm),
-              ElevatedButton.icon(
+              // Action PRINCIPALE : la messagerie. Décision produit
+              // « messagerie-first » : l'app informe, tout se règle ensuite
+              // entre les deux personnes dans le chat. L'accord n'est plus le
+              // passage obligé.
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: viewModel.isBusy ? null : viewModel.contacter,
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Contacter'),
+                ),
+              ),
+              // Action SECONDAIRE, optionnelle et volontairement discrète :
+              // formaliser l'échange/coloc. Elle sert surtout à débloquer les
+              // avis + le calcul des économies pour ceux qui concluent vraiment.
+              TextButton.icon(
                 onPressed: viewModel.isBusy
                     ? null
                     : () => _showProposerSheet(context, viewModel),
-                icon: const Icon(Icons.handshake_outlined),
-                label: Text('Proposer un ${s.typePropose.label.toLowerCase()}'),
+                icon: const Icon(Icons.handshake_outlined, size: 18),
+                label: Text('Formaliser un ${s.typePropose.label.toLowerCase()}'),
               ),
             ],
           ),

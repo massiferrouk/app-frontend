@@ -33,12 +33,18 @@ class HomeEtudiantViewModel extends BaseViewModel {
   String? errorMessage;
   int unreadCount = 0;
 
+  /// Compte « neuf/inactif » : aucun accord en cours → on affiche le bloc
+  /// « Bien démarrer » pour guider l'étudiant plutôt que de laisser du vide
+  /// (APP-117 — équivalent des « premières étapes » de l'accueil alternant).
+  bool get isNouveau => accordsEnCours.isEmpty;
+
   Future<void> load() async {
     setBusy(true);
     try {
-      // Les derniers logements publiés, sans filtre (page 0)
+      // Aperçu : seulement les 3 dernières annonces publiées (page 0).
+      // La liste complète + filtres + tri, c'est l'écran Recherche (APP-117).
       final result = await _logements.search();
-      vedettes = result.logements.take(5).toList();
+      vedettes = result.logements.take(3).toList();
       errorMessage = null;
     } on ApiException catch (e) {
       errorMessage = e.message;
