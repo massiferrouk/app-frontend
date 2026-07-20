@@ -3,22 +3,36 @@ import 'package:stacked/stacked.dart';
 import '../../app/app.locator.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/dashboard_service.dart';
+import '../../services/logement_service.dart';
+import '../../shared/models/logement.dart';
 import '../../shared/models/proprietaire_dashboard.dart';
 
 /// Logique du dashboard propriétaire.
 class HomeProprioViewModel extends BaseViewModel {
   final DashboardService _dashboard;
+  final LogementService _logements;
 
-  HomeProprioViewModel({DashboardService? dashboardService})
-      : _dashboard = dashboardService ?? locator<DashboardService>();
+  HomeProprioViewModel({
+    DashboardService? dashboardService,
+    LogementService? logementService,
+  })  : _dashboard = dashboardService ?? locator<DashboardService>(),
+        _logements = logementService ?? locator<LogementService>();
 
   ProprietaireDashboard? dashboard;
+
+  /// Logements complets (avec photos) pour l'aperçu visuel de l'accueil.
+  /// Le dashboard ne renvoie que des résumés sans image : on charge donc
+  /// la liste complète, comme l'écran « Mes logements », pour afficher de
+  /// vraies cartes-annonces au lieu de lignes de texte (même traitement
+  /// que l'accueil étudiant).
+  List<Logement> logements = [];
   String? errorMessage;
 
   Future<void> load() async {
     setBusy(true);
     try {
       dashboard = await _dashboard.getProprietaireDashboard();
+      logements = await _logements.getMesLogements();
       errorMessage = null;
     } on ApiException catch (e) {
       errorMessage = e.message;

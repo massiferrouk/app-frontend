@@ -223,49 +223,37 @@ class _LogementCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              // Vignette photo ou placeholder
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceDark,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: logement.photoUrls.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(logement.photoUrls.first,
-                            fit: BoxFit.cover,
-                            semanticLabel:
-                                'Photo du logement à ${logement.ville}'),
-                      )
-                    : const Icon(Icons.apartment,
-                        color: AppColors.textTertiary),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        '${logement.type.label} · ${logement.surface.toStringAsFixed(0)} m²',
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600)),
-                    Text('${logement.ville} — ${logement.adresse}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall),
-                    Text(
-                        '${logement.loyer.toStringAsFixed(0)} € / mois',
-                        style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ],
+          // ─── Grande photo 16:9 en tête ────────────────────
+          // Remplace l'ancienne vignette 56×56 : l'annonce devient visuelle,
+          // cohérente avec l'accueil et l'écran Recherche.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: logement.photoUrls.isNotEmpty
+                  ? Image.network(logement.photoUrls.first,
+                      fit: BoxFit.cover,
+                      semanticLabel:
+                          'Photo du logement à ${logement.ville}',
+                      errorBuilder: (_, _, _) => const _PhotoFallback())
+                  : const _PhotoFallback(),
+            ),
           ),
+          const SizedBox(height: AppSpacing.md),
+
+          // ─── Infos (prix mis en avant) ────────────────────
+          Text('${logement.loyer.toStringAsFixed(0)} € / mois',
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(
+              '${logement.type.label} · '
+              '${logement.surface.toStringAsFixed(0)} m² · ${logement.ville}',
+              style: Theme.of(context).textTheme.bodySmall),
+          Text(logement.adresse,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: AppSpacing.sm),
 
           // ─── Badges statut + ville associée ───────────────
@@ -371,6 +359,21 @@ class _LogementCard extends StatelessWidget {
       ),
     );
     if (ville != null) onAssocier(ville);
+  }
+}
+
+/// Visuel de repli quand l'annonce n'a pas de photo (ou qu'elle ne charge pas).
+class _PhotoFallback extends StatelessWidget {
+  const _PhotoFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surfaceDark,
+      alignment: Alignment.center,
+      child:
+          const Icon(Icons.apartment, size: 32, color: AppColors.textTertiary),
+    );
   }
 }
 

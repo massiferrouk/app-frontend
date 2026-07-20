@@ -4,6 +4,7 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/profil/profil_viewmodel.dart';
 import 'package:studup_app/services/auth_service.dart';
+import 'package:studup_app/services/candidature_service.dart';
 import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/services/profile_service.dart';
@@ -23,6 +24,8 @@ class MockAuthService extends Mock implements AuthService {}
 
 class MockChatSocketService extends Mock implements ChatSocketService {}
 
+class MockCandidatureService extends Mock implements CandidatureService {}
+
 class MockNavigationService extends Mock implements NavigationService {}
 
 void main() {
@@ -31,6 +34,7 @@ void main() {
   late MockReviewService reviewService;
   late MockAuthService authService;
   late MockChatSocketService socketService;
+  late MockCandidatureService candidatureService;
   late MockNavigationService nav;
   late ProfilViewModel viewModel;
 
@@ -62,14 +66,19 @@ void main() {
     reviewService = MockReviewService();
     authService = MockAuthService();
     socketService = MockChatSocketService();
+    candidatureService = MockCandidatureService();
     nav = MockNavigationService();
     // Défaut : pas de profil alternant chargé (surchargé au besoin)
     when(() => profileService.getMyAlternantProfile())
         .thenAnswer((_) async => null);
+    // Défaut : aucune candidature (enrichissement non bloquant du profil)
+    when(() => candidatureService.getMesCandidatures())
+        .thenAnswer((_) async => []);
     viewModel = ProfilViewModel(
       profileService: profileService,
       logementService: logementService,
       reviewService: reviewService,
+      candidatureService: candidatureService,
       authService: authService,
       chatSocketService: socketService,
       navigationService: nav,

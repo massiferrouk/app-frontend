@@ -58,6 +58,13 @@ class LogementDetailViewModel extends BaseViewModel {
   /// true si l'annonce est déjà dans mes candidatures (APP-117)
   bool isSuivi = false;
 
+  /// Ouvre l'écran « Mes candidatures » (depuis le bouton « Dans mes
+  /// candidatures ») pour que l'utilisateur retrouve l'annonce sans la chercher.
+  void voirMesCandidatures() => _nav.navigateTo(
+        Routes.mesCandidaturesView,
+        arguments: const MesCandidaturesViewArguments(standalone: true),
+      );
+
   /// Ajoute l'annonce au suivi sans contacter (bouton « Suivre »).
   /// Retourne null si OK, le message d'erreur sinon.
   Future<String?> suivre() async {

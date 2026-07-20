@@ -26,7 +26,15 @@ class RegisterViewModel extends BaseViewModel {
   /// Rôle sélectionné — ADMIN volontairement absent des choix
   UserRole selectedRole = UserRole.ALTERNANT;
 
+  /// Affichage en clair du mot de passe (bouton œil)
+  bool passwordVisible = false;
+
   String? errorMessage;
+
+  void togglePasswordVisibility() {
+    passwordVisible = !passwordVisible;
+    notifyListeners();
+  }
 
   /// true après inscription réussie : la View bascule sur le message
   /// "email de confirmation envoyé"

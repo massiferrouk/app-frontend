@@ -4,7 +4,7 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/enums.dart';
-import '../../shared/models/proprietaire_dashboard.dart';
+import '../../shared/widgets/logement_card.dart';
 import 'home_proprio_viewmodel.dart';
 
 /// Dashboard propriétaire — onglet Accueil.
@@ -125,6 +125,9 @@ class HomeProprioView extends StackedView<HomeProprioViewModel> {
         ],
 
         // ─── Logements ──────────────────────────────────────
+        // Aperçu visuel : on ne montre que les 3 premières annonces en
+        // grandes cartes (photo 16:9). La gestion complète est dans l'onglet
+        // Logements, d'où « Gérer » et le tap qui y renvoie.
         Row(
           children: [
             Expanded(
@@ -135,7 +138,8 @@ class HomeProprioView extends StackedView<HomeProprioViewModel> {
                 onPressed: onSeeLogements, child: const Text('Gérer')),
           ],
         ),
-        if (d.logements.isEmpty)
+        const SizedBox(height: AppSpacing.sm),
+        if (viewModel.logements.isEmpty)
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
@@ -150,7 +154,11 @@ class HomeProprioView extends StackedView<HomeProprioViewModel> {
             ),
           )
         else
-          ...d.logements.map((l) => _LogementLine(logement: l)),
+          ...viewModel.logements.take(3).map((l) => LogementCard(
+                logement: l,
+                onTap: () => onSeeLogements?.call(),
+                footer: _StatutFooter(statut: l.statut),
+              )),
       ],
     );
   }
@@ -203,14 +211,17 @@ class _KpiCard extends StatelessWidget {
   }
 }
 
-class _LogementLine extends StatelessWidget {
-  final LogementSummary logement;
+/// Footer de statut affiché en bas de chaque carte-annonce de l'aperçu.
+/// Le statut (ACTIF / BROUILLON / SUSPENDU) est l'info clé pour le
+/// propriétaire ; l'occupation reste portée par les KPIs et les alertes.
+class _StatutFooter extends StatelessWidget {
+  final LogementStatut statut;
 
-  const _LogementLine({required this.logement});
+  const _StatutFooter({required this.statut});
 
   @override
   Widget build(BuildContext context) {
-    final (statutColor, statutBg) = switch (logement.statut) {
+    final (statutColor, statutBg) = switch (statut) {
       LogementStatut.ACTIF => (AppColors.echange, AppColors.echangeLight),
       LogementStatut.SUSPENDU => (
           AppColors.chevauchement,
@@ -219,44 +230,19 @@ class _LogementLine extends StatelessWidget {
       _ => (AppColors.textSecondary, AppColors.surfaceDark),
     };
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${logement.type.label} · ${logement.ville}',
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600)),
-                Text(
-                    '${logement.loyer.toStringAsFixed(0)} € / mois · '
-                    '${logement.isOccupe ? "Occupé" : "Vacant"}',
-                    style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-          ),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: statutBg,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-            ),
-            child: Text(logement.statut.label,
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: statutColor)),
-          ),
-        ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: statutBg,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+        ),
+        child: Text(statut.label,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: statutColor)),
       ),
     );
   }

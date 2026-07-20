@@ -155,15 +155,17 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                     const SizedBox(height: AppSpacing.sm),
                     // Suivi de candidature (APP-117) : repérer une annonce sans
                     // encore contacter. Contacter l'ajoute automatiquement.
+                    // Une fois suivie, le bouton emmène directement au suivi,
+                    // pour que l'utilisateur retrouve l'annonce sans la chercher.
                     OutlinedButton.icon(
                       onPressed: viewModel.isSuivi
-                          ? null
+                          ? viewModel.voirMesCandidatures
                           : () => _suivre(context, viewModel),
                       icon: Icon(viewModel.isSuivi
-                          ? Icons.bookmark_added_outlined
+                          ? Icons.fact_check_outlined
                           : Icons.bookmark_border),
                       label: Text(viewModel.isSuivi
-                          ? 'Dans mes candidatures'
+                          ? 'Voir dans mes candidatures'
                           : 'Suivre cette annonce'),
                     ),
                   ],
@@ -181,7 +183,15 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
     final erreur = await viewModel.suivre();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(erreur ?? 'Ajoutée à tes candidatures')));
+      content: Text(erreur ?? 'Ajoutée à tes candidatures'),
+      // Raccourci direct vers le suivi en cas de succès
+      action: erreur != null
+          ? null
+          : SnackBarAction(
+              label: 'Voir',
+              onPressed: viewModel.voirMesCandidatures,
+            ),
+    ));
   }
 
   @override

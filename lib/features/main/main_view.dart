@@ -77,7 +77,13 @@ class MainView extends StackedView<MainViewModel> {
           _rechercheTab(viewModel),
           // APP-117 : suivi des candidatures (l'onglet Accords était toujours
           // vide côté étudiant). onSearch renvoie sur l'onglet Recherche.
-          MesCandidaturesView(onSearch: () => viewModel.setIndex(1)),
+          // La clé change à chaque ouverture de l'onglet → rechargement, sinon
+          // une candidature créée depuis une annonce n'apparaîtrait jamais
+          // (les onglets d'un IndexedStack restent montés).
+          MesCandidaturesView(
+            key: ValueKey('candidatures-${viewModel.candidaturesReloadKey}'),
+            onSearch: () => viewModel.setIndex(1),
+          ),
           _conversationsTab(viewModel),
           const ProfilView(),
         ];

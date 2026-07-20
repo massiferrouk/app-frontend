@@ -30,6 +30,14 @@ class LoginViewModel extends BaseViewModel {
   /// Message d'erreur affiché sous le formulaire (null = pas d'erreur)
   String? errorMessage;
 
+  /// Affichage en clair du mot de passe (bouton œil) — même UX que l'inscription
+  bool passwordVisible = false;
+
+  void togglePasswordVisibility() {
+    passwordVisible = !passwordVisible;
+    notifyListeners();
+  }
+
   Future<void> login() async {
     // 1. Validation locale avant tout appel réseau
     errorMessage = Validators.email(emailController.text) ??
