@@ -33,6 +33,20 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
       appBar: AppBar(
         title: const Text('Compatibilité'),
         actions: [
+          // Cycle les 3 vues : liste → annuel → mensuel (expérim. APP-100)
+          IconButton(
+            onPressed: viewModel.cyclerVue,
+            tooltip: switch (viewModel.vue) {
+              VueCompat.liste => 'Vue calendrier annuel',
+              VueCompat.annuel => 'Vue blocs mensuels',
+              VueCompat.mensuel => 'Vue liste',
+            },
+            icon: Icon(switch (viewModel.vue) {
+              VueCompat.liste => Icons.calendar_view_month_outlined,
+              VueCompat.annuel => Icons.calendar_month_outlined,
+              VueCompat.mensuel => Icons.view_list_outlined,
+            }),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.screenPadding),
             child: Center(child: _ScoreRing(percent: s.scorePercent)),
@@ -192,46 +206,73 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
             const SizedBox(height: AppSpacing.xs),
             const Divider(height: 1),
 
-            // ─── Semaines (mois collants, hauteurs fixes) ───────
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenPadding),
-                child: CustomScrollView(
-                  controller: viewModel.scrollController,
-                  slivers: [
-                    const SliverToBoxAdapter(
-                        child: SizedBox(
-                            height: CompatibiliteViewModel.topGap)),
-                    for (final entry in groupes.entries)
-                      SliverMainAxisGroup(
-                        slivers: [
-                          SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _MoisHeaderDelegate(entry.key),
-                          ),
-                          SliverFixedExtentList(
-                            itemExtent: CompatibiliteViewModel.rowExtent,
-                            delegate: SliverChildBuilderDelegate(
-                              (context, i) => _SemaineRow(
-                                semaine: entry.value[i],
-                                courante: viewModel
-                                    .isSemaineCourante(entry.value[i]),
-                                onTap: () => _showDetailSheet(
-                                    context, viewModel, entry.value[i]),
-                              ),
-                              childCount: entry.value.length,
+            // ─── Semaines : liste, calendrier annuel ou mensuel ──
+            if (viewModel.vue == VueCompat.annuel)
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                  child: _CalendrierAnnuel(
+                    groupes: viewModel.semainesParMoisCompletes,
+                    filtre: viewModel.filtre,
+                    isCourante: viewModel.isSemaineCourante,
+                    onTapSemaine: (sem) =>
+                        _showDetailSheet(context, viewModel, sem),
+                  ),
+                ),
+              )
+            else if (viewModel.vue == VueCompat.mensuel)
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                  child: _CalendrierMensuel(
+                    groupes: viewModel.semainesParMoisCompletes,
+                    filtre: viewModel.filtre,
+                    isCourante: viewModel.isSemaineCourante,
+                    onTapSemaine: (sem) =>
+                        _showDetailSheet(context, viewModel, sem),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenPadding),
+                  child: CustomScrollView(
+                    controller: viewModel.scrollController,
+                    slivers: [
+                      const SliverToBoxAdapter(
+                          child: SizedBox(
+                              height: CompatibiliteViewModel.topGap)),
+                      for (final entry in groupes.entries)
+                        SliverMainAxisGroup(
+                          slivers: [
+                            SliverPersistentHeader(
+                              pinned: true,
+                              delegate: _MoisHeaderDelegate(entry.key),
                             ),
-                          ),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(
-                                  height: CompatibiliteViewModel.groupGap)),
-                        ],
-                      ),
-                  ],
+                            SliverFixedExtentList(
+                              itemExtent: CompatibiliteViewModel.rowExtent,
+                              delegate: SliverChildBuilderDelegate(
+                                (context, i) => _SemaineRow(
+                                  semaine: entry.value[i],
+                                  courante: viewModel
+                                      .isSemaineCourante(entry.value[i]),
+                                  onTap: () => _showDetailSheet(
+                                      context, viewModel, entry.value[i]),
+                                ),
+                                childCount: entry.value.length,
+                              ),
+                            ),
+                            const SliverToBoxAdapter(
+                                child: SizedBox(
+                                    height: CompatibiliteViewModel.groupGap)),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -319,6 +360,285 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
           null
         ),
     };
+
+// ─── Vues calendrier alternatives (expérimentation APP-100) ───────
+// Deux affichages en plus de la liste, bascule via l'icône de l'AppBar.
+// Objectif : les tester auprès d'étudiants pour en retenir deux.
+
+/// Vue calendrier annuel (variante A) : un rang par mois, une case
+/// colorée par semaine. Toute l'alternance visible d'un coup — le détail
+/// est au tap, comme la vue liste.
+class _CalendrierAnnuel extends StatelessWidget {
+  final Map<String, List<SemaineCompatibilite>> groupes;
+  final CompatibiliteType? filtre;
+  final bool Function(SemaineCompatibilite) isCourante;
+  final void Function(SemaineCompatibilite) onTapSemaine;
+
+  const _CalendrierAnnuel({
+    required this.groupes,
+    required this.filtre,
+    required this.isCourante,
+    required this.onTapSemaine,
+  });
+
+  /// Couleur pleine d'une case selon le type
+  static Color _couleur(CompatibiliteType type) => switch (type) {
+        CompatibiliteType.ECHANGE => AppColors.echange,
+        CompatibiliteType.COLOCATION => AppColors.colocation,
+        CompatibiliteType.CHEVAUCHEMENT => AppColors.chevauchement,
+        CompatibiliteType.INCOMPATIBLE => AppColors.surfaceDark,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final entry in groupes.entries)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Row(
+              children: [
+                // Label mois abrégé ("Sept. 2026" → "Sept.")
+                SizedBox(
+                  width: 64,
+                  child: Text(
+                    entry.key.split(' ').first,
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary),
+                  ),
+                ),
+                // Une case tappable par semaine du mois
+                Expanded(
+                  child: Row(
+                    children: [
+                      for (final sem in entry.value)
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: _CaseSemaine(
+                              semaine: sem,
+                              couleur: _couleur(sem.type),
+                              courante: isCourante(sem),
+                              estompee:
+                                  filtre != null && sem.type != filtre,
+                              onTap: () => onTapSemaine(sem),
+                            ),
+                          ),
+                        ),
+                      // Complète à 5 cases pour aligner les mois courts
+                      for (var i = entry.value.length; i < 5; i++)
+                        const Expanded(child: SizedBox()),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Case d'une semaine dans le calendrier annuel
+class _CaseSemaine extends StatelessWidget {
+  final SemaineCompatibilite semaine;
+  final Color couleur;
+  final bool courante;
+  final bool estompee;
+  final VoidCallback onTap;
+
+  const _CaseSemaine({
+    required this.semaine,
+    required this.couleur,
+    required this.courante,
+    required this.estompee,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        opacity: estompee ? 0.2 : 1,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: couleur,
+            borderRadius: BorderRadius.circular(6),
+            border: courante
+                ? Border.all(color: AppColors.textPrimary, width: 2)
+                : null,
+          ),
+          // Jour du mois : donne un repère de date sans surcharger
+          child: Text(
+            '${semaine.semaine.day}',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: semaine.type == CompatibiliteType.INCOMPATIBLE
+                  ? AppColors.textTertiary
+                  : AppColors.background,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Vue blocs mensuels (variante B) : une carte par mois, 2 par ligne,
+/// une bande colorée par semaine. Chaque carte affiche le décompte du
+/// mois (« 3 éch · 1 coloc »).
+class _CalendrierMensuel extends StatelessWidget {
+  final Map<String, List<SemaineCompatibilite>> groupes;
+  final CompatibiliteType? filtre;
+  final bool Function(SemaineCompatibilite) isCourante;
+  final void Function(SemaineCompatibilite) onTapSemaine;
+
+  const _CalendrierMensuel({
+    required this.groupes,
+    required this.filtre,
+    required this.isCourante,
+    required this.onTapSemaine,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 2 cartes par ligne, hauteur libre (les mois font 4 ou 5 semaines)
+        final largeurCarte = (constraints.maxWidth - AppSpacing.sm) / 2;
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            for (final entry in groupes.entries)
+              SizedBox(
+                width: largeurCarte,
+                child: _MoisCard(
+                  label: entry.key,
+                  semaines: entry.value,
+                  filtre: filtre,
+                  isCourante: isCourante,
+                  onTapSemaine: onTapSemaine,
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Carte d'un mois : en-tête (nom + décompte) et bandes semaine
+class _MoisCard extends StatelessWidget {
+  final String label;
+  final List<SemaineCompatibilite> semaines;
+  final CompatibiliteType? filtre;
+  final bool Function(SemaineCompatibilite) isCourante;
+  final void Function(SemaineCompatibilite) onTapSemaine;
+
+  const _MoisCard({
+    required this.label,
+    required this.semaines,
+    required this.filtre,
+    required this.isCourante,
+    required this.onTapSemaine,
+  });
+
+  /// Décompte court du mois, ex. « 3 éch · 1 coloc »
+  String get _resume {
+    final ech =
+        semaines.where((s) => s.type == CompatibiliteType.ECHANGE).length;
+    final coloc =
+        semaines.where((s) => s.type == CompatibiliteType.COLOCATION).length;
+    final chev = semaines
+        .where((s) => s.type == CompatibiliteType.CHEVAUCHEMENT)
+        .length;
+    final parts = [
+      if (ech > 0) '$ech éch',
+      if (coloc > 0) '$coloc coloc',
+      if (chev > 0) '$chev à gérer',
+    ];
+    return parts.isEmpty ? '—' : parts.join(' · ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  // « Septembre 2026 » → « Septembre » (l'année est évidente)
+                  label.split(' ').first,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(_resume,
+                  style: const TextStyle(
+                      fontSize: 10, color: AppColors.textSecondary)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          for (final sem in semaines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: GestureDetector(
+                onTap: () => onTapSemaine(sem),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 22,
+                      child: Text('${sem.semaine.day}',
+                          style: const TextStyle(
+                              fontSize: 10, color: AppColors.textTertiary)),
+                    ),
+                    Expanded(
+                      child: AnimatedOpacity(
+                        opacity:
+                            filtre != null && sem.type != filtre ? 0.2 : 1,
+                        duration: const Duration(milliseconds: 150),
+                        child: Container(
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: _CalendrierAnnuel._couleur(sem.type),
+                            borderRadius: BorderRadius.circular(4),
+                            border: isCourante(sem)
+                                ? Border.all(
+                                    color: AppColors.textPrimary, width: 2)
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 // ─── Widgets internes ─────────────────────────────────────────────
 

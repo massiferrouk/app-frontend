@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/calendrier/mon_calendrier_viewmodel.dart';
 import 'package:studup_app/services/calendrier_service.dart';
+import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/mes_semaines.dart';
 
 class MockCalendrierService extends Mock implements CalendrierService {}
@@ -123,7 +124,7 @@ void main() {
             reason: 'conges',
           )).thenAnswer((_) async => semaine);
 
-      final error = await viewModel.override(
+      final error = await viewModel.modifierSemaine(
           semaine: semaine, label: 'B', reason: 'conges');
 
       expect(error, isNull);
@@ -148,10 +149,71 @@ void main() {
         statusCode: 400,
       ));
 
-      final error = await viewModel.override(
+      final error = await viewModel.modifierSemaine(
           semaine: semaine, label: 'B', reason: 'conges');
 
       expect(error, contains('semaine passée'));
+    });
+  });
+
+  group('vues et bandeau (APP-118)', () {
+    // Lundi de la semaine en cours (les semaines backend sont des lundis)
+    DateTime lundiCourant() {
+      final now = DateTime.now();
+      return DateTime(now.year, now.month, now.day - (now.weekday - 1));
+    }
+
+    AlternanceSemaine semaine(String id, DateTime jour, String label) =>
+        AlternanceSemaine(
+            id: id, semaine: jour, label: label, isOverridden: false);
+
+    test('cyclerVue bascule liste ⇄ annuel', () {
+      expect(viewModel.vue, VueCalendrier.liste);
+      viewModel.cyclerVue();
+      expect(viewModel.vue, VueCalendrier.annuel);
+      viewModel.cyclerVue();
+      expect(viewModel.vue, VueCalendrier.liste);
+    });
+
+    test('semaine courante et prochaine repérées', () async {
+      final lundi = lundiCourant();
+      when(() => calendrierService.getMesSemaines()).thenAnswer((_) async =>
+          MesSemaines(
+            profileId: 'p',
+            villeA: 'Paris',
+            villeB: 'Lyon',
+            rythme: RythmeAlternance.SEMAINE_3_1,
+            semaines: [
+              semaine('a', lundi, 'A'),
+              semaine('b', lundi.add(const Duration(days: 7)), 'B'),
+            ],
+          ));
+
+      await viewModel.load();
+
+      expect(viewModel.semaineCourante?.id, 'a');
+      expect(viewModel.semaineProchaine?.id, 'b');
+    });
+
+    test('alternance pas commencée : pas de courante, prochaine à venir',
+        () async {
+      final lundi = lundiCourant();
+      when(() => calendrierService.getMesSemaines()).thenAnswer((_) async =>
+          MesSemaines(
+            profileId: 'p',
+            villeA: 'Paris',
+            villeB: 'Lyon',
+            rythme: RythmeAlternance.SEMAINE_3_1,
+            semaines: [
+              semaine('futur1', lundi.add(const Duration(days: 14)), 'A'),
+              semaine('futur2', lundi.add(const Duration(days: 21)), 'B'),
+            ],
+          ));
+
+      await viewModel.load();
+
+      expect(viewModel.semaineCourante, isNull);
+      expect(viewModel.semaineProchaine?.id, 'futur1');
     });
   });
 }

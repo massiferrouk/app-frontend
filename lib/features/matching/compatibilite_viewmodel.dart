@@ -12,6 +12,10 @@ import '../../shared/models/enums.dart';
 import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/semaine_compatibilite.dart';
 
+/// Les trois vues de l'écran compatibilité (expérimentation APP-100) :
+/// liste détaillée, calendrier annuel (heatmap), blocs mensuels.
+enum VueCompat { liste, annuel, mensuel }
+
 /// Logique du calendrier de compatibilité.
 /// L'affichage n'appelle pas le réseau (données dans la suggestion),
 /// seule la proposition d'accord fait un POST.
@@ -106,6 +110,20 @@ class CompatibiliteViewModel extends BaseViewModel {
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
   ];
 
+  // ─── Bascule liste / calendriers (expérimentation APP-100) ──────
+
+  /// Vue affichée — cycle : liste → annuel (A) → mensuel (B) → liste
+  VueCompat vue = VueCompat.liste;
+
+  void cyclerVue() {
+    vue = switch (vue) {
+      VueCompat.liste => VueCompat.annuel,
+      VueCompat.annuel => VueCompat.mensuel,
+      VueCompat.mensuel => VueCompat.liste,
+    };
+    notifyListeners();
+  }
+
   // ─── Filtre par type (tap sur une tuile stat, APP-100) ──────────
 
   /// Type actuellement filtré — null = tout afficher
@@ -119,11 +137,20 @@ class CompatibiliteViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  /// Semaines groupées par mois, filtre appliqué
-  Map<String, List<SemaineCompatibilite>> get semainesParMois {
+  /// Semaines groupées par mois, filtre appliqué (vue liste)
+  Map<String, List<SemaineCompatibilite>> get semainesParMois =>
+      _grouperParMois(filtrer: true);
+
+  /// Toutes les semaines groupées par mois (vues calendrier : le filtre
+  /// estompe les cases au lieu de les retirer, la grille reste stable)
+  Map<String, List<SemaineCompatibilite>> get semainesParMoisCompletes =>
+      _grouperParMois(filtrer: false);
+
+  Map<String, List<SemaineCompatibilite>> _grouperParMois(
+      {required bool filtrer}) {
     final grouped = <String, List<SemaineCompatibilite>>{};
     for (final s in suggestion.semaines) {
-      if (filtre != null && s.type != filtre) continue;
+      if (filtrer && filtre != null && s.type != filtre) continue;
       final key = '${_mois[s.semaine.month - 1]} ${s.semaine.year}';
       grouped.putIfAbsent(key, () => []).add(s);
     }

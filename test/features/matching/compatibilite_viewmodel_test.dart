@@ -230,6 +230,34 @@ void main() {
             s.semaine == lundi ? isTrue : isFalse);
       }
     });
+
+    test('cyclerVue enchaîne liste → annuel → mensuel → liste (APP-118)', () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
+
+      expect(viewModel.vue, VueCompat.liste);
+      viewModel.cyclerVue();
+      expect(viewModel.vue, VueCompat.annuel);
+      viewModel.cyclerVue();
+      expect(viewModel.vue, VueCompat.mensuel);
+      viewModel.cyclerVue();
+      expect(viewModel.vue, VueCompat.liste);
+    });
+
+    test('semainesParMoisCompletes ignore le filtre (grille stable, APP-118)',
+        () {
+      final viewModel = CompatibiliteViewModel(
+          suggestion: buildSuggestion(), accordService: MockAccordService(), matchingService: MockMatchingService(), navigationService: MockNavigationService());
+
+      // Un filtre actif retire les semaines de la vue liste…
+      viewModel.toggleFiltre(CompatibiliteType.COLOCATION);
+      expect(viewModel.semainesParMois.values.expand((s) => s), hasLength(1));
+
+      // …mais les vues calendrier gardent toutes les semaines (elles les
+      // estompent au lieu de les retirer).
+      expect(viewModel.semainesParMoisCompletes.values.expand((s) => s),
+          hasLength(3));
+    });
   });
 
   group('publierLogement (APP-106)', () {

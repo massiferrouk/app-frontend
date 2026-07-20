@@ -5,6 +5,26 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../models/mes_semaines.dart';
 
+/// Style visuel d'une semaine selon le lieu (label 'A' = école, 'B' = entreprise).
+/// Partagé par la carte, le bandeau et la heatmap du calendrier (APP-118).
+/// L'info n'est jamais portée par la seule couleur (règle OPQUAST) : l'icône
+/// et le libellé [tag] accompagnent toujours la couleur.
+({Color color, Color light, IconData icon, String tag}) styleSemaineLieu(
+        String label) =>
+    label == 'A'
+        ? (
+            color: AppColors.colocation,
+            light: AppColors.colocationLight,
+            icon: Icons.school_outlined,
+            tag: 'École',
+          )
+        : (
+            color: AppColors.echange,
+            light: AppColors.echangeLight,
+            icon: Icons.work_outline,
+            tag: 'Entreprise',
+          );
+
 /// Carte d'une semaine du calendrier personnel.
 /// Anatomie (cf. design validé) : barre colorée gauche (A=foncé, B=gris),
 /// numéro de semaine + dates, ville en gras, badge A/B,
@@ -13,6 +33,9 @@ class SemaineCard extends StatelessWidget {
   final AlternanceSemaine semaine;
   final String ville;
   final bool modifiable;
+
+  /// Semaine en cours → bordure pleine pour la repérer d'un œil (APP-118)
+  final bool courante;
   final VoidCallback? onTap;
 
   const SemaineCard({
@@ -20,13 +43,14 @@ class SemaineCard extends StatelessWidget {
     required this.semaine,
     required this.ville,
     this.modifiable = false,
+    this.courante = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isA = semaine.label == 'A';
-    final barColor = isA ? AppColors.villeA : AppColors.villeB;
+    final style = styleSemaineLieu(semaine.label);
+    final barColor = style.color;
     final finSemaine = semaine.semaine.add(const Duration(days: 6));
     final dates = '${DateFormat('dd/MM').format(semaine.semaine)} — '
         '${DateFormat('dd/MM').format(finSemaine)}';
@@ -39,7 +63,9 @@ class SemaineCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+              color: courante ? AppColors.textPrimary : AppColors.border,
+              width: courante ? 2 : 1),
         ),
         child: IntrinsicHeight(
           child: Row(
@@ -73,6 +99,8 @@ class SemaineCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   ville.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.w700),
                 ),
@@ -101,22 +129,27 @@ class SemaineCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              // Badge A/B
+              // Pastille lieu : icône + « École » / « Entreprise »
+              // (le sens ne dépend jamais de la seule couleur — OPQUAST)
               Container(
                 margin: const EdgeInsets.only(right: AppSpacing.md),
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: barColor,
-                  borderRadius: BorderRadius.circular(6),
+                  color: style.light,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
                 ),
-                child: Text(
-                  semaine.label,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(style.icon, size: 14, color: style.color),
+                    const SizedBox(width: 4),
+                    Text(style.tag,
+                        style: TextStyle(
+                            color: style.color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
+                  ],
                 ),
               ),
             ],
