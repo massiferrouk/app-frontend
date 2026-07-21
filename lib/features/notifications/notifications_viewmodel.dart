@@ -5,32 +5,48 @@ import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/accord_service.dart';
+import '../../services/dashboard_service.dart';
 import '../../services/matching_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/profile_service.dart';
 import '../../shared/models/app_notification.dart';
+import '../../shared/models/enums.dart';
 
 /// Logique de l'écran notifications.
 class NotificationsViewModel extends BaseViewModel {
   final NotificationService _notifications;
   final AccordService _accords;
   final MatchingService _matching;
+  final ProfileService _profile;
+  final DashboardService _dashboard;
   final NavigationService _nav;
 
   NotificationsViewModel(
       {NotificationService? notificationService,
       AccordService? accordService,
       MatchingService? matchingService,
+      ProfileService? profileService,
+      DashboardService? dashboardService,
       NavigationService? navigationService})
       : _notifications =
             notificationService ?? locator<NotificationService>(),
         _accords = accordService ?? locator<AccordService>(),
         _matching = matchingService ?? locator<MatchingService>(),
+        _profile = profileService ?? locator<ProfileService>(),
+        _dashboard = dashboardService ?? locator<DashboardService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
   List<AppNotification> notifications = [];
   String? errorMessage;
 
   int get unreadCount => notifications.where((n) => !n.isRead).length;
+
+  /// Alertes déduites de l'état des annonces du propriétaire (APP-119) :
+  /// brouillons jamais publiés, logements actifs sans locataire.
+  /// Elles étaient déjà calculées sur l'accueil proprio mais n'apparaissaient
+  /// pas dans l'onglet « Alertes », qui restait donc désespérément vide.
+  /// Ce ne sont pas des notifications en base : rien à marquer comme lu.
+  List<String> alertesLogements = [];
 
   Future<void> load() async {
     setBusy(true);
@@ -41,6 +57,38 @@ class NotificationsViewModel extends BaseViewModel {
       errorMessage = e.message;
     } finally {
       setBusy(false);
+    }
+    await _refreshAlertesLogements();
+  }
+
+  /// Réservé au propriétaire — les autres rôles n'ont pas de parc à surveiller.
+  /// Silencieux : ces alertes sont un bonus, jamais un motif d'écran en erreur.
+  Future<void> _refreshAlertesLogements() async {
+    try {
+      if (await _profile.currentRole() != UserRole.PROPRIETAIRE) {
+        alertesLogements = [];
+        return;
+      }
+      final d = await _dashboard.getProprietaireDashboard();
+      final result = <String>[];
+      final brouillons = d.nbLogementsTotaux - d.nbLogementsActifs;
+      if (brouillons > 0) {
+        result.add(brouillons > 1
+            ? '$brouillons logements en brouillon — pense à les publier'
+            : '1 logement en brouillon — pense à le publier');
+      }
+      final vacants = d.logements
+          .where((l) => !l.isOccupe && l.statut.name == 'ACTIF')
+          .length;
+      if (vacants > 0) {
+        result.add(vacants > 1
+            ? '$vacants logements actifs sans locataire'
+            : '1 logement actif sans locataire');
+      }
+      alertesLogements = result;
+      notifyListeners();
+    } on ApiException {
+      // non bloquant : la liste des notifications s'affiche quand même
     }
   }
 

@@ -5,8 +5,12 @@ import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/notifications/notifications_viewmodel.dart';
 import 'package:studup_app/services/accord_service.dart';
+import 'package:studup_app/services/dashboard_service.dart';
 import 'package:studup_app/services/matching_service.dart';
 import 'package:studup_app/services/notification_service.dart';
+import 'package:studup_app/services/profile_service.dart';
+import 'package:studup_app/shared/models/enums.dart';
+import 'package:studup_app/shared/models/proprietaire_dashboard.dart';
 import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/shared/models/app_notification.dart';
 import 'package:studup_app/shared/models/matching_suggestion.dart';
@@ -19,11 +23,17 @@ class MockMatchingService extends Mock implements MatchingService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
+class MockProfileService extends Mock implements ProfileService {}
+
+class MockDashboardService extends Mock implements DashboardService {}
+
 void main() {
   late MockNotificationService service;
   late MockAccordService accords;
   late MockMatchingService matching;
   late MockNavigationService nav;
+  late MockProfileService profile;
+  late MockDashboardService dashboard;
   late NotificationsViewModel viewModel;
 
   AppNotification build(
@@ -76,14 +86,70 @@ void main() {
     accords = MockAccordService();
     matching = MockMatchingService();
     nav = MockNavigationService();
+    profile = MockProfileService();
+    dashboard = MockDashboardService();
+    // Par défaut : pas un propriétaire → aucune alerte sur le parc (APP-119)
+    when(() => profile.currentRole()).thenAnswer((_) async => UserRole.ETUDIANT);
     viewModel = NotificationsViewModel(
       notificationService: service,
       accordService: accords,
       matchingService: matching,
+      profileService: profile,
+      dashboardService: dashboard,
       navigationService: nav,
     );
     // Le tap marque toujours comme lue avant de naviguer
     when(() => service.markAsRead(any())).thenAnswer((_) async {});
+  });
+
+  group('alertes sur le parc du propriétaire (APP-119)', () {
+    ProprietaireDashboard buildDashboard({
+      required int totaux,
+      required int actifs,
+      List<Map<String, dynamic>> logements = const [],
+    }) =>
+        ProprietaireDashboard.fromJson({
+          'nbLogementsTotaux': totaux,
+          'nbLogementsActifs': actifs,
+          'nbLocatairesActifs': 0,
+          'tauxOccupation': 0,
+          'logements': logements,
+        });
+
+    test('propriétaire : brouillons et logements vacants remontés', () async {
+      when(() => service.getNotifications()).thenAnswer((_) async => []);
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.PROPRIETAIRE);
+      when(() => dashboard.getProprietaireDashboard()).thenAnswer((_) async =>
+          buildDashboard(totaux: 3, actifs: 1, logements: [
+            {
+              'id': 'l1',
+              'ville': 'Paris',
+              'adresse': '1 rue Test',
+              'type': 'STUDIO',
+              'statut': 'ACTIF',
+              'loyer': 700,
+              'isOccupe': false,
+            },
+          ]));
+
+      await viewModel.load();
+
+      // 2 brouillons (3 - 1) + 1 logement actif sans locataire
+      expect(viewModel.alertesLogements, hasLength(2));
+      expect(viewModel.alertesLogements.first, contains('brouillon'));
+      expect(viewModel.alertesLogements.last, contains('sans locataire'));
+    });
+
+    test('autre rôle : aucune alerte de parc', () async {
+      when(() => service.getNotifications()).thenAnswer((_) async => []);
+      // currentRole vaut ETUDIANT par défaut (setUp)
+
+      await viewModel.load();
+
+      expect(viewModel.alertesLogements, isEmpty);
+      verifyNever(() => dashboard.getProprietaireDashboard());
+    });
   });
 
   group('load', () {

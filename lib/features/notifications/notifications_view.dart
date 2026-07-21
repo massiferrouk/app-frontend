@@ -45,6 +45,20 @@ class NotificationsView extends StackedView<NotificationsViewModel> {
               ],
             ),
           ),
+          // Alertes sur le parc du propriétaire (APP-119) — pas des
+          // notifications en base : rien à marquer comme lu, c'est un état.
+          if (viewModel.alertesLogements.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+                  AppSpacing.screenPadding, AppSpacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final a in viewModel.alertesLogements)
+                    _AlerteLogement(texte: a),
+                ],
+              ),
+            ),
           Expanded(child: _buildList(context, viewModel)),
         ],
       ),
@@ -131,11 +145,45 @@ class NotificationsView extends StackedView<NotificationsViewModel> {
 
 // ─── Tuile de notification ────────────────────────────────────────
 
+/// Alerte sur le parc du propriétaire (APP-119) — état déduit des annonces,
+/// visuellement distinct des notifications pour qu'on ne les confonde pas.
+class _AlerteLogement extends StatelessWidget {
+  final String texte;
+
+  const _AlerteLogement({required this.texte});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.chevauchementLight,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline,
+              size: 18, color: AppColors.chevauchement),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(texte,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textPrimary)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _NotificationTile extends StatelessWidget {
   final AppNotification notification;
   final VoidCallback onTap;
 
   const _NotificationTile({required this.notification, required this.onTap});
+
 
   /// Icône + couleur par type de notification
   (IconData, Color) get _style => switch (notification.type) {
@@ -174,6 +222,11 @@ class _NotificationTile extends StatelessWidget {
         NotificationType.RAPPEL_DEPART ||
         NotificationType.RAPPEL_ARRIVEE =>
           (Icons.calendar_today_outlined, AppColors.chevauchement),
+        // Un étudiant a mis l'annonce en favori (APP-119)
+        NotificationType.ANNONCE_SUIVIE => (
+            Icons.favorite_outline,
+            AppColors.colocation
+          ),
         NotificationType.SYSTEME => (
             Icons.info_outline,
             AppColors.textSecondary

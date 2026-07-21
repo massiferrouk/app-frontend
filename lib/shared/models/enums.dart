@@ -236,6 +236,8 @@ enum NotificationType {
   DOCUMENT_REFUSE,
   RAPPEL_DEPART,
   RAPPEL_ARRIVEE,
+  // Un étudiant a mis l'annonce en favori (APP-119) — reçu par le propriétaire
+  ANNONCE_SUIVIE,
   SYSTEME;
 
   static NotificationType fromJson(String value) => values.byName(value);
