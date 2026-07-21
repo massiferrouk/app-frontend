@@ -11,7 +11,6 @@ void main() {
           RythmeAlternance.SEMAINE_3_1);
       expect(AccordType.fromJson('COLOCATION_TOURNANTE'),
           AccordType.COLOCATION_TOURNANTE);
-      expect(AccordStatut.fromJson('EN_ATTENTE'), AccordStatut.EN_ATTENTE);
       expect(LogementType.fromJson('T3_PLUS'), LogementType.T3_PLUS);
       expect(LogementStatut.fromJson('BROUILLON'), LogementStatut.BROUILLON);
       expect(CompatibiliteType.fromJson('ECHANGE'), CompatibiliteType.ECHANGE);
@@ -22,7 +21,6 @@ void main() {
     test('toJson restitue la valeur exacte', () {
       expect(UserRole.ALTERNANT.toJson(), 'ALTERNANT');
       expect(RythmeAlternance.SEMAINE_1_1.toJson(), 'SEMAINE_1_1');
-      expect(AccordStatut.EN_COURS.toJson(), 'EN_COURS');
     });
 
     test('fromJson lève une erreur sur une valeur inconnue', () {
@@ -32,7 +30,6 @@ void main() {
     test('les labels français sont définis', () {
       expect(RythmeAlternance.SEMAINE_3_1.label, '3 semaines / 1 semaine');
       expect(AccordType.ECHANGE_TOTAL.label, 'Échange total');
-      expect(AccordStatut.EN_ATTENTE.label, 'En attente');
       expect(LogementType.STUDIO.label, 'Studio');
     });
   });

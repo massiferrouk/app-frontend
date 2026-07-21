@@ -88,17 +88,6 @@ void main() {
       expect(result.first.type, DisponibiliteType.LIBRE);
     });
 
-    test('getReputation parse le score', () async {
-      when(() => api.get<Map<String, dynamic>>('/reputation/user/u1'))
-          .thenAnswer((_) async => {
-                'userId': 'u1',
-                'avgRating': 4.5,
-                'totalReviews': 10,
-              });
-
-      expect((await service.getReputation('u1')).avgRating, 4.5);
-    });
-
     test('autocompleteAddress transmet la requête', () async {
       when(() => api.get<List<dynamic>>('/geocoding/autocomplete',
           queryParameters: any(named: 'queryParameters'))).thenAnswer(

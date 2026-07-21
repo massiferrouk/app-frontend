@@ -3,7 +3,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/dashboard/home_alternant_viewmodel.dart';
-import 'package:studup_app/services/accord_service.dart';
 import 'package:studup_app/services/calendrier_service.dart';
 import 'package:studup_app/services/dashboard_service.dart';
 import 'package:studup_app/services/logement_service.dart';
@@ -14,8 +13,6 @@ import 'package:studup_app/shared/models/logement.dart';
 import 'package:studup_app/shared/models/mes_semaines.dart';
 
 class MockDashboardService extends Mock implements DashboardService {}
-
-class MockAccordService extends Mock implements AccordService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
@@ -48,7 +45,6 @@ void main() {
         .thenAnswer((_) async => const []);
     viewModel = HomeAlternantViewModel(
       dashboardService: dashboardService,
-      accordService: MockAccordService(),
       calendrierService: calendrierService,
       logementService: logementService,
       notificationService: notificationService,
@@ -59,18 +55,6 @@ void main() {
   group('HomeAlternantViewModel.load', () {
     test('charge le dashboard avec succès', () async {
       final dash = AlternantDashboard.fromJson(const {
-        'prochainAccords': [
-          {
-            'id': 'accord-1',
-            'type': 'ECHANGE_TOTAL',
-            'statut': 'EN_COURS',
-            'dateDebut': '2026-07-14',
-            'dateFin': '2026-09-30',
-            'partnerId': 'user-2',
-            'heuresAvantExpiration': null,
-          }
-        ],
-        'accordsEnAttente': [],
         'economiePossibleMax': 2700.50,
         'nbMatchesCompatibles': 3,
       });
@@ -82,7 +66,6 @@ void main() {
       expect(viewModel.dashboard, isNotNull);
       expect(viewModel.dashboard!.economiePossibleMax, 2700.50);
       expect(viewModel.dashboard!.nbMatchesCompatibles, 3);
-      expect(viewModel.dashboard!.prochainAccords, hasLength(1));
       expect(viewModel.errorMessage, isNull);
       expect(viewModel.isBusy, isFalse);
     });
@@ -105,8 +88,6 @@ void main() {
     test('load rafraîchit le compteur de notifications non lues', () async {
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
-                'prochainAccords': [],
-                'accordsEnAttente': [],
                 'economiePossibleMax': 0,
                 'nbMatchesCompatibles': 0,
               }));
@@ -120,8 +101,6 @@ void main() {
         () async {
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
-                'prochainAccords': [],
-                'accordsEnAttente': [],
                 'economiePossibleMax': 0,
                 'nbMatchesCompatibles': 0,
               }));
@@ -152,8 +131,6 @@ void main() {
 
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
-                'prochainAccords': [],
-                'accordsEnAttente': [],
                 'economiePossibleMax': 0,
                 'nbMatchesCompatibles': 0,
               }));
@@ -168,8 +145,6 @@ void main() {
     Future<void> loadWithEmptyDash() async {
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
-                'prochainAccords': [],
-                'accordsEnAttente': [],
                 'economiePossibleMax': 0,
                 'nbMatchesCompatibles': 0,
               }));
@@ -196,8 +171,6 @@ void main() {
       );
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
-                'prochainAccords': [],
-                'accordsEnAttente': [],
                 'economiePossibleMax': 0,
                 'nbMatchesCompatibles': 0,
               }));
@@ -215,28 +188,16 @@ void main() {
       expect(viewModel.estEcole(viewModel.semaineProchaine!), isFalse);
     });
 
-    test('isNouveau : true sans aucun accord', () async {
+    test("isNouveau : true tant qu'aucun match compatible", () async {
       await loadWithEmptyDash();
       expect(viewModel.isNouveau, isTrue);
     });
 
-    test('isNouveau : false dès qu\'un prochain accord existe', () async {
+    test("isNouveau : false dès qu'un match compatible existe", () async {
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
-                'prochainAccords': [
-                  {
-                    'id': 'a',
-                    'type': 'ECHANGE_TOTAL',
-                    'statut': 'EN_COURS',
-                    'dateDebut': '2026-07-14',
-                    'dateFin': '2026-09-30',
-                    'partnerId': 'u2',
-                    'heuresAvantExpiration': null,
-                  }
-                ],
-                'accordsEnAttente': [],
                 'economiePossibleMax': 0,
-                'nbMatchesCompatibles': 0,
+                'nbMatchesCompatibles': 2,
               }));
       await viewModel.load();
       expect(viewModel.isNouveau, isFalse);
@@ -245,8 +206,6 @@ void main() {
     test('hasPublishedLogement : true si un logement est ACTIF', () async {
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
-                'prochainAccords': [],
-                'accordsEnAttente': [],
                 'economiePossibleMax': 0,
                 'nbMatchesCompatibles': 0,
               }));
@@ -288,8 +247,6 @@ void main() {
       );
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
-                'prochainAccords': [],
-                'accordsEnAttente': [],
                 'economiePossibleMax': 0,
                 'nbMatchesCompatibles': 0,
               }));

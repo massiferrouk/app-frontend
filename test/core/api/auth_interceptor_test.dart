@@ -72,7 +72,7 @@ void main() {
 
       // 1. La requête initiale répond 401 (token expiré)
       dioAdapter.onGet(
-        '/accords/mes-accords',
+        '/logements/mes-logements',
         (server) => server.reply(401, {'message': 'Token expiré'}),
       );
 
@@ -88,12 +88,12 @@ void main() {
 
       // 3. Le rejeu de la requête d'origine répond 200
       plainAdapter.onGet(
-        '${ApiConfig.baseUrl}/accords/mes-accords',
-        (server) => server.reply(200, {'accords': []}),
+        '${ApiConfig.baseUrl}/logements/mes-logements',
+        (server) => server.reply(200, {'logements': []}),
         headers: {'Authorization': 'Bearer nouveau-access'},
       );
 
-      final response = await dio.get('/accords/mes-accords');
+      final response = await dio.get('/logements/mes-logements');
 
       // L'appelant reçoit un 200 : le 401 a été absorbé par l'intercepteur
       expect(response.statusCode, 200);
@@ -112,7 +112,7 @@ void main() {
       when(() => tokenStorage.clearTokens()).thenAnswer((_) async {});
 
       dioAdapter.onGet(
-        '/accords/mes-accords',
+        '/logements/mes-logements',
         (server) => server.reply(401, {'message': 'Token expiré'}),
       );
 
@@ -124,7 +124,7 @@ void main() {
       );
 
       await expectLater(
-        dio.get('/accords/mes-accords'),
+        dio.get('/logements/mes-logements'),
         throwsA(isA<DioException>()),
       );
 
@@ -137,12 +137,12 @@ void main() {
       when(() => tokenStorage.getRefreshToken()).thenAnswer((_) async => null);
 
       dioAdapter.onGet(
-        '/accords/mes-accords',
+        '/logements/mes-logements',
         (server) => server.reply(401, {'message': 'Non authentifié'}),
       );
 
       await expectLater(
-        dio.get('/accords/mes-accords'),
+        dio.get('/logements/mes-logements'),
         throwsA(isA<DioException>()),
       );
     });

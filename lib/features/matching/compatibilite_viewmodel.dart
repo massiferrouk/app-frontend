@@ -5,7 +5,6 @@ import 'package:stacked_services/stacked_services.dart';
 import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
-import '../../services/accord_service.dart';
 import '../../services/matching_service.dart';
 import '../../shared/models/conversation_summary.dart';
 import '../../shared/models/enums.dart';
@@ -17,24 +16,20 @@ import '../../shared/models/semaine_compatibilite.dart';
 enum VueCompat { liste, annuel, mensuel }
 
 /// Logique du calendrier de compatibilité.
-/// L'affichage n'appelle pas le réseau (données dans la suggestion),
-/// seule la proposition d'accord fait un POST.
+/// L'affichage n'appelle pas le réseau : tout vient de la suggestion.
 class CompatibiliteViewModel extends BaseViewModel {
   /// Mutable : rafraîchie après publication d'un logement (APP-106) —
   /// le match peut devenir actif et l'économie apparaître.
   MatchingSuggestion suggestion;
 
-  final AccordService _accords;
   final MatchingService _matching;
   final NavigationService _nav;
 
   CompatibiliteViewModel(
       {required this.suggestion,
-      AccordService? accordService,
       MatchingService? matchingService,
       NavigationService? navigationService})
-      : _accords = accordService ?? locator<AccordService>(),
-        _matching = matchingService ?? locator<MatchingService>(),
+      : _matching = matchingService ?? locator<MatchingService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
   /// CTA « Publier mon logement » (APP-106) : ouvre la publication puis
@@ -69,40 +64,6 @@ class CompatibiliteViewModel extends BaseViewModel {
         ),
       ),
     );
-  }
-
-  /// true si le type d'accord est un échange (nécessite les 2 logements).
-  bool get _estEchange =>
-      suggestion.typePropose == AccordType.ECHANGE_TOTAL ||
-      suggestion.typePropose == AccordType.ECHANGE_PARTIEL;
-
-  /// Envoie la demande d'accord au match affiché.
-  /// Le type vient de l'algorithme (typePropose). Aucune date : le backend
-  /// déduit la période commune des deux alternances.
-  /// Retourne null si OK, un message d'erreur sinon.
-  Future<String?> proposerAccord({String? message}) async {
-    // Un échange n'est signable que si les deux logements sont publiés.
-    if (_estEchange &&
-        (suggestion.logementAId == null || suggestion.logementBId == null)) {
-      return 'Match potentiel : vous devez tous les deux avoir publié votre '
-          'logement pour proposer un échange.';
-    }
-
-    setBusy(true);
-    try {
-      await _accords.createAccord(
-        receiverId: suggestion.userId,
-        type: suggestion.typePropose,
-        logementAId: suggestion.logementAId,
-        logementBId: suggestion.logementBId,
-        messageInitial: message,
-      );
-      return null;
-    } on ApiException catch (e) {
-      return e.message;
-    } finally {
-      setBusy(false);
-    }
   }
 
   static const _mois = [
@@ -235,7 +196,7 @@ class CompatibiliteViewModel extends BaseViewModel {
         CompatibiliteType.CHEVAUCHEMENT =>
           'Vous êtes dans la même ville en même temps, mais de façon '
               'ponctuelle. Ni échange ni coloc structurelle cette semaine : '
-              'à vous de vous organiser entre vous si vous signez un accord.',
+              'à vous de vous organiser entre vous.',
         CompatibiliteType.INCOMPATIBLE =>
           'Cette semaine, vos positions ne permettent ni échange ni '
               'colocation. Rien à faire, c\'est juste une semaine neutre.',

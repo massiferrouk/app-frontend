@@ -141,14 +141,6 @@ class ProfilViewModel extends BaseViewModel {
 
   void goToCalendrier() => _nav.navigateTo(Routes.monCalendrierView);
 
-  /// Mes accords formels (APP-117) : ils n'ont plus d'onglet dédié — les
-  /// accords sont devenus rares (décision « messagerie-first »), on y accède
-  /// donc depuis le Profil.
-  void goToMesAccords() => _nav.navigateTo(
-        Routes.mesAccordsView,
-        arguments: const MesAccordsViewArguments(standalone: true),
-      );
-
   /// Mes candidatures (APP-117). L'étudiant a un onglet dédié ; l'alternant,
   /// dont la bottom nav est pleine, y accède ici — il cherche lui aussi une
   /// location classique et crée donc des candidatures.

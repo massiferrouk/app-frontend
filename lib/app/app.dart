@@ -5,9 +5,6 @@ import '../core/api/api_client.dart';
 import '../features/auth/login/login_view.dart';
 import '../features/auth/profil_creation/profil_creation_view.dart';
 import '../features/auth/register/register_view.dart';
-import '../features/accords/accord_detail_view.dart';
-import '../features/accords/mes_accords_view.dart';
-import '../features/avis/avis_view.dart';
 import '../features/calendrier/mon_calendrier_view.dart';
 import '../features/candidatures/mes_candidatures_view.dart';
 import '../features/logements/ajouter_logement_view.dart';
@@ -20,7 +17,6 @@ import '../features/notifications/notifications_view.dart';
 import '../features/onboarding/onboarding_view.dart';
 import '../features/recherche/recherche_view.dart';
 import '../features/startup/startup_view.dart';
-import '../services/accord_service.dart';
 import '../services/auth_service.dart';
 import '../services/calendrier_service.dart';
 import '../services/candidature_service.dart';
@@ -32,7 +28,6 @@ import '../services/message_service.dart';
 import '../services/notification_service.dart';
 import '../services/onboarding_service.dart';
 import '../services/profile_service.dart';
-import '../services/review_service.dart';
 import '../services/token_storage_service.dart';
 
 /// Point de vérité unique de l'application.
@@ -53,13 +48,10 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: CompatibiliteView),
     MaterialRoute(page: AjouterLogementView),
     MaterialRoute(page: LogementDetailView),
-    MaterialRoute(page: AccordDetailView),
     MaterialRoute(page: NotificationsView),
     MaterialRoute(page: RechercheView),
     MaterialRoute(page: MesLogementsView),
-    MaterialRoute(page: MesAccordsView),
     MaterialRoute(page: MesCandidaturesView),
-    MaterialRoute(page: AvisView),
     MaterialRoute(page: ChatView),
     // Les prochains écrans seront ajoutés ici
   ],
@@ -77,10 +69,8 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: CalendrierService),
     LazySingleton(classType: MatchingService),
     LazySingleton(classType: LogementService),
-    LazySingleton(classType: AccordService),
     LazySingleton(classType: CandidatureService),
     LazySingleton(classType: NotificationService),
-    LazySingleton(classType: ReviewService),
     LazySingleton(classType: MessageService),
     LazySingleton(classType: ChatSocketService),
     LazySingleton(classType: OnboardingService),

@@ -4,12 +4,10 @@ import 'package:stacked_services/stacked_services.dart';
 import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
-import '../../services/accord_service.dart';
 import '../../services/calendrier_service.dart';
 import '../../services/dashboard_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/notification_service.dart';
-import '../../shared/models/accord_summary.dart';
 import '../../shared/models/alternant_dashboard.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
@@ -18,7 +16,6 @@ import '../../shared/models/mes_semaines.dart';
 /// Logique du dashboard alternant.
 class HomeAlternantViewModel extends BaseViewModel {
   final DashboardService _dashboard;
-  final AccordService _accords;
   final CalendrierService _calendrier;
   final LogementService _logements;
   final NotificationService _notifications;
@@ -26,13 +23,11 @@ class HomeAlternantViewModel extends BaseViewModel {
 
   HomeAlternantViewModel(
       {DashboardService? dashboardService,
-      AccordService? accordService,
       CalendrierService? calendrierService,
       LogementService? logementService,
       NotificationService? notificationService,
       NavigationService? navigationService})
       : _dashboard = dashboardService ?? locator<DashboardService>(),
-        _accords = accordService ?? locator<AccordService>(),
         _calendrier = calendrierService ?? locator<CalendrierService>(),
         _logements = logementService ?? locator<LogementService>(),
         _notifications = notificationService ?? locator<NotificationService>(),
@@ -51,24 +46,6 @@ class HomeAlternantViewModel extends BaseViewModel {
   int unreadCount = 0;
 
   void goToCalendrier() => _nav.navigateTo(Routes.monCalendrierView);
-
-  /// Ouvre le détail d'un accord (accepter / refuser / consulter).
-  Future<void> goToAccordDetail(AccordSummary summary) async {
-    setBusy(true);
-    try {
-      final accord = await _accords.getAccord(summary.id);
-      errorMessage = null;
-      setBusy(false);
-      await _nav.navigateTo(
-        Routes.accordDetailView,
-        arguments: AccordDetailViewArguments(accord: accord),
-      );
-      await load(); // statut peut avoir changé (accepté / refusé)
-    } on ApiException catch (e) {
-      errorMessage = e.message;
-      setBusy(false);
-    }
-  }
 
   /// Ouvre la gestion des logements (check-list « publie ton logement »),
   /// puis recharge au retour — le statut du logement a pu changer.
@@ -179,13 +156,10 @@ class HomeAlternantViewModel extends BaseViewModel {
 
   // ─── Check-list « premières étapes » (APP-117) ──────────────────
 
-  /// Compte « neuf » : aucune activité d'accord → on guide l'utilisateur
+  /// Compte « neuf » : aucun match compatible → on guide l'utilisateur
   /// avec la check-list plutôt que de lui montrer une carte vide.
   bool get isNouveau =>
-      dashboard != null &&
-      dashboard!.prochainAccords.isEmpty &&
-      dashboard!.accordsEnAttente.isEmpty &&
-      dashboard!.nbMatchesCompatibles == 0;
+      dashboard != null && dashboard!.nbMatchesCompatibles == 0;
 
   /// A-t-il au moins un logement publié (ACTIF) ?
   bool get hasPublishedLogement =>

@@ -62,10 +62,15 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
             children: [
               const _Legende(),
               const SizedBox(height: AppSpacing.sm),
-              // Action PRINCIPALE : la messagerie. Décision produit
-              // « messagerie-first » : l'app informe, tout se règle ensuite
-              // entre les deux personnes dans le chat. L'accord n'est plus le
-              // passage obligé.
+              // Seule action de l'écran : la messagerie. Décision produit
+              // « messagerie-first » assumée jusqu'au bout — l'app informe,
+              // tout se règle ensuite entre les deux personnes dans le chat.
+              //
+              // APP-120 : « Formaliser un échange/une coloc » vivait ici. Le
+              // bouton promettait un contrat et ne créait qu'une ligne de
+              // statut : aucun planning, aucun loyer partagé, aucun logement
+              // engagé. Tout ce qui compte dans un échange se décide dans le
+              // chat, donc l'accord et ses écrans ont été retirés.
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -73,16 +78,6 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                   icon: const Icon(Icons.chat_bubble_outline),
                   label: const Text('Contacter'),
                 ),
-              ),
-              // Action SECONDAIRE, optionnelle et volontairement discrète :
-              // formaliser l'échange/coloc. Elle sert surtout à débloquer les
-              // avis + le calcul des économies pour ceux qui concluent vraiment.
-              TextButton.icon(
-                onPressed: viewModel.isBusy
-                    ? null
-                    : () => _showProposerSheet(context, viewModel),
-                icon: const Icon(Icons.handshake_outlined, size: 18),
-                label: Text('Formaliser un ${s.typePropose.label.toLowerCase()}'),
               ),
             ],
           ),
@@ -194,30 +189,6 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
   /// Bottom sheet de proposition d'accord : message uniquement.
   /// Pas de dates : l'app met en relation, l'organisation est laissée aux
   /// deux utilisateurs (période déduite automatiquement côté backend).
-  Future<void> _showProposerSheet(
-      BuildContext context, CompatibiliteViewModel viewModel) async {
-    final result = await showModalBottomSheet<({String? message})>(
-      context: context,
-      isScrollControlled: true, // laisse la place au clavier
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => _ProposerAccordSheet(
-          typeLabel: viewModel.suggestion.typePropose.label),
-    );
-    if (result == null) return;
-
-    final error = await viewModel.proposerAccord(message: result.message);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(error ??
-            'Demande envoyée ! Elle expire dans 72h sans réponse.'),
-        backgroundColor: error == null ? AppColors.echange : AppColors.error,
-      ));
-    }
-  }
-
   @override
   CompatibiliteViewModel viewModelBuilder(BuildContext context) =>
       CompatibiliteViewModel(suggestion: suggestion);
@@ -1297,67 +1268,3 @@ class _PositionCard extends StatelessWidget {
   }
 }
 
-// ─── Bottom sheet de proposition ──────────────────────────────────
-
-class _ProposerAccordSheet extends StatefulWidget {
-  final String typeLabel;
-
-  const _ProposerAccordSheet({required this.typeLabel});
-
-  @override
-  State<_ProposerAccordSheet> createState() => _ProposerAccordSheetState();
-}
-
-class _ProposerAccordSheetState extends State<_ProposerAccordSheet> {
-  final _messageController = TextEditingController();
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      // Remonte le sheet au-dessus du clavier
-      padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Proposer un ${widget.typeLabel.toLowerCase()}',
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Vous entrez en contact. Vous organisez ensuite les détails '
-              'entre vous — l\'app ne fixe pas les dates.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: _messageController,
-              maxLines: 3,
-              maxLength: 500,
-              decoration: const InputDecoration(
-                  hintText: 'Message (optionnel)', counterText: ''),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, (
-                    message: _messageController.text.trim().isEmpty
-                        ? null
-                        : _messageController.text.trim(),
-                  )),
-              child: const Text('Envoyer la demande'),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ),
-      ),
-    );
-  }
-}

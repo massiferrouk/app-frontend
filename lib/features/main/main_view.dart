@@ -72,7 +72,6 @@ class MainView extends StackedView<MainViewModel> {
           HomeEtudiantView(
             key: _homeKey(viewModel),
             onSearch: () => viewModel.setIndex(1),
-            onAccords: () => viewModel.setIndex(2),
           ),
           _rechercheTab(viewModel),
           // APP-117 : suivi des candidatures (l'onglet Accords était toujours

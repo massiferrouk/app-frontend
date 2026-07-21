@@ -7,7 +7,6 @@ import '../shared/models/address_suggestion.dart';
 import '../shared/models/disponibilite.dart';
 import '../shared/models/enums.dart';
 import '../shared/models/logement.dart';
-import '../shared/models/reputation_score.dart';
 
 /// Service des logements.
 class LogementService {
@@ -73,13 +72,6 @@ class LogementService {
     return data
         .map((e) => Disponibilite.fromJson(e as Map<String, dynamic>))
         .toList();
-  }
-
-  /// GET /reputation/user/{userId} — score de réputation du propriétaire
-  Future<ReputationScore> getReputation(String userId) async {
-    final data =
-        await _api.get<Map<String, dynamic>>('/reputation/user/$userId');
-    return ReputationScore.fromJson(data);
   }
 
   /// GET /geocoding/autocomplete — suggestions d'adresses (Base Adresse
