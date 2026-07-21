@@ -85,6 +85,13 @@ class LogementDetailViewModel extends BaseViewModel {
   /// premier message RÉELLEMENT envoyé qui pose le statut. Au retour du chat,
   /// on rafraîchit donc l'état du suivi.
   Future<void> contacter() async {
+    // APP-120 : si l'annonceur est un alternant avec qui je matche, la
+    // discussion porte sur NOTRE ARRANGEMENT, pas sur cette annonce — son
+    // logement n'en est qu'une pièce. On réutilise donc le fil par personne
+    // du match (logementId null) au lieu d'en ouvrir un second : sinon on se
+    // retrouvait avec deux discussions séparées avec la même personne.
+    final estUnMatch = matchAnnonceur != null;
+
     await _nav.navigateTo(
       Routes.chatView,
       arguments: ChatViewArguments(
@@ -94,14 +101,18 @@ class LogementDetailViewModel extends BaseViewModel {
           partnerName: logement.ownerPrenom ?? 'Le propriétaire',
           lastMessage: '',
           unreadCount: 0,
-          // La discussion porte sur CETTE annonce (APP-119) : un propriétaire
-          // qui publie plusieurs biens a un fil par bien.
-          logementId: logement.id,
-          logementVille: logement.ville,
-          logementType: logement.type,
+          // Un propriétaire qui publie plusieurs biens a un fil par bien
+          // (APP-119) — sauf entre alternants matchés, cf. ci-dessus.
+          logementId: estUnMatch ? null : logement.id,
+          logementVille: estUnMatch ? null : logement.ville,
+          logementType: estUnMatch ? null : logement.type,
         ),
       ),
     );
+
+    // Le suivi ne concerne pas les annonces d'un match (aucune candidature
+    // n'est créée dans ce cas), inutile d'interroger le serveur.
+    if (estUnMatch) return;
 
     // Un message a peut-être été envoyé pendant la discussion : le suivi a
     // alors changé côté serveur, on resynchronise le bouton.

@@ -147,22 +147,30 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                       icon: const Icon(Icons.chat_bubble_outline),
                       label: const Text('Contacter'),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
                     // Suivi de candidature (APP-117) : repérer une annonce sans
                     // encore contacter. Contacter l'ajoute automatiquement.
                     // Une fois suivie, le bouton emmène directement au suivi,
                     // pour que l'utilisateur retrouve l'annonce sans la chercher.
-                    OutlinedButton.icon(
-                      onPressed: viewModel.isSuivi
-                          ? viewModel.voirMesCandidatures
-                          : () => _suivre(context, viewModel),
-                      icon: Icon(viewModel.isSuivi
-                          ? Icons.fact_check_outlined
-                          : Icons.bookmark_border),
-                      label: Text(viewModel.isSuivi
-                          ? 'Voir dans mes candidatures'
-                          : 'Suivre cette annonce'),
-                    ),
+                    //
+                    // APP-120 : masqué si l'annonceur est un alternant avec qui
+                    // je matche. La relation est déjà suivie dans Matches — la
+                    // dupliquer en candidature créerait deux endroits pour la
+                    // même chose, avec des statuts qui divergent. L'accès au
+                    // contexte passe par la carte de compatibilité ci-dessus.
+                    if (viewModel.matchAnnonceur == null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      OutlinedButton.icon(
+                        onPressed: viewModel.isSuivi
+                            ? viewModel.voirMesCandidatures
+                            : () => _suivre(context, viewModel),
+                        icon: Icon(viewModel.isSuivi
+                            ? Icons.fact_check_outlined
+                            : Icons.bookmark_border),
+                        label: Text(viewModel.isSuivi
+                            ? 'Voir dans mes candidatures'
+                            : 'Suivre cette annonce'),
+                      ),
+                    ],
                   ],
                 ],
               ),
