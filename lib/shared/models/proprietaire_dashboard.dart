@@ -37,17 +37,19 @@ class LogementSummary {
 class ProprietaireDashboard {
   final int nbLogementsTotaux;
   final int nbLogementsActifs;
-  final int nbLocatairesActifs;
 
-  /// Pourcentage 0-100
-  final double tauxOccupation;
+  /// KPIs vivants (APP-119) — remplacent « taux d'occupation » et
+  /// « locataires actifs », qui dépendaient d'accords EN_COURS jamais
+  /// atteints et affichaient 0 pour toujours.
+  final int nbEtudiantsInteresses;
+  final int nbConversations;
   final List<LogementSummary> logements;
 
   const ProprietaireDashboard({
     required this.nbLogementsTotaux,
     required this.nbLogementsActifs,
-    required this.nbLocatairesActifs,
-    required this.tauxOccupation,
+    required this.nbEtudiantsInteresses,
+    required this.nbConversations,
     required this.logements,
   });
 
@@ -55,8 +57,9 @@ class ProprietaireDashboard {
     return ProprietaireDashboard(
       nbLogementsTotaux: (json['nbLogementsTotaux'] as num? ?? 0).toInt(),
       nbLogementsActifs: (json['nbLogementsActifs'] as num? ?? 0).toInt(),
-      nbLocatairesActifs: (json['nbLocatairesActifs'] as num? ?? 0).toInt(),
-      tauxOccupation: (json['tauxOccupation'] as num? ?? 0).toDouble(),
+      nbEtudiantsInteresses:
+          (json['nbEtudiantsInteresses'] as num? ?? 0).toInt(),
+      nbConversations: (json['nbConversations'] as num? ?? 0).toInt(),
       logements: (json['logements'] as List? ?? [])
           .map((e) => LogementSummary.fromJson(e as Map<String, dynamic>))
           .toList(),

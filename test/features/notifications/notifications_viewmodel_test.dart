@@ -111,8 +111,8 @@ void main() {
         ProprietaireDashboard.fromJson({
           'nbLogementsTotaux': totaux,
           'nbLogementsActifs': actifs,
-          'nbLocatairesActifs': 0,
-          'tauxOccupation': 0,
+          'nbEtudiantsInteresses': 0,
+          'nbConversations': 0,
           'logements': logements,
         });
 
