@@ -2,18 +2,16 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:stacked/stacked.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
 import '../../shared/models/matching_suggestion.dart';
 import 'logement_detail_viewmodel.dart';
 
 /// Détail d'un logement : carousel photos, caractéristiques,
-/// équipements, propriétaire (réputation), disponibilités.
+/// équipements, propriétaire.
 class LogementDetailView extends StackedView<LogementDetailViewModel> {
   final Logement logement;
 
@@ -77,11 +75,8 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                       _InfoChip(
                           icon: Icons.chair_outlined,
                           label: l.isMeuble ? 'Meublé' : 'Non meublé'),
-                      if (l.isVerified)
-                        const _InfoChip(
-                            icon: Icons.verified_outlined,
-                            label: 'Vérifié',
-                            color: AppColors.echange),
+                      // Chip « Vérifié » retiré (APP-119) : aucun parcours de
+                      // vérification d'annonce dans cette version (V2)
                     ],
                   ),
 
@@ -139,12 +134,10 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                   const SizedBox(height: AppSpacing.sm),
                   _OwnerCard(viewModel: viewModel),
 
-                  // ─── Disponibilités ─────────────────────────
-                  const SizedBox(height: AppSpacing.lg),
-                  Text('Disponibilités (4 prochaines semaines)',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: AppSpacing.sm),
-                  _DisponibilitesSection(viewModel: viewModel),
+                  // Section « Disponibilités » retirée (APP-119) : aucun
+                  // écran ne permet au propriétaire de déclarer ses plages
+                  // (lecture seule côté API), elle affichait donc « Aucune
+                  // plage renseignée » en permanence. Reportée en V2.
 
                   // Contacter le propriétaire (masqué sur son propre logement)
                   if (viewModel.canContact) ...[
@@ -398,12 +391,10 @@ class _FullScreenGallery extends StatelessWidget {
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
 
-  const _InfoChip(
-      {required this.icon,
-      required this.label,
-      this.color = AppColors.textPrimary});
+  const _InfoChip({required this.icon, required this.label});
+
+  static const color = AppColors.textPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -486,8 +477,9 @@ class _OwnerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rep = viewModel.reputation;
-
+    // APP-119 : étoiles, nombre d'avis et badge de réputation retirés —
+    // les avis exigent un accord TERMINE, statut jamais atteint dans cette
+    // version. Fonctionnalité reportée en V2, backend conservé.
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -504,115 +496,11 @@ class _OwnerCard extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: rep == null
-                ? Text('Propriétaire',
-                    style: Theme.of(context).textTheme.bodyMedium)
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          ...List.generate(
-                            5,
-                            (i) => Icon(
-                              i < rep.avgRating.round()
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              size: 16,
-                              color: AppColors.chevauchement,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${rep.avgRating.toStringAsFixed(1)} (${rep.totalReviews} avis)',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.echangeLight,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusChip),
-                        ),
-                        child: Text(rep.badge,
-                            style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.echange)),
-                      ),
-                    ],
-                  ),
+            child: Text(viewModel.logement.ownerPrenom ?? 'Propriétaire',
+                style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DisponibilitesSection extends StatelessWidget {
-  final LogementDetailViewModel viewModel;
-
-  const _DisponibilitesSection({required this.viewModel});
-
-  @override
-  Widget build(BuildContext context) {
-    if (viewModel.isBusy) {
-      return const Center(
-          child: Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
-        child: CircularProgressIndicator(
-            color: AppColors.echange, strokeWidth: 2),
-      ));
-    }
-
-    final dispos = viewModel.prochainesDisponibilites;
-    if (dispos.isEmpty) {
-      return Text('Aucune plage renseignée.',
-          style: Theme.of(context).textTheme.bodySmall);
-    }
-
-    return Column(
-      children: dispos.map((d) {
-        final (color, bg) = switch (d.type) {
-          DisponibiliteType.LIBRE => (
-              AppColors.echange,
-              AppColors.echangeLight
-            ),
-          DisponibiliteType.OCCUPE => (AppColors.error, AppColors.errorLight),
-          DisponibiliteType.BLOQUE => (
-              AppColors.textSecondary,
-              AppColors.surfaceDark
-            ),
-        };
-        return Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: 10),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Text(
-                '${DateFormat('dd/MM').format(d.dateDebut)} → '
-                '${DateFormat('dd/MM').format(d.dateFin)}',
-                style: const TextStyle(fontSize: 13),
-              ),
-              const Spacer(),
-              Text(d.type.label,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: color)),
-            ],
-          ),
-        );
-      }).toList(),
     );
   }
 }

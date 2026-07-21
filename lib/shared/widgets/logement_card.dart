@@ -82,17 +82,13 @@ class LogementCard extends StatelessWidget {
                       '${logement.surface.toStringAsFixed(0)} m² · '
                       '${logement.ville}',
                       style: Theme.of(context).textTheme.bodySmall),
-                  if (logement.isMeuble || logement.isVerified) ...[
+                  // Badge « Vérifié ✓ » retiré (APP-119) : aucun parcours de
+                  // vérification d'annonce dans cette version (reporté en V2)
+                  if (logement.isMeuble) ...[
                     const SizedBox(height: AppSpacing.sm),
-                    Wrap(
+                    const Wrap(
                       spacing: AppSpacing.xs,
-                      children: [
-                        if (logement.isMeuble)
-                          const _MiniBadge(label: 'Meublé'),
-                        if (logement.isVerified)
-                          const _MiniBadge(
-                              label: 'Vérifié ✓', color: AppColors.echange),
-                      ],
+                      children: [_MiniBadge(label: 'Meublé')],
                     ),
                   ],
                   if (footer != null) ...[
@@ -126,9 +122,10 @@ class _PhotoFallback extends StatelessWidget {
 
 class _MiniBadge extends StatelessWidget {
   final String label;
-  final Color color;
 
-  const _MiniBadge({required this.label, this.color = AppColors.textSecondary});
+  const _MiniBadge({required this.label});
+
+  static const _color = AppColors.textSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +136,7 @@ class _MiniBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
         border: Border.all(color: AppColors.border),
       ),
-      child: Text(label, style: TextStyle(fontSize: 10, color: color)),
+      child: Text(label, style: const TextStyle(fontSize: 10, color: _color)),
     );
   }
 }

@@ -9,15 +9,13 @@ import '../../services/logement_service.dart';
 import '../../services/matching_service.dart';
 import '../../services/profile_service.dart';
 import '../../shared/models/conversation_summary.dart';
-import '../../shared/models/disponibilite.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
 import '../../shared/models/matching_suggestion.dart';
-import '../../shared/models/reputation_score.dart';
 
 /// Logique du détail d'un logement.
 /// Le logement arrive en argument de navigation ; les disponibilités
-/// et la réputation du propriétaire se chargent ensuite.
+/// se chargent ensuite.
 class LogementDetailViewModel extends BaseViewModel {
   final LogementService _logements;
   final MatchingService _matching;
@@ -43,8 +41,6 @@ class LogementDetailViewModel extends BaseViewModel {
         _candidatures = candidatureService ?? locator<CandidatureService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
-  List<Disponibilite> disponibilites = [];
-  ReputationScore? reputation;
   String? currentUserId;
 
   /// Si l'annonceur est un alternant compatible avec moi : sa suggestion
@@ -130,16 +126,10 @@ class LogementDetailViewModel extends BaseViewModel {
     } on ApiException {
       // Non bloquant : on garde la version reçue en argument
     }
-    try {
-      disponibilites = await _logements.getDisponibilites(logement.id);
-    } on ApiException {
-      // Non bloquant : la section disponibilités restera vide
-    }
-    try {
-      reputation = await _logements.getReputation(logement.ownerId);
-    } on ApiException {
-      // Non bloquant : la carte propriétaire s'affiche sans score
-    }
+    // APP-119 : les disponibilités ne sont plus chargées — la section a été
+    // retirée (aucun écran ne permet d'en déclarer). Service conservé pour V2.
+    // APP-119 : la réputation du propriétaire n'est plus chargée — les
+    // étoiles et le nombre d'avis ne sont plus affichés (reporté en V2).
     // Déjà suivie ? Sert à afficher « Suivie ✓ » plutôt que « Suivre » (APP-117)
     try {
       final mes = await _candidatures.getMesCandidatures();
@@ -176,13 +166,4 @@ class LogementDetailViewModel extends BaseViewModel {
     );
   }
 
-  /// Disponibilités des 4 prochaines semaines uniquement
-  List<Disponibilite> get prochainesDisponibilites {
-    final now = DateTime.now();
-    final horizon = now.add(const Duration(days: 28));
-    return disponibilites
-        .where((d) =>
-            d.dateFin.isAfter(now) && d.dateDebut.isBefore(horizon))
-        .toList();
-  }
 }

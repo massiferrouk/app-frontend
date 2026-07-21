@@ -9,19 +9,15 @@ import '../../services/candidature_service.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/profile_service.dart';
-import '../../services/review_service.dart';
 import '../../shared/models/alternant_profile.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
-import '../../shared/models/reputation_score.dart';
-import '../../shared/models/review.dart';
 import '../../shared/models/user.dart';
 
 /// Logique de l'écran profil (mon profil).
 class ProfilViewModel extends BaseViewModel {
   final ProfileService _profile;
   final LogementService _logements;
-  final ReviewService _reviews;
   final CandidatureService _candidatures;
   final AuthService _auth;
   final ChatSocketService _socket;
@@ -30,14 +26,12 @@ class ProfilViewModel extends BaseViewModel {
   ProfilViewModel({
     ProfileService? profileService,
     LogementService? logementService,
-    ReviewService? reviewService,
     CandidatureService? candidatureService,
     AuthService? authService,
     ChatSocketService? chatSocketService,
     NavigationService? navigationService,
   })  : _profile = profileService ?? locator<ProfileService>(),
         _logements = logementService ?? locator<LogementService>(),
-        _reviews = reviewService ?? locator<ReviewService>(),
         _candidatures = candidatureService ?? locator<CandidatureService>(),
         _auth = authService ?? locator<AuthService>(),
         _socket = chatSocketService ?? locator<ChatSocketService>(),
@@ -45,8 +39,6 @@ class ProfilViewModel extends BaseViewModel {
 
   User? user;
   AlternantProfile? alternantProfile;
-  ReputationScore? reputation;
-  List<Review> avisRecus = [];
   List<Logement> logements = [];
 
   /// Résumé des candidatures pour la carte du profil (APP-117).
@@ -75,6 +67,10 @@ class ProfilViewModel extends BaseViewModel {
   /// - Devient alternant SANS profil d'alternance → direction le formulaire.
   /// - Sinon → on relance l'app sur le menu, qui relit le rôle à jour.
   Future<void> changeMode(UserRole newRole) async {
+    // Mémorisé AVANT le changement : c'est le rôle à rétablir si
+    // l'utilisateur annule depuis le formulaire (APP-119)
+    final ancienRole = user?.role;
+
     setBusy(true);
     try {
       await _profile.changeMode(newRole);
@@ -95,7 +91,12 @@ class ProfilViewModel extends BaseViewModel {
       } on ApiException {/* réseau : on tente quand même la création */}
       if (existing == null) {
         setBusy(false);
-        await _nav.navigateTo(Routes.profilCreationView);
+        // L'ancien rôle voyage avec la route : le formulaire propose alors
+        // « Annuler » qui rétablit ce rôle (APP-119)
+        await _nav.navigateTo(
+          Routes.profilCreationView,
+          arguments: ProfilCreationViewArguments(roleAnnulation: ancienRole),
+        );
         return;
       }
     }
@@ -121,12 +122,8 @@ class ProfilViewModel extends BaseViewModel {
         alternantProfile = await _profile.getMyAlternantProfile();
       } on ApiException {/* profil pas encore rempli */}
     }
-    try {
-      reputation = await _logements.getReputation(user!.id);
-    } on ApiException {/* pas encore de score */}
-    try {
-      avisRecus = await _reviews.getReviewsForUser(user!.id);
-    } on ApiException {/* section vide */}
+    // APP-119 : réputation et avis ne sont plus chargés — plus rien ne les
+    // affiche (fonctionnalité reportée en V2). Les services restent en place.
     try {
       logements = await _logements.getMesLogements();
     } on ApiException {/* section vide */}
