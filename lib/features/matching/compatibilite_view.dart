@@ -91,111 +91,7 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Tuiles chiffrées (tap = filtre) ────────────────
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.screenPadding),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _StatTile(
-                      value: s.nbSemainesEchange,
-                      label: s.nbSemainesEchange > 1 ? 'échanges' : 'échange',
-                      color: AppColors.echange,
-                      background: AppColors.echangeLight,
-                      selected: viewModel.filtre == CompatibiliteType.ECHANGE,
-                      dimmed: viewModel.filtre != null &&
-                          viewModel.filtre != CompatibiliteType.ECHANGE,
-                      onTap: () =>
-                          viewModel.toggleFiltre(CompatibiliteType.ECHANGE),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: _StatTile(
-                      value: s.nbSemainesColocation,
-                      label: s.nbSemainesColocation > 1 ? 'colocs' : 'coloc',
-                      color: AppColors.colocation,
-                      background: AppColors.colocationLight,
-                      selected:
-                          viewModel.filtre == CompatibiliteType.COLOCATION,
-                      dimmed: viewModel.filtre != null &&
-                          viewModel.filtre != CompatibiliteType.COLOCATION,
-                      onTap: () =>
-                          viewModel.toggleFiltre(CompatibiliteType.COLOCATION),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: _StatTile(
-                      // Semaines neutres = chacun chez soi (APP-108).
-                      // Calculé depuis la liste : total - échange - coloc.
-                      value: s.semaines.length -
-                          s.nbSemainesEchange -
-                          s.nbSemainesColocation,
-                      label: 'chacun chez soi',
-                      color: AppColors.textSecondary,
-                      background: AppColors.surfaceDark,
-                      selected:
-                          viewModel.filtre == CompatibiliteType.INCOMPATIBLE,
-                      dimmed: viewModel.filtre != null &&
-                          viewModel.filtre != CompatibiliteType.INCOMPATIBLE,
-                      onTap: () => viewModel
-                          .toggleFiltre(CompatibiliteType.INCOMPATIBLE),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ─── Économie estimée (APP-103) ─────────────────────
-            if (s.hasEconomie)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                    0, AppSpacing.screenPadding, AppSpacing.md),
-                child: _EconomieBanner(
-                  label: s.economieLabel,
-                  coloc: s.typePropose == AccordType.COLOCATION_TOURNANTE,
-                ),
-              ),
-
-            // ─── Vos options : les scénarios du moteur (APP-109) ─
-            if (s.scenarios.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                    0, AppSpacing.screenPadding, AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('VOS OPTIONS',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: AppColors.textTertiary)),
-                    const SizedBox(height: AppSpacing.sm),
-                    for (final sc in s.scenarios)
-                      _ScenarioCard(
-                        scenario: sc,
-                        onPublier: viewModel.publierLogement,
-                        onContacter: viewModel.contacter,
-                      ),
-                  ],
-                ),
-              )
-            else if (!s.hasEconomie && s.logementBId == null)
-              // Repli sans scénarios : SON logement manque
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                    0, AppSpacing.screenPadding, AppSpacing.md),
-                child: Text(
-                  '${s.displayName} n\'a pas encore publié son logement',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: AppColors.textSecondary),
-                ),
-              ),
+            _EnTete(viewModel: viewModel),
 
             // ─── En-tête de colonnes Toi | Lui ──────────────────
             Padding(
@@ -332,6 +228,144 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
     // à la liste avant de pouvoir calculer l'offset.
     WidgetsBinding.instance.addPostFrameCallback(
         (_) => viewModel.scrollToSemaineCourante());
+  }
+}
+
+/// En-tête de l'écran compatibilité : tuiles chiffrées, économie estimée et
+/// « Vos options ».
+///
+/// APP-120 : sa hauteur est BORNÉE et son contenu défile. Auparavant il vivait
+/// directement dans la Column de l'écran : les cartes d'options repoussaient le
+/// calendrier vers le bas jusqu'à ne lui laisser que quelques pixels.
+class _EnTete extends StatelessWidget {
+  final CompatibiliteViewModel viewModel;
+
+  const _EnTete({required this.viewModel});
+
+  /// Part maximale de la hauteur d'écran laissée à l'en-tête — le calendrier
+  /// garde ainsi toujours l'essentiel de la place.
+  static const _partMaxHauteur = 0.38;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = viewModel.suggestion;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * _partMaxHauteur),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+      // ─── Tuiles chiffrées (tap = filtre) ────────────────
+      Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        child: Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                value: s.nbSemainesEchange,
+                label: s.nbSemainesEchange > 1 ? 'échanges' : 'échange',
+                color: AppColors.echange,
+                background: AppColors.echangeLight,
+                selected: viewModel.filtre == CompatibiliteType.ECHANGE,
+                dimmed: viewModel.filtre != null &&
+                    viewModel.filtre != CompatibiliteType.ECHANGE,
+                onTap: () =>
+                    viewModel.toggleFiltre(CompatibiliteType.ECHANGE),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _StatTile(
+                value: s.nbSemainesColocation,
+                label: s.nbSemainesColocation > 1 ? 'colocs' : 'coloc',
+                color: AppColors.colocation,
+                background: AppColors.colocationLight,
+                selected:
+                    viewModel.filtre == CompatibiliteType.COLOCATION,
+                dimmed: viewModel.filtre != null &&
+                    viewModel.filtre != CompatibiliteType.COLOCATION,
+                onTap: () =>
+                    viewModel.toggleFiltre(CompatibiliteType.COLOCATION),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _StatTile(
+                // Semaines neutres = chacun chez soi (APP-108).
+                // Calculé depuis la liste : total - échange - coloc.
+                value: s.semaines.length -
+                    s.nbSemainesEchange -
+                    s.nbSemainesColocation,
+                label: 'chacun chez soi',
+                color: AppColors.textSecondary,
+                background: AppColors.surfaceDark,
+                selected:
+                    viewModel.filtre == CompatibiliteType.INCOMPATIBLE,
+                dimmed: viewModel.filtre != null &&
+                    viewModel.filtre != CompatibiliteType.INCOMPATIBLE,
+                onTap: () => viewModel
+                    .toggleFiltre(CompatibiliteType.INCOMPATIBLE),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // ─── Économie estimée (APP-103) ─────────────────────
+      if (s.hasEconomie)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              0, AppSpacing.screenPadding, AppSpacing.md),
+          child: _EconomieBanner(
+            label: s.economieLabel,
+            coloc: s.typePropose == AccordType.COLOCATION_TOURNANTE,
+          ),
+        ),
+
+      // ─── Vos options : les scénarios du moteur (APP-109) ─
+      if (s.scenarios.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              0, AppSpacing.screenPadding, AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('VOS OPTIONS',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                      color: AppColors.textTertiary)),
+              const SizedBox(height: AppSpacing.sm),
+              for (final sc in s.scenarios)
+                _ScenarioCard(
+                  scenario: sc,
+                  onPublier: viewModel.publierLogement,
+                  onContacter: viewModel.contacter,
+                ),
+            ],
+          ),
+        )
+      else if (!s.hasEconomie && s.logementBId == null)
+        // Repli sans scénarios : SON logement manque
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              0, AppSpacing.screenPadding, AppSpacing.md),
+          child: Text(
+            '${s.displayName} n\'a pas encore publié son logement',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: AppColors.textSecondary),
+          ),
+        ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
