@@ -71,8 +71,8 @@ void main() {
           }
         ],
         'accordsEnAttente': [],
-        'economiesEstimees': 2700.50,
-        'nbAccordsTermines': 3,
+        'economiePossibleMax': 2700.50,
+        'nbMatchesCompatibles': 3,
       });
       when(() => dashboardService.getAlternantDashboard())
           .thenAnswer((_) async => dash);
@@ -80,8 +80,8 @@ void main() {
       await viewModel.load();
 
       expect(viewModel.dashboard, isNotNull);
-      expect(viewModel.dashboard!.economiesEstimees, 2700.50);
-      expect(viewModel.dashboard!.nbAccordsTermines, 3);
+      expect(viewModel.dashboard!.economiePossibleMax, 2700.50);
+      expect(viewModel.dashboard!.nbMatchesCompatibles, 3);
       expect(viewModel.dashboard!.prochainAccords, hasLength(1));
       expect(viewModel.errorMessage, isNull);
       expect(viewModel.isBusy, isFalse);
@@ -107,8 +107,8 @@ void main() {
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
                 'prochainAccords': [],
                 'accordsEnAttente': [],
-                'economiesEstimees': 0,
-                'nbAccordsTermines': 0,
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
               }));
 
       await viewModel.load();
@@ -122,8 +122,8 @@ void main() {
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
                 'prochainAccords': [],
                 'accordsEnAttente': [],
-                'economiesEstimees': 0,
-                'nbAccordsTermines': 0,
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
               }));
       when(() => notificationService.getUnreadCount())
           .thenThrow(const ApiException(
@@ -154,8 +154,8 @@ void main() {
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
                 'prochainAccords': [],
                 'accordsEnAttente': [],
-                'economiesEstimees': 0,
-                'nbAccordsTermines': 0,
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
               }));
       await viewModel.load();
 
@@ -170,8 +170,8 @@ void main() {
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
                 'prochainAccords': [],
                 'accordsEnAttente': [],
-                'economiesEstimees': 0,
-                'nbAccordsTermines': 0,
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
               }));
       await viewModel.load();
     }
@@ -198,8 +198,8 @@ void main() {
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
                 'prochainAccords': [],
                 'accordsEnAttente': [],
-                'economiesEstimees': 0,
-                'nbAccordsTermines': 0,
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
               }));
       when(() => calendrierService.getMesSemaines())
           .thenAnswer((_) async => mes);
@@ -235,8 +235,8 @@ void main() {
                   }
                 ],
                 'accordsEnAttente': [],
-                'economiesEstimees': 0,
-                'nbAccordsTermines': 0,
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
               }));
       await viewModel.load();
       expect(viewModel.isNouveau, isFalse);
@@ -247,8 +247,8 @@ void main() {
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
                 'prochainAccords': [],
                 'accordsEnAttente': [],
-                'economiesEstimees': 0,
-                'nbAccordsTermines': 0,
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
               }));
       when(() => logementService.getMesLogements()).thenAnswer((_) async => [
             Logement.fromJson(const {
@@ -290,8 +290,8 @@ void main() {
           .thenAnswer((_) async => AlternantDashboard.fromJson(const {
                 'prochainAccords': [],
                 'accordsEnAttente': [],
-                'economiesEstimees': 0,
-                'nbAccordsTermines': 0,
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
               }));
       when(() => calendrierService.getMesSemaines())
           .thenAnswer((_) async => mes);

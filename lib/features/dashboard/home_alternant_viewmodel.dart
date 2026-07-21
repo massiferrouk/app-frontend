@@ -185,7 +185,7 @@ class HomeAlternantViewModel extends BaseViewModel {
       dashboard != null &&
       dashboard!.prochainAccords.isEmpty &&
       dashboard!.accordsEnAttente.isEmpty &&
-      dashboard!.nbAccordsTermines == 0;
+      dashboard!.nbMatchesCompatibles == 0;
 
   /// A-t-il au moins un logement publié (ACTIF) ?
   bool get hasPublishedLogement =>

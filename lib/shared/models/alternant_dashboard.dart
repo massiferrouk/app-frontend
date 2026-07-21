@@ -9,15 +9,17 @@ class AlternantDashboard {
   final List<AccordSummary> accordsEnAttente;
 
   /// Économies estimées en euros sur les échanges réalisés
-  final double economiesEstimees;
+  /// Meilleure économie POSSIBLE parmi les matches (APP-120) — un potentiel,
+  /// pas un acquis : le libellé affiché doit rester au conditionnel.
+  final double economiePossibleMax;
 
-  final int nbAccordsTermines;
+  final int nbMatchesCompatibles;
 
   const AlternantDashboard({
     required this.prochainAccords,
     required this.accordsEnAttente,
-    required this.economiesEstimees,
-    required this.nbAccordsTermines,
+    required this.economiePossibleMax,
+    required this.nbMatchesCompatibles,
   });
 
   factory AlternantDashboard.fromJson(Map<String, dynamic> json) {
@@ -29,8 +31,10 @@ class AlternantDashboard {
           .map((e) => AccordSummary.fromJson(e as Map<String, dynamic>))
           .toList(),
       // BigDecimal backend → num JSON → double Dart
-      economiesEstimees: (json['economiesEstimees'] as num? ?? 0).toDouble(),
-      nbAccordsTermines: (json['nbAccordsTermines'] as num? ?? 0).toInt(),
+      economiePossibleMax:
+          (json['economiePossibleMax'] as num? ?? 0).toDouble(),
+      nbMatchesCompatibles:
+          (json['nbMatchesCompatibles'] as num? ?? 0).toInt(),
     );
   }
 }

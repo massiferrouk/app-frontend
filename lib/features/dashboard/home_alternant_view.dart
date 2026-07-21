@@ -83,22 +83,31 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
         ],
 
         // ─── KPIs ───────────────────────────────────────────────
+        // APP-120 : « économisés » et « échanges terminés » remplacés. Ils
+        // comptaient des accords TERMINE jamais atteints → 0 à vie. Ici, des
+        // chiffres qui bougent avec le matching. « possibles » et pas
+        // « économisés » : c'est un potentiel, on ne promet rien.
         Row(
           children: [
             Expanded(
               child: _StatCard(
-                value: '${dash.economiesEstimees.toStringAsFixed(0)} €',
-                label: 'économisés',
-                valueColor: AppColors.echange,
+                value: '${dash.nbMatchesCompatibles}',
+                label: dash.nbMatchesCompatibles > 1
+                    ? 'matches compatibles'
+                    : 'match compatible',
+                valueColor: dash.nbMatchesCompatibles > 0
+                    ? AppColors.echange
+                    : AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: _StatCard(
-                value: '${dash.nbAccordsTermines}',
-                label: dash.nbAccordsTermines > 1
-                    ? 'échanges terminés'
-                    : 'échange terminé',
+                value: '${dash.economiePossibleMax.toStringAsFixed(0)} €',
+                label: 'économies possibles',
+                valueColor: dash.economiePossibleMax > 0
+                    ? AppColors.echange
+                    : AppColors.textPrimary,
               ),
             ),
           ],
