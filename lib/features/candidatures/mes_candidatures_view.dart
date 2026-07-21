@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../shared/models/candidature.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/widgets/logement_card.dart';
+import '../../shared/widgets/statut_candidature_badge.dart';
 import 'mes_candidatures_viewmodel.dart';
 
 /// Mes candidatures — onglet de l'étudiant (APP-117).
@@ -142,6 +143,9 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
           return LogementCard(
             logement: c.logement,
             onTap: () => viewModel.goToDetail(c.logement),
+            // Statut visible immédiatement sur la photo (APP-119) — plus
+            // besoin de descendre en bas de carte pour le lire.
+            statut: c.statut,
             footer: Row(
               children: [
                 // Le statut est cliquable : il ouvre la feuille de changement
@@ -320,26 +324,22 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
 
 /// Pastille de couleur du statut. L'information n'est jamais portée par la
 /// seule couleur : le libellé texte l'accompagne toujours (règle OPQUAST).
+/// La couleur vient de [couleurCandidatureStatut] — source unique partagée
+/// avec le badge posé sur la photo, pour éviter toute divergence.
 class _StatutPastille extends StatelessWidget {
   final CandidatureStatut statut;
 
   const _StatutPastille({required this.statut});
-
-  Color get _couleur => switch (statut) {
-        CandidatureStatut.A_CONTACTER => AppColors.textTertiary,
-        CandidatureStatut.CONTACTE => AppColors.colocation,
-        CandidatureStatut.VISITE_PREVUE => AppColors.chevauchement,
-        CandidatureStatut.VISITEE => AppColors.chevauchement,
-        CandidatureStatut.SANS_SUITE => AppColors.error,
-        CandidatureStatut.ACCEPTEE => AppColors.echange,
-      };
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 10,
       height: 10,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: _couleur),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: couleurCandidatureStatut(statut),
+      ),
     );
   }
 }

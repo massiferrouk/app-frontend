@@ -5,6 +5,7 @@ import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/accord_service.dart';
+import '../../services/candidature_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/notification_service.dart';
 import '../../shared/models/accord.dart';
@@ -16,17 +17,38 @@ class HomeEtudiantViewModel extends BaseViewModel {
   final LogementService _logements;
   final AccordService _accords;
   final NotificationService _notifications;
+  final CandidatureService _candidatures;
   final NavigationService _nav;
 
   HomeEtudiantViewModel({
     LogementService? logementService,
     AccordService? accordService,
     NotificationService? notificationService,
+    CandidatureService? candidatureService,
     NavigationService? navigationService,
   })  : _logements = logementService ?? locator<LogementService>(),
         _accords = accordService ?? locator<AccordService>(),
         _notifications = notificationService ?? locator<NotificationService>(),
+        _candidatures = candidatureService ?? locator<CandidatureService>(),
         _nav = navigationService ?? locator<NavigationService>();
+
+  /// Statut de suivi par annonce (APP-119) — même badge que sur la Recherche,
+  /// pour que l'utilisateur reconnaisse une annonce déjà traitée partout où
+  /// elle apparaît. Absente de la map = non suivie → aucun badge.
+  Map<String, CandidatureStatut> statutsSuivis = {};
+
+  CandidatureStatut? statutPour(String logementId) => statutsSuivis[logementId];
+
+  /// Silencieux : un échec n'empêche pas l'accueil de s'afficher.
+  Future<void> _refreshStatutsSuivis() async {
+    try {
+      final mes = await _candidatures.getMesCandidatures();
+      statutsSuivis = {for (final c in mes) c.logement.id: c.statut};
+      notifyListeners();
+    } on ApiException {
+      // non bloquant : les cartes s'affichent sans badge
+    }
+  }
 
   List<Logement> vedettes = [];
   List<Accord> accordsEnCours = [];
@@ -62,6 +84,7 @@ class HomeEtudiantViewModel extends BaseViewModel {
     } on ApiException {/* section vide */}
 
     setBusy(false);
+    await _refreshStatutsSuivis();
     await _refreshUnreadCount();
   }
 

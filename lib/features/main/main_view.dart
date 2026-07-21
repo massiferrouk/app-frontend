@@ -96,7 +96,11 @@ class MainView extends StackedView<MainViewModel> {
           ),
           const MesLogementsView(),
           _conversationsTab(viewModel),
-          const NotificationsView(),
+          // Clé rechargée à chaque entrée dans l'onglet : sans elle, les
+          // nouvelles alertes n'apparaissaient qu'après un détour (APP-119)
+          NotificationsView(
+            key: ValueKey('alertes-${viewModel.alertesReloadKey}'),
+          ),
           const ProfilView(),
         ];
     }

@@ -47,6 +47,7 @@ class MainViewModel extends BaseViewModel {
   int messagesReloadKey = 0;
   int rechercheReloadKey = 0;
   int candidaturesReloadKey = 0;
+  int alertesReloadKey = 0;
 
   /// Index de l'onglet Messages selon le rôle (voir _pagesForRole).
   int get _messagesTabIndex =>
@@ -61,6 +62,11 @@ class MainViewModel extends BaseViewModel {
 
   /// Index de l'onglet Candidatures : étudiant uniquement (APP-117).
   int get _candidaturesTabIndex => role == UserRole.ETUDIANT ? 2 : -1;
+
+  /// Onglet « Alertes » — propriétaire (et admin, même nav) uniquement.
+  /// -1 pour les autres rôles : aucun onglet ne correspond.
+  int get _alertesTabIndex =>
+      role == UserRole.PROPRIETAIRE || role == UserRole.ADMIN ? 3 : -1;
 
   /// userId abonné au topic personnel — pour se désabonner au dispose
   String? _subscribedUserId;
@@ -95,6 +101,10 @@ class MainViewModel extends BaseViewModel {
     if (index == _messagesTabIndex) messagesReloadKey++;
     if (index == _rechercheTabIndex) rechercheReloadKey++;
     if (index == _candidaturesTabIndex) candidaturesReloadKey++;
+    // Sans ça, l'onglet Alertes restait figé : dans un IndexedStack il n'est
+    // monté qu'une fois, donc une notification arrivée depuis n'apparaissait
+    // qu'après un passage par un autre écran (APP-119).
+    if (index == _alertesTabIndex) alertesReloadKey++;
     notifyListeners();
     // Chaque changement d'onglet rafraîchit le badge : en quittant
     // Messages il retombe à zéro, ailleurs il capte les nouveautés.

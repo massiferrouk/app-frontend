@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -178,12 +180,22 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
     );
   }
 
+  /// Durée d'affichage du bandeau de confirmation — court, il ne doit pas
+  /// gêner la lecture de l'annonce.
+  static const _dureeSnackBar = Duration(seconds: 3);
+
   Future<void> _suivre(
       BuildContext context, LogementDetailViewModel viewModel) async {
     final erreur = await viewModel.suivre();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+
+    final messenger = ScaffoldMessenger.of(context);
+    // Une seule à la fois : évite l'empilement si on enchaîne les clics
+    messenger.hideCurrentSnackBar();
+
+    final controller = messenger.showSnackBar(SnackBar(
       content: Text(erreur ?? 'Ajoutée à tes candidatures'),
+      duration: _dureeSnackBar,
       // Raccourci direct vers le suivi en cas de succès
       action: erreur != null
           ? null
@@ -192,6 +204,16 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
               onPressed: viewModel.voirMesCandidatures,
             ),
     ));
+
+    // Flutter ne lance PAS son minuteur pour une SnackBar porteuse d'une action
+    // quand la navigation accessible est active (souvent le cas sur le web) :
+    // le bandeau restait alors figé jusqu'au clic sur « Voir ». On le ferme
+    // donc nous-mêmes. Le drapeau évite de fermer une SnackBar plus récente.
+    var dejaFermee = false;
+    unawaited(controller.closed.then((_) => dejaFermee = true));
+    unawaited(Future<void>.delayed(_dureeSnackBar, () {
+      if (!dejaFermee) controller.close();
+    }));
   }
 
   @override

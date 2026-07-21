@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../models/enums.dart';
 import '../models/logement.dart';
+import 'statut_candidature_badge.dart';
 
 /// Carte d'annonce : grande photo 16:9, prix mis en avant, caractéristiques
 /// puis badges. Partagée par l'accueil étudiant (aperçu) et l'écran Recherche
@@ -12,15 +14,20 @@ class LogementCard extends StatelessWidget {
   final Logement logement;
   final VoidCallback onTap;
 
-  /// Contenu additionnel affiché en bas de la carte (ex : le statut d'une
-  /// candidature). Optionnel — null sur les écrans de simple consultation.
+  /// Contenu additionnel affiché en bas de la carte (ex : l'action de
+  /// changement de statut). Optionnel — null sur les écrans de consultation.
   final Widget? footer;
+
+  /// Statut de suivi de l'annonce (APP-119) — affiché en badge sur la photo.
+  /// null = annonce non suivie : aucun badge, la carte reste vierge.
+  final CandidatureStatut? statut;
 
   const LogementCard({
     super.key,
     required this.logement,
     required this.onTap,
     this.footer,
+    this.statut,
   });
 
   @override
@@ -39,16 +46,27 @@ class LogementCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: logement.photoUrls.isEmpty
-                  ? const _PhotoFallback()
-                  : Image.network(
-                      logement.photoUrls.first,
-                      fit: BoxFit.cover,
-                      semanticLabel: 'Photo du logement à ${logement.ville}',
-                      errorBuilder: (_, _, _) => const _PhotoFallback(),
-                    ),
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: logement.photoUrls.isEmpty
+                      ? const _PhotoFallback()
+                      : Image.network(
+                          logement.photoUrls.first,
+                          fit: BoxFit.cover,
+                          semanticLabel: 'Photo du logement à ${logement.ville}',
+                          errorBuilder: (_, _, _) => const _PhotoFallback(),
+                        ),
+                ),
+                // Statut du suivi, posé sur la photo (APP-119)
+                if (statut != null)
+                  Positioned(
+                    top: AppSpacing.sm,
+                    right: AppSpacing.sm,
+                    child: StatutCandidatureBadge(statut: statut!),
+                  ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
