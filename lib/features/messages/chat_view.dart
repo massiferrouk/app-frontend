@@ -6,7 +6,9 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/conversation_summary.dart';
+import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
+import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/message.dart';
 import 'chat_viewmodel.dart';
 
@@ -49,11 +51,23 @@ class ChatView extends StackedView<ChatViewModel> {
       body: SafeArea(
         child: Column(
           children: [
-            // Carte de l'annonce, cliquable → détail (APP-119)
+            // Contexte de la conversation, en tête et cliquable.
+            // Étudiant/proprio : l'annonce (APP-119).
+            // Alternant ↔ alternant : le match, car le sujet est un
+            // arrangement et non une annonce — il peut y en avoir deux,
+            // une seule, ou aucune (APP-120).
             if (viewModel.logement != null)
               _AnnonceCard(
                 logement: viewModel.logement!,
                 onTap: viewModel.ouvrirAnnonce,
+              )
+            else if (viewModel.matchPartenaire != null)
+              _MatchCard(
+                match: viewModel.matchPartenaire!,
+                onTap: viewModel.ouvrirCompatibilite,
+                onVoirLogement: viewModel.partenaireAUnLogement
+                    ? viewModel.ouvrirLogementPartenaire
+                    : null,
               ),
             Expanded(child: _buildMessages(context, viewModel)),
             _InputBar(viewModel: viewModel),
@@ -179,6 +193,130 @@ class _AnnonceCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Carte de contexte d'une discussion entre alternants (APP-120).
+///
+/// Ici le sujet n'est pas une annonce mais un arrangement : selon les cas il y
+/// a deux logements, un seul ou aucun. Le seul contexte valable partout est
+/// donc le match — d'où le lien principal vers le calendrier de compatibilité,
+/// l'écran qui explique pourquoi ces deux-là se parlent. Un accès secondaire
+/// mène à l'annonce du partenaire quand il en a publié une.
+class _MatchCard extends StatelessWidget {
+  final MatchingSuggestion match;
+  final VoidCallback onTap;
+  final VoidCallback? onVoirLogement;
+
+  const _MatchCard({
+    required this.match,
+    required this.onTap,
+    this.onVoirLogement,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final coloc = match.typePropose == AccordType.COLOCATION_TOURNANTE;
+    final accent = coloc ? AppColors.colocation : AppColors.echange;
+
+    return Material(
+      color: AppColors.surface,
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: AppColors.border)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenPadding,
+                    vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: coloc
+                            ? AppColors.colocationLight
+                            : AppColors.echangeLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${match.scorePercent}%',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: accent)),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            match.typePropose.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _resume,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right,
+                        size: 20, color: AppColors.textTertiary),
+                  ],
+                ),
+              ),
+            ),
+            // Accès secondaire : son annonce, s'il en a publié une
+            if (onVoirLogement != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                      left: AppSpacing.sm, bottom: AppSpacing.xs),
+                  child: TextButton.icon(
+                    onPressed: onVoirLogement,
+                    icon: const Icon(Icons.apartment_outlined, size: 16),
+                    label: const Text('Voir son logement',
+                        style: TextStyle(fontSize: 12)),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Résumé court : les semaines qui comptent, et l'économie si elle est connue
+  String get _resume {
+    final parts = <String>[];
+    if (match.nbSemainesEchange > 0) {
+      parts.add('${match.nbSemainesEchange} sem. échange');
+    }
+    if (match.nbSemainesColocation > 0) {
+      parts.add('${match.nbSemainesColocation} sem. coloc');
+    }
+    if (match.hasEconomie) {
+      parts.add('jusqu\'à ${match.economieMensuelle} €/mois');
+    }
+    return parts.isEmpty ? 'Voir votre compatibilité' : parts.join(' · ');
   }
 }
 

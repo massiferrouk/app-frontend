@@ -1,17 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/messages/chat_viewmodel.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/services/candidature_service.dart';
 import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/logement_service.dart';
+import 'package:studup_app/services/matching_service.dart';
 import 'package:studup_app/services/message_service.dart';
 import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/shared/models/candidature.dart';
 import 'package:studup_app/shared/models/conversation_summary.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/logement.dart';
+import 'package:studup_app/shared/models/matching_suggestion.dart';
 import 'package:studup_app/shared/models/message.dart';
 
 class MockMessageService extends Mock implements MessageService {}
@@ -24,6 +27,8 @@ class MockCandidatureService extends Mock implements CandidatureService {}
 
 class MockLogementService extends Mock implements LogementService {}
 
+class MockMatchingService extends Mock implements MatchingService {}
+
 class MockNavigationService extends Mock implements NavigationService {}
 
 void main() {
@@ -32,6 +37,7 @@ void main() {
   late MockChatSocketService socketService;
   late MockCandidatureService candidatureService;
   late MockLogementService logementService;
+  late MockMatchingService matchingService;
   late MockNavigationService navigationService;
 
   /// Annonce renvoyée par le service pour la carte en tête de conversation
@@ -76,6 +82,7 @@ void main() {
         chatSocketService: socketService,
         candidatureService: candidatureService,
         logementService: logementService,
+        matchingService: matchingService,
         navigationService: navigationService,
       );
 
@@ -85,6 +92,9 @@ void main() {
     socketService = MockChatSocketService();
     candidatureService = MockCandidatureService();
     logementService = MockLogementService();
+    matchingService = MockMatchingService();
+    // Par défaut : aucun match avec ce partenaire → aucune carte de contexte
+    when(() => matchingService.getSuggestions()).thenAnswer((_) async => []);
     navigationService = MockNavigationService();
     when(() => logementService.getLogement(any()))
         .thenAnswer((_) async => buildLogement());
@@ -455,6 +465,107 @@ void main() {
             'Bonjour',
             logementId: 'log-marseille',
           )).called(1);
+    });
+  });
+
+  group('carte de contexte entre alternants (APP-120)', () {
+    MatchingSuggestion buildMatch({String? logementBId}) =>
+        MatchingSuggestion.fromJson({
+          'profileId': 'p-1',
+          'userId': 'lui',
+          'prenom': 'Thomas',
+          'nom': 'Durand',
+          'villeA': 'Lyon',
+          'villeB': 'Paris',
+          'score': 0.87,
+          'scorePercent': 87,
+          'typePropose': 'ECHANGE_PARTIEL',
+          'isMatchActif': true,
+          'nbSemainesEchange': 3,
+          'nbSemainesColocation': 0,
+          'nbSemainesChevauchement': 1,
+          'semaines': const [],
+          'logementBId': logementBId,
+          'economieMensuelle': 283,
+        });
+
+    test('match trouvé : carte affichée, lien vers la compatibilité', () async {
+      when(() => messageService.getHistory('conv-1'))
+          .thenAnswer((_) async => []);
+      when(() => matchingService.getSuggestions())
+          .thenAnswer((_) async => [buildMatch()]);
+
+      final viewModel = makeViewModel();
+      await viewModel.init();
+
+      expect(viewModel.matchPartenaire?.scorePercent, 87);
+
+      viewModel.ouvrirCompatibilite();
+      verify(() => navigationService.navigateTo(Routes.compatibiliteView,
+          arguments: any(named: 'arguments'))).called(1);
+    });
+
+    test('plus compatible : aucune carte', () async {
+      when(() => messageService.getHistory('conv-1'))
+          .thenAnswer((_) async => []);
+      // Le partenaire n'est plus dans mes suggestions (villes modifiées)
+      when(() => matchingService.getSuggestions())
+          .thenAnswer((_) async => []);
+
+      final viewModel = makeViewModel();
+      await viewModel.init();
+
+      expect(viewModel.matchPartenaire, isNull);
+    });
+
+    test('sans logement publié : pas d\'accès secondaire', () async {
+      when(() => messageService.getHistory('conv-1'))
+          .thenAnswer((_) async => []);
+      when(() => matchingService.getSuggestions())
+          .thenAnswer((_) async => [buildMatch()]);
+
+      final viewModel = makeViewModel();
+      await viewModel.init();
+
+      expect(viewModel.partenaireAUnLogement, isFalse);
+    });
+
+    test('logement publié : accès secondaire vers son annonce', () async {
+      when(() => messageService.getHistory('conv-1'))
+          .thenAnswer((_) async => []);
+      when(() => matchingService.getSuggestions())
+          .thenAnswer((_) async => [buildMatch(logementBId: 'log-lui')]);
+      when(() => logementService.getLogement('log-lui'))
+          .thenAnswer((_) async => buildLogement());
+
+      final viewModel = makeViewModel();
+      await viewModel.init();
+      expect(viewModel.partenaireAUnLogement, isTrue);
+
+      await viewModel.ouvrirLogementPartenaire();
+
+      verify(() => navigationService.navigateTo(Routes.logementDetailView,
+          arguments: any(named: 'arguments'))).called(1);
+    });
+
+    test('discussion sur une annonce : pas de carte match', () async {
+      const surAnnonce = ConversationSummary(
+        conversationId: '',
+        partnerId: 'lui',
+        partnerName: 'Rabah B.',
+        lastMessage: '',
+        unreadCount: 0,
+        logementId: 'log-marseille',
+        logementVille: 'Marseille',
+      );
+      when(() => matchingService.getSuggestions())
+          .thenAnswer((_) async => [buildMatch()]);
+
+      final viewModel = makeViewModel(surAnnonce);
+      await viewModel.init();
+
+      // Le contexte est déjà l'annonce : on n'interroge même pas le matching
+      expect(viewModel.matchPartenaire, isNull);
     });
   });
 
