@@ -138,8 +138,8 @@ class ProfilCreationViewModel extends BaseViewModel {
             entrepriseController.text, 'Le nom de l\'entreprise');
     if (requiredError != null) return requiredError;
 
-    // 🟣 Règle métier StudUp : les deux villes doivent être différentes,
-    // sinon il n'y a rien à échanger (même contrainte CHECK côté BDD)
+    // Les deux villes doivent être différentes, sinon il n'y a rien à
+    // échanger (même contrainte CHECK côté BDD)
     final villeA = villeAController.text.trim().toLowerCase();
     final villeB = villeBController.text.trim().toLowerCase();
     if (villeA == villeB) {

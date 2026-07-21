@@ -43,7 +43,6 @@ class ProfilViewModel extends BaseViewModel {
 
   /// Résumé des candidatures pour la carte du profil (APP-117).
   int nbCandidatures = 0;
-  int nbCandidaturesContactees = 0;
 
   String? errorMessage;
 
@@ -131,9 +130,6 @@ class ProfilViewModel extends BaseViewModel {
     try {
       final candidatures = await _candidatures.getMesCandidatures();
       nbCandidatures = candidatures.length;
-      nbCandidaturesContactees = candidatures
-          .where((c) => c.statut != CandidatureStatut.A_CONTACTER)
-          .length;
     } on ApiException {/* carte masquée */}
 
     setBusy(false);
@@ -159,12 +155,6 @@ class ProfilViewModel extends BaseViewModel {
     );
     if (updated == true) await load();
   }
-
-  /// Ouvre le détail d'un de mes logements (données passées en argument).
-  void goToLogementDetail(Logement logement) => _nav.navigateTo(
-        Routes.logementDetailView,
-        arguments: LogementDetailViewArguments(logement: logement),
-      );
 
   /// Ouvre l'écran complet de gestion des logements (ajout, publication,
   /// association ville). Recharge le profil au retour (la liste a pu changer).

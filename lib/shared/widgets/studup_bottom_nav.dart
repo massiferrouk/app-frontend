@@ -12,7 +12,8 @@ class NavTab {
 }
 
 /// Les onglets par rôle — source de vérité unique de la navigation.
-/// 🟣 Chaque profil StudUp a sa propre navigation (cf. CLAUDE.md).
+/// Chaque profil a des besoins distincts : l'alternant cherche un binôme,
+/// l'étudiant une location, le propriétaire gère ses annonces.
 List<NavTab> navTabsForRole(UserRole role) {
   switch (role) {
     case UserRole.ALTERNANT:
