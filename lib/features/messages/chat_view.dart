@@ -143,8 +143,8 @@ class _AnnonceCard extends StatelessWidget {
                       : CachedNetworkImage(
                           imageUrl: photo,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) => const _VignetteVide(),
-                          errorWidget: (_, __, ___) => const _VignetteVide(),
+                          placeholder: (_, _) => const _VignetteVide(),
+                          errorWidget: (_, _, _) => const _VignetteVide(),
                         ),
                 ),
               ),
