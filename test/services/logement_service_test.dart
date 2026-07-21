@@ -4,7 +4,6 @@ import 'package:studup_app/core/api/api_client.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/shared/models/enums.dart';
-import 'package:studup_app/shared/models/logement.dart' show VilleAssociee;
 
 class MockApiClient extends Mock implements ApiClient {}
 
@@ -168,20 +167,6 @@ void main() {
 
       verify(() => api.put<Map<String, dynamic>>('/logements/l1/publish'))
           .called(1);
-    });
-
-    test('associerVille envoie villeAssociee', () async {
-      when(() => api.patch<Map<String, dynamic>>('/logements/l1/ville',
-          data: any(named: 'data'))).thenAnswer((_) async => logementJson);
-
-      await service.associerVille('l1', VilleAssociee.VILLE_A);
-
-      final sent = verify(() => api.patch<Map<String, dynamic>>(
-              '/logements/l1/ville',
-              data: captureAny(named: 'data')))
-          .captured
-          .single as Map<String, dynamic>;
-      expect(sent['villeAssociee'], 'VILLE_A');
     });
 
     test('delete appelle DELETE et propage un conflit 409', () async {

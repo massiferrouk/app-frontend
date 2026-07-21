@@ -197,15 +197,4 @@ class LogementService {
         .put<Map<String, dynamic>>('/logements/$logementId/publish');
     return Logement.fromJson(data);
   }
-
-  /// PATCH /logements/{id}/ville — associe le logement à villeA ou villeB
-  /// du profil alternant (409 si un logement occupe déjà cette ville).
-  Future<Logement> associerVille(
-      String logementId, VilleAssociee ville) async {
-    final data = await _api.patch<Map<String, dynamic>>(
-      '/logements/$logementId/ville',
-      data: {'villeAssociee': ville.toJson()},
-    );
-    return Logement.fromJson(data);
-  }
 }
