@@ -231,32 +231,25 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
   }
 }
 
-/// En-tête de l'écran compatibilité : tuiles chiffrées, économie estimée et
-/// « Vos options ».
+/// En-tête de l'écran compatibilité : les tuiles chiffrées, puis UNE barre
+/// qui résume la situation et ouvre les options.
 ///
-/// APP-120 : sa hauteur est BORNÉE et son contenu défile. Auparavant il vivait
-/// directement dans la Column de l'écran : les cartes d'options repoussaient le
-/// calendrier vers le bas jusqu'à ne lui laisser que quelques pixels.
+/// APP-120 : « Vos options » vivait ici, en pleine hauteur, et repoussait le
+/// calendrier jusqu'à le rendre inutilisable. Or le calendrier est le cœur de
+/// l'écran — les options se consultent une fois, le calendrier se parcourt.
+/// Elles sont donc passées dans une bottom sheet, où elles ont toute la place.
 class _EnTete extends StatelessWidget {
   final CompatibiliteViewModel viewModel;
 
   const _EnTete({required this.viewModel});
 
-  /// Part maximale de la hauteur d'écran laissée à l'en-tête — le calendrier
-  /// garde ainsi toujours l'essentiel de la place.
-  static const _partMaxHauteur = 0.38;
-
   @override
   Widget build(BuildContext context) {
     final s = viewModel.suggestion;
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * _partMaxHauteur),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
       // ─── Tuiles chiffrées (tap = filtre) ────────────────
       Padding(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -313,56 +306,171 @@ class _EnTete extends StatelessWidget {
         ),
       ),
 
-      // ─── Économie estimée (APP-103) ─────────────────────
-      if (s.hasEconomie)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-              0, AppSpacing.screenPadding, AppSpacing.md),
-          child: _EconomieBanner(
-            label: s.economieLabel,
-            coloc: s.typePropose == AccordType.COLOCATION_TOURNANTE,
+        // ─── Barre de synthèse : économie + accès aux options ──
+        if (s.scenarios.isNotEmpty || s.hasEconomie)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+                AppSpacing.screenPadding, AppSpacing.md),
+            child: _BarreOptions(viewModel: viewModel),
+          )
+        else if (s.logementBId == null)
+          // Repli : SON logement manque, rien à proposer pour l'instant
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+                AppSpacing.screenPadding, AppSpacing.md),
+            child: Text(
+              '${s.displayName} n\'a pas encore publié son logement',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: AppColors.textSecondary),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Barre unique de synthèse (APP-120) — remplace la bannière d'économie ET le
+/// bloc « Vos options ». Une ligne : le gain qui donne envie, le nombre
+/// d'options, un chevron. Cliquable seulement s'il y a des options à montrer.
+class _BarreOptions extends StatelessWidget {
+  final CompatibiliteViewModel viewModel;
+
+  const _BarreOptions({required this.viewModel});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = viewModel.suggestion;
+    final nbOptions = s.scenarios.length;
+    final cliquable = nbOptions > 0;
+
+    // Le gain mis en avant : celui du match s'il est chiffré, sinon le plus
+    // élevé parmi les options. Jamais de chiffre inventé : 0 = on n'affiche rien.
+    final meilleurGain = s.hasEconomie
+        ? s.economieMensuelle
+        : s.scenarios.fold<int>(
+            0,
+            (max, sc) =>
+                sc.economieMensuelle > max ? sc.economieMensuelle : max);
+
+    final coloc = s.typePropose == AccordType.COLOCATION_TOURNANTE;
+    final accent = coloc ? AppColors.colocation : AppColors.echange;
+    final fond = coloc ? AppColors.colocationLight : AppColors.echangeLight;
+
+    return Material(
+      color: fond,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        onTap: cliquable ? () => _ouvrirOptions(context) : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              Icon(cliquable ? Icons.lightbulb_outline : Icons.savings_outlined,
+                  size: 20, color: accent),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      cliquable
+                          ? (nbOptions > 1
+                              ? '$nbOptions options pour économiser'
+                              : 'Une option pour économiser')
+                          : 'Économie estimée',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: accent),
+                    ),
+                    if (meilleurGain > 0)
+                      Text('jusqu\'à $meilleurGain €/mois',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              if (cliquable)
+                Icon(Icons.chevron_right, size: 20, color: accent),
+            ],
           ),
         ),
+      ),
+    );
+  }
 
-      // ─── Vos options : les scénarios du moteur (APP-109) ─
-      if (s.scenarios.isNotEmpty)
-        Padding(
+  /// Ouvre les options dans une feuille — elles y ont toute la hauteur
+  /// nécessaire, sans jamais empiéter sur le calendrier.
+  void _ouvrirOptions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.background,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => _OptionsSheet(viewModel: viewModel),
+    );
+  }
+}
+
+/// Feuille des options d'arrangement (APP-120).
+class _OptionsSheet extends StatelessWidget {
+  final CompatibiliteViewModel viewModel;
+
+  const _OptionsSheet({required this.viewModel});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = viewModel.suggestion;
+
+    return SafeArea(
+      child: ConstrainedBox(
+        // Jamais plein écran : on garde le calendrier visible derrière
+        constraints:
+            BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.75),
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-              0, AppSpacing.screenPadding, AppSpacing.md),
+              AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.md),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('VOS OPTIONS',
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                      color: AppColors.textTertiary)),
-              const SizedBox(height: AppSpacing.sm),
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text('Vos options avec ${s.displayName}',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.md),
+              // Les actions ferment la feuille avant de naviguer
               for (final sc in s.scenarios)
                 _ScenarioCard(
                   scenario: sc,
-                  onPublier: viewModel.publierLogement,
-                  onContacter: viewModel.contacter,
+                  onPublier: () {
+                    Navigator.pop(context);
+                    viewModel.publierLogement();
+                  },
+                  onContacter: () {
+                    Navigator.pop(context);
+                    viewModel.contacter();
+                  },
                 ),
             ],
           ),
-        )
-      else if (!s.hasEconomie && s.logementBId == null)
-        // Repli sans scénarios : SON logement manque
-        Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-              0, AppSpacing.screenPadding, AppSpacing.md),
-          child: Text(
-            '${s.displayName} n\'a pas encore publié son logement',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                color: AppColors.textSecondary),
-          ),
-        ),
-          ],
         ),
       ),
     );
@@ -627,9 +735,15 @@ class _MoisCard extends StatelessWidget {
                       fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
-              Text(_resume,
-                  style: const TextStyle(
-                      fontSize: 10, color: AppColors.textSecondary)),
+              // Flexible : le décompte peut être long (« 3 éch · 1 coloc ·
+              // 2 à gérer ») et la carte ne fait qu'une demi-largeur (APP-120)
+              Flexible(
+                child: Text(_resume,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 10, color: AppColors.textSecondary)),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -748,42 +862,6 @@ class _ScenarioCard extends StatelessWidget {
                       style: TextStyle(fontSize: 12)),
                 ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Bandeau d'économie estimée — vert pour l'échange, bleu pour la coloc
-class _EconomieBanner extends StatelessWidget {
-  final String label;
-  final bool coloc;
-
-  const _EconomieBanner({required this.label, required this.coloc});
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = coloc ? AppColors.colocation : AppColors.echange;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm, horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: coloc ? AppColors.colocationLight : AppColors.echangeLight,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.savings_outlined, size: 18, color: accent),
-          const SizedBox(width: AppSpacing.sm),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700, color: accent),
-            ),
           ),
         ],
       ),
