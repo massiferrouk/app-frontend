@@ -7,6 +7,7 @@ import '../../../app/app.router.dart';
 import '../../../core/api/api_exception.dart';
 import '../../../core/utils/validators.dart';
 import '../../../services/accord_service.dart';
+import '../../../services/auth_service.dart';
 import '../../../services/profile_service.dart';
 import '../../../shared/models/alternant_profile.dart';
 import '../../../shared/models/enums.dart';
@@ -17,18 +18,30 @@ import '../../../shared/models/enums.dart';
 class ProfilCreationViewModel extends BaseViewModel {
   final ProfileService _profile;
   final AccordService _accords;
+  final AuthService _auth;
   final NavigationService _nav;
 
   /// Profil déjà existant à modifier — null en création.
   final AlternantProfile? existingProfile;
 
+  /// Rôle à rétablir si l'utilisateur annule un changement de mode (APP-119).
+  /// Renseigné uniquement quand le formulaire s'ouvre depuis « Changer de
+  /// mode » : le compte est alors DÉJÀ passé alternant côté serveur, donc
+  /// annuler doit rétablir l'ancien rôle — un simple retour laisserait un
+  /// alternant sans profil d'alternance (état incohérent).
+  /// null dans le parcours d'inscription : la création reste obligatoire.
+  final UserRole? roleAnnulation;
+
   ProfilCreationViewModel({
     this.existingProfile,
+    this.roleAnnulation,
     ProfileService? profileService,
     AccordService? accordService,
+    AuthService? authService,
     NavigationService? navigationService,
   })  : _profile = profileService ?? locator<ProfileService>(),
         _accords = accordService ?? locator<AccordService>(),
+        _auth = authService ?? locator<AuthService>(),
         _nav = navigationService ?? locator<NavigationService>() {
     // Pré-remplissage en mode édition (les controllers sont déjà initialisés
     // car ce sont des champs, donc évalués avant ce corps de constructeur).
@@ -46,6 +59,32 @@ class ProfilCreationViewModel extends BaseViewModel {
   }
 
   bool get isEdition => existingProfile != null;
+
+  /// true si un bouton Annuler doit être proposé (ouverture via « Changer de
+  /// mode ») — jamais en édition ni dans le parcours d'inscription.
+  bool get peutAnnuler => !isEdition && roleAnnulation != null;
+
+  /// Annule le changement de mode (APP-119) : rétablit l'ancien rôle côté
+  /// serveur, rafraîchit la session (le token doit reporter le rôle rétabli)
+  /// puis revient en arrière — sur l'écran Profil d'où venait l'utilisateur,
+  /// redevenu cohérent puisque le rôle est rétabli AVANT de quitter.
+  /// En cas d'échec réseau, on reste sur le formulaire avec un message :
+  /// quitter quand même laisserait le compte alternant sans profil.
+  Future<void> annulerChangementMode() async {
+    final role = roleAnnulation;
+    if (role == null || isBusy) return;
+
+    setBusy(true);
+    try {
+      await _profile.changeMode(role);
+      await _auth.refreshSession();
+      _nav.back();
+    } on ApiException catch (e) {
+      errorMessage = e.message;
+    } finally {
+      setBusy(false);
+    }
+  }
 
   /// APP-117 (A-07) : true si l'utilisateur a un accord VIVANT. En édition, on
   /// l'avertit alors que modifier son profil n'affecte PAS cet accord (figé côté

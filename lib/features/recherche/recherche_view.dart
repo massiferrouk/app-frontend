@@ -304,7 +304,11 @@ class RechercheView extends StackedView<RechercheViewModel> {
             }
             final l = viewModel.resultats[i];
             return LogementCard(
-                logement: l, onTap: () => viewModel.goToDetail(l));
+              logement: l,
+              onTap: () => viewModel.goToDetail(l),
+              // Badge « Contacté », « Visité »… sur les annonces déjà suivies
+              statut: viewModel.statutPour(l.id),
+            );
           },
         ),
       ),

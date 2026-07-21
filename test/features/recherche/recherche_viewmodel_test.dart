@@ -3,9 +3,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/recherche/recherche_viewmodel.dart';
+import 'package:studup_app/services/candidature_service.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/services/matching_service.dart';
 import 'package:studup_app/services/profile_service.dart';
+import 'package:studup_app/shared/models/candidature.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/logement.dart';
 import 'package:studup_app/shared/models/matching_suggestion.dart';
@@ -18,10 +20,13 @@ class MockMatchingService extends Mock implements MatchingService {}
 
 class MockProfileService extends Mock implements ProfileService {}
 
+class MockCandidatureService extends Mock implements CandidatureService {}
+
 void main() {
   late MockLogementService logementService;
   late MockMatchingService matchingService;
   late MockProfileService profileService;
+  late MockCandidatureService candidatureService;
   late RechercheViewModel viewModel;
 
   Logement build(String id) => Logement.fromJson({
@@ -82,6 +87,10 @@ void main() {
     logementService = MockLogementService();
     matchingService = MockMatchingService();
     profileService = MockProfileService();
+    candidatureService = MockCandidatureService();
+    // Par défaut : aucune annonce suivie → aucun badge sur les cartes
+    when(() => candidatureService.getMesCandidatures())
+        .thenAnswer((_) async => []);
     // Par défaut : étudiant (pas de carte matching)
     when(() => profileService.currentRole())
         .thenAnswer((_) async => UserRole.ETUDIANT);
@@ -89,8 +98,46 @@ void main() {
       logementService: logementService,
       matchingService: matchingService,
       profileService: profileService,
+      candidatureService: candidatureService,
       navigationService: MockNavigationService(),
     );
+  });
+
+  group('badges de suivi sur les résultats (APP-119)', () {
+    Candidature buildCandidature(String logementId, CandidatureStatut statut) =>
+        Candidature(
+          id: 'cand-$logementId',
+          statut: statut,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          logement: build(logementId),
+        );
+
+    test('seules les annonces suivies portent un statut', () async {
+      stubSearch(logements: [build('log-1'), build('log-2')]);
+      when(() => candidatureService.getMesCandidatures()).thenAnswer(
+          (_) async => [buildCandidature('log-1', CandidatureStatut.VISITEE)]);
+
+      await viewModel.search();
+
+      // Suivie → badge ; non suivie → rien, la carte reste vierge
+      expect(viewModel.statutPour('log-1'), CandidatureStatut.VISITEE);
+      expect(viewModel.statutPour('log-2'), isNull);
+    });
+
+    test('échec du chargement des candidatures : recherche intacte', () async {
+      stubSearch(logements: [build('log-1')]);
+      when(() => candidatureService.getMesCandidatures()).thenThrow(
+          const ApiException(
+              code: 'NETWORK_ERROR', message: 'Hors ligne', statusCode: 0));
+
+      await viewModel.search();
+
+      // Les résultats s'affichent quand même, simplement sans badge
+      expect(viewModel.resultats, hasLength(1));
+      expect(viewModel.statutPour('log-1'), isNull);
+      expect(viewModel.errorMessage, isNull);
+    });
   });
 
   group('carte matching dans la recherche (APP-104)', () {

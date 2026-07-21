@@ -5,7 +5,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/candidature.dart';
 import '../../shared/models/enums.dart';
+import '../../shared/widgets/confirmation_dialog.dart';
 import '../../shared/widgets/logement_card.dart';
+import '../../shared/widgets/statut_candidature_badge.dart';
 import 'mes_candidatures_viewmodel.dart';
 
 /// Mes candidatures — onglet de l'étudiant (APP-117).
@@ -142,6 +144,9 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
           return LogementCard(
             logement: c.logement,
             onTap: () => viewModel.goToDetail(c.logement),
+            // Statut visible immédiatement sur la photo (APP-119) — plus
+            // besoin de descendre en bas de carte pour le lire.
+            statut: c.statut,
             footer: Row(
               children: [
                 // Le statut est cliquable : il ouvre la feuille de changement
@@ -280,27 +285,15 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
 
   Future<void> _retirer(BuildContext context,
       MesCandidaturesViewModel viewModel, Candidature c) async {
-    final confirme = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Retirer du suivi ?'),
-        content: const Text(
-            'Cette annonce ne sera plus dans tes candidatures. '
-            'Tu pourras la re-suivre depuis la recherche.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Annuler')),
-          ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Retirer')),
-        ],
-      ),
+    final confirme = await confirmerAction(
+      context,
+      titre: 'Retirer du suivi ?',
+      message: 'Cette annonce ne sera plus dans tes candidatures. '
+          'Tu pourras la re-suivre depuis la recherche.',
+      confirmer: 'Retirer',
+      destructif: true,
     );
-    if (confirme != true) return;
+    if (!confirme) return;
     final erreur = await viewModel.retirer(c);
     if (erreur != null && context.mounted) {
       ScaffoldMessenger.of(context)
@@ -320,26 +313,22 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
 
 /// Pastille de couleur du statut. L'information n'est jamais portée par la
 /// seule couleur : le libellé texte l'accompagne toujours (règle OPQUAST).
+/// La couleur vient de [couleurCandidatureStatut] — source unique partagée
+/// avec le badge posé sur la photo, pour éviter toute divergence.
 class _StatutPastille extends StatelessWidget {
   final CandidatureStatut statut;
 
   const _StatutPastille({required this.statut});
-
-  Color get _couleur => switch (statut) {
-        CandidatureStatut.A_CONTACTER => AppColors.textTertiary,
-        CandidatureStatut.CONTACTE => AppColors.colocation,
-        CandidatureStatut.VISITE_PREVUE => AppColors.chevauchement,
-        CandidatureStatut.VISITEE => AppColors.chevauchement,
-        CandidatureStatut.SANS_SUITE => AppColors.error,
-        CandidatureStatut.ACCEPTEE => AppColors.echange,
-      };
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 10,
       height: 10,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: _couleur),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: couleurCandidatureStatut(statut),
+      ),
     );
   }
 }

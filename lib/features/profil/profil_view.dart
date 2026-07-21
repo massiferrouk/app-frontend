@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:stacked/stacked.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/enums.dart';
-import '../../shared/models/review.dart';
+import '../../shared/widgets/confirmation_dialog.dart';
 import 'profil_viewmodel.dart';
 
 /// Mon profil — onglet Profil du shell (tous rôles).
@@ -47,7 +46,6 @@ class ProfilView extends StackedView<ProfilViewModel> {
     }
 
     final user = viewModel.user!;
-    final rep = viewModel.reputation;
     final isChercheur = user.role == UserRole.ETUDIANT ||
         user.role == UserRole.ALTERNANT;
     final isProprietaire = user.role == UserRole.PROPRIETAIRE;
@@ -82,41 +80,16 @@ class ProfilView extends StackedView<ProfilViewModel> {
                   spacing: AppSpacing.sm,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
+                    // APP-119 : badge « Vérifié » et réputation (étoiles,
+                    // nb d'avis) retirés de l'affichage — aucun parcours ne
+                    // les alimente dans cette version (vérification d'identité
+                    // et avis reportés en V2, backend conservé).
                     _Badge(
                         label: user.role.label,
                         color: AppColors.colocation,
                         background: AppColors.colocationLight),
-                    if (user.isVerified)
-                      const _Badge(
-                          label: 'Vérifié ✓',
-                          color: AppColors.echange,
-                          background: AppColors.echangeLight),
                   ],
                 ),
-                // Réputation compacte (masquée si aucun avis, pour rester épuré)
-                if (rep != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ...List.generate(
-                        5,
-                        (i) => Icon(
-                          i < rep.avgRating.round()
-                              ? Icons.star
-                              : Icons.star_border,
-                          size: 16,
-                          color: AppColors.chevauchement,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                          '${rep.avgRating.toStringAsFixed(1)} · '
-                          '${rep.totalReviews} avis',
-                          style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
@@ -185,16 +158,9 @@ class ProfilView extends StackedView<ProfilViewModel> {
                   : () => _confirmChangeMode(context, viewModel),
             ),
 
-          // ─── Avis reçus ─────────────────────────────────────
-          // L'en-tête montre la note moyenne ; ici on déroule le détail des
-          // avis (note, commentaire, date). Donnée déjà chargée, masquée si
-          // aucun avis pour ne pas alourdir un profil neuf.
-          if (viewModel.avisRecus.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
-            Text('Avis reçus', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            ...viewModel.avisRecus.map((avis) => _AvisCard(avis: avis)),
-          ],
+          // Section « Avis reçus » retirée (APP-119) : les avis exigent un
+          // accord TERMINE, statut jamais atteint dans cette version —
+          // fonctionnalité reportée en V2, backend conservé.
 
           const SizedBox(height: AppSpacing.md),
           _ProfilTile(
@@ -210,24 +176,13 @@ class ProfilView extends StackedView<ProfilViewModel> {
 
   Future<void> _confirmLogout(
       BuildContext context, ProfilViewModel viewModel) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Se déconnecter ?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Non')),
-          ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Oui')),
-        ],
-      ),
+    final confirmed = await confirmerAction(
+      context,
+      titre: 'Se déconnecter ?',
+      confirmer: 'Se déconnecter',
+      destructif: true,
     );
-    if (confirmed == true) await viewModel.logout();
+    if (confirmed) await viewModel.logout();
   }
 
   Future<void> _confirmChangeMode(
@@ -235,26 +190,17 @@ class ProfilView extends StackedView<ProfilViewModel> {
     final target = viewModel.otherStudentMode;
     if (target == null) return;
     final becomeAlternant = target == UserRole.ALTERNANT;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(becomeAlternant
-            ? 'Passer en mode alternant ?'
-            : 'Passer en mode étudiant ?'),
-        content: Text(becomeAlternant
-            ? 'On te demandera de renseigner ton alternance (villes, rythme) juste après.'
-            : 'Tu repasses en simple recherche de logement. Ton profil d\'alternance est conservé.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Annuler')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Confirmer')),
-        ],
-      ),
+    final confirmed = await confirmerAction(
+      context,
+      titre: becomeAlternant
+          ? 'Passer en mode alternant ?'
+          : 'Passer en mode étudiant ?',
+      message: becomeAlternant
+          ? 'On te demandera de renseigner ton alternance (villes, rythme) juste après.'
+          : 'Tu repasses en simple recherche de logement. Ton profil d\'alternance est conservé.',
+      confirmer: 'Continuer',
     );
-    if (confirmed == true) await viewModel.changeMode(target);
+    if (confirmed) await viewModel.changeMode(target);
   }
 
   @override
@@ -320,54 +266,6 @@ class _ProfilTile extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Carte d'un avis reçu : rangée d'étoiles + date, puis le commentaire.
-class _AvisCard extends StatelessWidget {
-  final Review avis;
-
-  const _AvisCard({required this.avis});
-
-  @override
-  Widget build(BuildContext context) {
-    final aCommentaire =
-        avis.comment != null && avis.comment!.trim().isNotEmpty;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              ...List.generate(
-                5,
-                (i) => Icon(
-                  i < avis.rating ? Icons.star : Icons.star_border,
-                  size: 16,
-                  color: AppColors.chevauchement,
-                ),
-              ),
-              const Spacer(),
-              Text(DateFormat('dd/MM/yyyy').format(avis.createdAt),
-                  style: Theme.of(context).textTheme.bodySmall),
-            ],
-          ),
-          if (aCommentaire) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(avis.comment!,
-                style: Theme.of(context).textTheme.bodyMedium),
-          ],
-        ],
       ),
     );
   }

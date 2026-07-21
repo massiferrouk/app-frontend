@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../models/enums.dart';
 import '../models/logement.dart';
+import 'statut_candidature_badge.dart';
 
 /// Carte d'annonce : grande photo 16:9, prix mis en avant, caractéristiques
 /// puis badges. Partagée par l'accueil étudiant (aperçu) et l'écran Recherche
@@ -12,15 +14,20 @@ class LogementCard extends StatelessWidget {
   final Logement logement;
   final VoidCallback onTap;
 
-  /// Contenu additionnel affiché en bas de la carte (ex : le statut d'une
-  /// candidature). Optionnel — null sur les écrans de simple consultation.
+  /// Contenu additionnel affiché en bas de la carte (ex : l'action de
+  /// changement de statut). Optionnel — null sur les écrans de consultation.
   final Widget? footer;
+
+  /// Statut de suivi de l'annonce (APP-119) — affiché en badge sur la photo.
+  /// null = annonce non suivie : aucun badge, la carte reste vierge.
+  final CandidatureStatut? statut;
 
   const LogementCard({
     super.key,
     required this.logement,
     required this.onTap,
     this.footer,
+    this.statut,
   });
 
   @override
@@ -39,16 +46,27 @@ class LogementCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: logement.photoUrls.isEmpty
-                  ? const _PhotoFallback()
-                  : Image.network(
-                      logement.photoUrls.first,
-                      fit: BoxFit.cover,
-                      semanticLabel: 'Photo du logement à ${logement.ville}',
-                      errorBuilder: (_, _, _) => const _PhotoFallback(),
-                    ),
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: logement.photoUrls.isEmpty
+                      ? const _PhotoFallback()
+                      : Image.network(
+                          logement.photoUrls.first,
+                          fit: BoxFit.cover,
+                          semanticLabel: 'Photo du logement à ${logement.ville}',
+                          errorBuilder: (_, _, _) => const _PhotoFallback(),
+                        ),
+                ),
+                // Statut du suivi, posé sur la photo (APP-119)
+                if (statut != null)
+                  Positioned(
+                    top: AppSpacing.sm,
+                    right: AppSpacing.sm,
+                    child: StatutCandidatureBadge(statut: statut!),
+                  ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -64,17 +82,13 @@ class LogementCard extends StatelessWidget {
                       '${logement.surface.toStringAsFixed(0)} m² · '
                       '${logement.ville}',
                       style: Theme.of(context).textTheme.bodySmall),
-                  if (logement.isMeuble || logement.isVerified) ...[
+                  // Badge « Vérifié ✓ » retiré (APP-119) : aucun parcours de
+                  // vérification d'annonce dans cette version (reporté en V2)
+                  if (logement.isMeuble) ...[
                     const SizedBox(height: AppSpacing.sm),
-                    Wrap(
+                    const Wrap(
                       spacing: AppSpacing.xs,
-                      children: [
-                        if (logement.isMeuble)
-                          const _MiniBadge(label: 'Meublé'),
-                        if (logement.isVerified)
-                          const _MiniBadge(
-                              label: 'Vérifié ✓', color: AppColors.echange),
-                      ],
+                      children: [_MiniBadge(label: 'Meublé')],
                     ),
                   ],
                   if (footer != null) ...[
@@ -108,9 +122,10 @@ class _PhotoFallback extends StatelessWidget {
 
 class _MiniBadge extends StatelessWidget {
   final String label;
-  final Color color;
 
-  const _MiniBadge({required this.label, this.color = AppColors.textSecondary});
+  const _MiniBadge({required this.label});
+
+  static const _color = AppColors.textSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +136,7 @@ class _MiniBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
         border: Border.all(color: AppColors.border),
       ),
-      child: Text(label, style: TextStyle(fontSize: 10, color: color)),
+      child: Text(label, style: const TextStyle(fontSize: 10, color: _color)),
     );
   }
 }

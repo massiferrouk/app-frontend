@@ -64,15 +64,22 @@ class HomeProprioView extends StackedView<HomeProprioViewModel> {
         const SizedBox(height: AppSpacing.lg),
 
         // ─── KPIs ───────────────────────────────────────────
+        // APP-119 : « occupation » et « locataires » supprimés (calculés
+        // depuis des accords EN_COURS jamais atteints → 0 à vie). Place à
+        // des chiffres qui bougent avec l'usage réel : l'intérêt des
+        // étudiants (candidatures) et les discussions ouvertes.
         Row(
           children: [
             Expanded(
               child: _KpiCard(
-                value: '${d.tauxOccupation.toStringAsFixed(0)}%',
-                label: 'occupation',
-                valueColor: d.tauxOccupation >= 50
+                value: '${d.nbEtudiantsInteresses}',
+                label: d.nbEtudiantsInteresses > 1
+                    ? 'étudiants intéressés'
+                    : 'étudiant intéressé',
+                // Vert dès qu'il y a de l'intérêt — gris neutre sinon
+                valueColor: d.nbEtudiantsInteresses > 0
                     ? AppColors.echange
-                    : AppColors.chevauchement,
+                    : AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -85,10 +92,10 @@ class HomeProprioView extends StackedView<HomeProprioViewModel> {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: _KpiCard(
-                value: '${d.nbLocatairesActifs}',
-                label: d.nbLocatairesActifs > 1
-                    ? 'locataires'
-                    : 'locataire',
+                value: '${d.nbConversations}',
+                label: d.nbConversations > 1
+                    ? 'conversations'
+                    : 'conversation',
               ),
             ),
           ],

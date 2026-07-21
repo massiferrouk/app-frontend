@@ -14,7 +14,11 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
   /// Profil à modifier — null pour une création (parcours d'inscription).
   final AlternantProfile? profile;
 
-  const ProfilCreationView({super.key, this.profile});
+  /// Rôle à rétablir si l'utilisateur annule (APP-119) — renseigné uniquement
+  /// à l'ouverture via « Changer de mode », null sinon (création obligatoire).
+  final UserRole? roleAnnulation;
+
+  const ProfilCreationView({super.key, this.profile, this.roleAnnulation});
 
   @override
   Widget builder(
@@ -28,8 +32,19 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
         title: Text(viewModel.isEdition
             ? 'Modifier mon alternance'
             : 'Mon profil alternant'),
-        // Création = étape obligatoire (pas de retour) ; édition = retour permis
+        // Inscription : création obligatoire, pas de retour.
+        // Édition : retour standard. Changement de mode : croix Annuler qui
+        // RÉTABLIT l'ancien rôle — le compte est déjà passé alternant côté
+        // serveur, un simple retour laisserait un état incohérent (APP-119).
         automaticallyImplyLeading: viewModel.isEdition,
+        leading: viewModel.peutAnnuler
+            ? IconButton(
+                tooltip: 'Annuler le changement de mode',
+                onPressed:
+                    viewModel.isBusy ? null : viewModel.annulerChangementMode,
+                icon: const Icon(Icons.close),
+              )
+            : null,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -200,7 +215,8 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
 
   @override
   ProfilCreationViewModel viewModelBuilder(BuildContext context) =>
-      ProfilCreationViewModel(existingProfile: profile);
+      ProfilCreationViewModel(
+          existingProfile: profile, roleAnnulation: roleAnnulation);
 }
 
 /// Bandeau d'avertissement (APP-117 · A-07) affiché en édition quand

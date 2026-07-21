@@ -44,8 +44,8 @@ void main() {
         .thenAnswer((_) async => ProprietaireDashboard.fromJson({
               'nbLogementsTotaux': 3,
               'nbLogementsActifs': 2,
-              'nbLocatairesActifs': 1,
-              'tauxOccupation': 50.0,
+              'nbEtudiantsInteresses': 3,
+              'nbConversations': 2,
               'logements': [
                 logementJson(id: 'l1', statut: 'ACTIF', occupe: true),
                 logementJson(id: 'l2', statut: 'ACTIF', occupe: false),
@@ -55,7 +55,8 @@ void main() {
 
     await viewModel.load();
 
-    expect(viewModel.dashboard!.tauxOccupation, 50.0);
+    expect(viewModel.dashboard!.nbEtudiantsInteresses, 3);
+    expect(viewModel.dashboard!.nbConversations, 2);
     expect(viewModel.dashboard!.logements, hasLength(3));
   });
 
@@ -65,8 +66,8 @@ void main() {
         .thenAnswer((_) async => ProprietaireDashboard.fromJson({
               'nbLogementsTotaux': 3,
               'nbLogementsActifs': 2,
-              'nbLocatairesActifs': 1,
-              'tauxOccupation': 50.0,
+              'nbEtudiantsInteresses': 3,
+              'nbConversations': 2,
               'logements': [
                 logementJson(id: 'l1', statut: 'ACTIF', occupe: true),
                 logementJson(id: 'l2', statut: 'ACTIF', occupe: false),
@@ -86,8 +87,8 @@ void main() {
         .thenAnswer((_) async => ProprietaireDashboard.fromJson({
               'nbLogementsTotaux': 1,
               'nbLogementsActifs': 1,
-              'nbLocatairesActifs': 1,
-              'tauxOccupation': 100.0,
+              'nbEtudiantsInteresses': 3,
+              'nbConversations': 1,
               'logements': [
                 logementJson(id: 'l1', statut: 'ACTIF', occupe: true),
               ],

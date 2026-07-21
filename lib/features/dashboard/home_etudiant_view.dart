@@ -210,7 +210,11 @@ class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
           )
         else
           ...viewModel.vedettes.map((l) => LogementCard(
-              logement: l, onTap: () => viewModel.goToDetail(l))),
+                logement: l,
+                onTap: () => viewModel.goToDetail(l),
+                // Même badge de suivi que sur la Recherche (APP-119)
+                statut: viewModel.statutPour(l.id),
+              )),
       ],
     );
   }

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/accord.dart';
 import '../../shared/models/enums.dart';
+import '../../shared/widgets/confirmation_dialog.dart';
 import 'accord_detail_viewmodel.dart';
 import 'mes_accords_view.dart' show AccordCardColors;
 
@@ -183,21 +184,13 @@ class AccordDetailView extends StackedView<AccordDetailViewModel> {
 
   Future<void> _confirm(BuildContext context, String question,
       Future<String?> Function() action) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(question),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Non')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Oui')),
-        ],
-      ),
+    final confirmed = await confirmerAction(
+      context,
+      titre: question,
+      confirmer: 'Oui',
+      annuler: 'Non',
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     final error = await action();
     if (context.mounted) {

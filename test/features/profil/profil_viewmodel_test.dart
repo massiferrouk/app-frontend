@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
+import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/profil/profil_viewmodel.dart';
 import 'package:studup_app/services/auth_service.dart';
@@ -8,17 +9,13 @@ import 'package:studup_app/services/candidature_service.dart';
 import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/services/profile_service.dart';
-import 'package:studup_app/services/review_service.dart';
 import 'package:studup_app/shared/models/alternant_profile.dart';
 import 'package:studup_app/shared/models/enums.dart';
-import 'package:studup_app/shared/models/reputation_score.dart';
 import 'package:studup_app/shared/models/user.dart';
 
 class MockProfileService extends Mock implements ProfileService {}
 
 class MockLogementService extends Mock implements LogementService {}
-
-class MockReviewService extends Mock implements ReviewService {}
 
 class MockAuthService extends Mock implements AuthService {}
 
@@ -31,7 +28,6 @@ class MockNavigationService extends Mock implements NavigationService {}
 void main() {
   late MockProfileService profileService;
   late MockLogementService logementService;
-  late MockReviewService reviewService;
   late MockAuthService authService;
   late MockChatSocketService socketService;
   late MockCandidatureService candidatureService;
@@ -63,7 +59,6 @@ void main() {
   setUp(() {
     profileService = MockProfileService();
     logementService = MockLogementService();
-    reviewService = MockReviewService();
     authService = MockAuthService();
     socketService = MockChatSocketService();
     candidatureService = MockCandidatureService();
@@ -77,7 +72,6 @@ void main() {
     viewModel = ProfilViewModel(
       profileService: profileService,
       logementService: logementService,
-      reviewService: reviewService,
       candidatureService: candidatureService,
       authService: authService,
       chatSocketService: socketService,
@@ -88,17 +82,6 @@ void main() {
   group('load', () {
     test('charge identité + enrichissements', () async {
       when(() => profileService.getMe()).thenAnswer((_) async => user);
-      when(() => logementService.getReputation('user-1'))
-          .thenAnswer((_) async => ReputationScore.fromJson(const {
-                'userId': 'user-1',
-                'avgRating': 4.2,
-                'totalReviews': 12,
-                'logementScore': 4.0,
-                'nbAccords': 5,
-                'badge': 'Fiable',
-              }));
-      when(() => reviewService.getReviewsForUser('user-1'))
-          .thenAnswer((_) async => []);
       when(() => logementService.getMesLogements())
           .thenAnswer((_) async => []);
       // Alternant : son profil d'alternance est aussi chargé (APP-117 · A-04)
@@ -109,19 +92,12 @@ void main() {
 
       expect(viewModel.user!.fullName, 'Alice Martin');
       expect(viewModel.isAlternant, isTrue);
-      expect(viewModel.reputation!.badge, 'Fiable');
       expect(viewModel.alternantProfile!.rythme,
           RythmeAlternance.SEMAINE_1_1);
     });
 
     test('échec des enrichissements : profil affiché quand même', () async {
       when(() => profileService.getMe()).thenAnswer((_) async => user);
-      when(() => logementService.getReputation(any())).thenThrow(
-          const ApiException(
-              code: 'NOT_FOUND', message: 'Pas de score', statusCode: 404));
-      when(() => reviewService.getReviewsForUser(any())).thenThrow(
-          const ApiException(
-              code: 'ERROR', message: 'Erreur', statusCode: 500));
       when(() => logementService.getMesLogements()).thenThrow(
           const ApiException(
               code: 'ERROR', message: 'Erreur', statusCode: 500));
@@ -129,7 +105,6 @@ void main() {
       await viewModel.load();
 
       expect(viewModel.user, isNotNull);
-      expect(viewModel.reputation, isNull);
       expect(viewModel.errorMessage, isNull);
     });
 
@@ -155,11 +130,6 @@ void main() {
     test('profil modifié (retour true) : recharge le profil', () async {
       // Pré-charge un profil alternant
       when(() => profileService.getMe()).thenAnswer((_) async => user);
-      when(() => logementService.getReputation(any()))
-          .thenThrow(const ApiException(
-              code: 'NOT_FOUND', message: 'x', statusCode: 404));
-      when(() => reviewService.getReviewsForUser(any()))
-          .thenAnswer((_) async => []);
       when(() => logementService.getMesLogements())
           .thenAnswer((_) async => []);
       when(() => profileService.getMyAlternantProfile())
@@ -241,13 +211,17 @@ void main() {
           .thenAnswer((_) async => user);
       when(() => authService.refreshSession()).thenAnswer((_) async {});
       // getMyAlternantProfile → null (défaut du setUp) : pas encore de profil
-      when(() => nav.navigateTo(any())).thenAnswer((_) async => null);
+      when(() => nav.navigateTo(any(), arguments: any(named: 'arguments')))
+          .thenAnswer((_) async => null);
 
       await viewModel.changeMode(UserRole.ALTERNANT);
 
       verify(() => profileService.changeMode(UserRole.ALTERNANT)).called(1);
       verify(() => authService.refreshSession()).called(1);
-      verify(() => nav.navigateTo(any())).called(1);
+      // L'ancien rôle voyage avec la route : le formulaire peut proposer
+      // « Annuler » qui le rétablit (APP-119)
+      verify(() => nav.navigateTo(Routes.profilCreationView,
+          arguments: any(named: 'arguments'))).called(1);
       verifyNever(() => nav.clearStackAndShow(any()));
     });
 

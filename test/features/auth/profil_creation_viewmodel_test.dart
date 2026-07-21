@@ -5,10 +5,12 @@ import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/auth/profil_creation/profil_creation_viewmodel.dart';
 import 'package:studup_app/services/accord_service.dart';
+import 'package:studup_app/services/auth_service.dart';
 import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/shared/models/alternant_profile.dart';
 import 'package:studup_app/shared/models/enums.dart';
+import 'package:studup_app/shared/models/user.dart';
 
 class MockProfileService extends Mock implements ProfileService {}
 
@@ -16,10 +18,13 @@ class MockNavigationService extends Mock implements NavigationService {}
 
 class MockAccordService extends Mock implements AccordService {}
 
+class MockAuthService extends Mock implements AuthService {}
+
 void main() {
   late MockProfileService profile;
   late MockNavigationService nav;
   late MockAccordService accords;
+  late MockAuthService auth;
   late ProfilCreationViewModel viewModel;
 
   final fakeProfile = AlternantProfile(
@@ -38,6 +43,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(RythmeAlternance.SEMAINE_1_1);
     registerFallbackValue(PremiereSemaine.ECOLE);
+    registerFallbackValue(UserRole.ETUDIANT);
     registerFallbackValue(DateTime(2026));
   });
 
@@ -45,10 +51,12 @@ void main() {
     profile = MockProfileService();
     nav = MockNavigationService();
     accords = MockAccordService();
+    auth = MockAuthService();
     viewModel = ProfilCreationViewModel(
       profileService: profile,
       navigationService: nav,
       accordService: accords,
+      authService: auth,
     );
   });
 
@@ -232,6 +240,7 @@ void main() {
           profileService: profile,
           navigationService: nav,
           accordService: accords,
+      authService: auth,
         );
 
     test('pré-remplit le formulaire depuis le profil existant', () {
@@ -328,6 +337,7 @@ void main() {
           profileService: profile,
           navigationService: nav,
           accordService: accords,
+      authService: auth,
         );
 
     test('en création, init ne consulte pas les accords', () async {
@@ -373,6 +383,71 @@ void main() {
       await vm.init();
 
       expect(vm.hasLivingAccord, isFalse);
+    });
+  });
+
+  group('annulation du changement de mode (APP-119)', () {
+    ProfilCreationViewModel makeVmAvecAnnulation() => ProfilCreationViewModel(
+          roleAnnulation: UserRole.ETUDIANT,
+          profileService: profile,
+          navigationService: nav,
+          accordService: accords,
+          authService: auth,
+        );
+
+    test('peutAnnuler : uniquement à l\'ouverture via « Changer de mode »',
+        () {
+      // Parcours d'inscription : création obligatoire, pas d'annulation
+      expect(viewModel.peutAnnuler, isFalse);
+      // Changement de mode : annulation proposée
+      expect(makeVmAvecAnnulation().peutAnnuler, isTrue);
+    });
+
+    test('annuler rétablit l\'ancien rôle puis revient au Profil', () async {
+      when(() => profile.changeMode(UserRole.ETUDIANT))
+          .thenAnswer((_) async => User.fromJson(const {
+                'id': 'u1',
+                'email': 'massi@studup.fr',
+                'firstName': 'Massi',
+                'lastName': 'F',
+                'role': 'ETUDIANT',
+              }));
+      when(() => auth.refreshSession()).thenAnswer((_) async {});
+      when(() => nav.back()).thenReturn(true);
+
+      final vm = makeVmAvecAnnulation();
+      await vm.annulerChangementMode();
+
+      // L'ordre compte : rôle rétabli côté serveur, session rafraîchie
+      // (token à jour), PUIS retour — sur l'écran Profil d'où l'utilisateur
+      // venait, pas sur l'accueil (un Annuler ramène là où on était)
+      verifyInOrder([
+        () => profile.changeMode(UserRole.ETUDIANT),
+        () => auth.refreshSession(),
+        () => nav.back(),
+      ]);
+      verifyNever(() => nav.clearStackAndShow(any()));
+    });
+
+    test('échec réseau : on reste sur le formulaire avec un message',
+        () async {
+      when(() => profile.changeMode(any())).thenThrow(const ApiException(
+          code: 'NETWORK_ERROR', message: 'Hors ligne', statusCode: 0));
+
+      final vm = makeVmAvecAnnulation();
+      await vm.annulerChangementMode();
+
+      // Quitter quand même laisserait un alternant sans profil : on ne
+      // navigue pas, l'utilisateur voit l'erreur et peut réessayer
+      expect(vm.errorMessage, 'Hors ligne');
+      verifyNever(() => nav.back());
+    });
+
+    test('sans roleAnnulation (inscription) : aucune action', () async {
+      await viewModel.annulerChangementMode();
+
+      verifyNever(() => profile.changeMode(any()));
+      verifyNever(() => nav.back());
     });
   });
 }

@@ -4,6 +4,7 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/dashboard/home_etudiant_viewmodel.dart';
 import 'package:studup_app/services/accord_service.dart';
+import 'package:studup_app/services/candidature_service.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/services/notification_service.dart';
 import 'package:studup_app/shared/models/accord.dart';
@@ -18,10 +19,13 @@ class MockNavigationService extends Mock implements NavigationService {}
 
 class MockNotificationService extends Mock implements NotificationService {}
 
+class MockCandidatureService extends Mock implements CandidatureService {}
+
 void main() {
   late MockLogementService logementService;
   late MockAccordService accordService;
   late MockNotificationService notificationService;
+  late MockCandidatureService candidatureService;
   late HomeEtudiantViewModel viewModel;
 
   Logement logement(String id) => Logement.fromJson({
@@ -55,13 +59,18 @@ void main() {
     logementService = MockLogementService();
     accordService = MockAccordService();
     notificationService = MockNotificationService();
+    candidatureService = MockCandidatureService();
     // Badge cloche : le load() rafraîchit aussi le compteur non-lues
     when(() => notificationService.getUnreadCount())
         .thenAnswer((_) async => 3);
+    // Par défaut : aucune annonce suivie → aucun badge de statut
+    when(() => candidatureService.getMesCandidatures())
+        .thenAnswer((_) async => []);
     viewModel = HomeEtudiantViewModel(
       logementService: logementService,
       accordService: accordService,
       notificationService: notificationService,
+      candidatureService: candidatureService,
       navigationService: MockNavigationService(),
     );
   });

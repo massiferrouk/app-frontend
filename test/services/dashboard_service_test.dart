@@ -34,8 +34,8 @@ void main() {
         .thenAnswer((_) async => {
               'nbLogementsTotaux': 3,
               'nbLogementsActifs': 2,
-              'nbLocatairesActifs': 1,
-              'tauxOccupation': 0.66,
+              'nbEtudiantsInteresses': 3,
+              'nbConversations': 2,
               'logements': [
                 {
                   'id': 'l1',

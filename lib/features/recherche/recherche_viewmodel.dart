@@ -5,6 +5,7 @@ import 'package:stacked_services/stacked_services.dart';
 import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
+import '../../services/candidature_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/matching_service.dart';
 import '../../services/profile_service.dart';
@@ -16,17 +17,41 @@ class RechercheViewModel extends BaseViewModel {
   final LogementService _logements;
   final MatchingService _matching;
   final ProfileService _profile;
+  final CandidatureService _candidatures;
   final NavigationService _nav;
 
   RechercheViewModel(
       {LogementService? logementService,
       MatchingService? matchingService,
       ProfileService? profileService,
+      CandidatureService? candidatureService,
       NavigationService? navigationService})
       : _logements = logementService ?? locator<LogementService>(),
         _matching = matchingService ?? locator<MatchingService>(),
         _profile = profileService ?? locator<ProfileService>(),
+        _candidatures = candidatureService ?? locator<CandidatureService>(),
         _nav = navigationService ?? locator<NavigationService>();
+
+  /// Statut de suivi par annonce (APP-119) : permet d'afficher « Contacté »,
+  /// « Visité »… directement sur les cartes de résultats, pour reconnaître
+  /// une annonce déjà traitée sans l'ouvrir.
+  /// Une annonce absente de cette map n'est pas suivie → aucun badge.
+  Map<String, CandidatureStatut> statutsSuivis = {};
+
+  CandidatureStatut? statutPour(String logementId) => statutsSuivis[logementId];
+
+  /// Recharge les candidatures pour alimenter les badges.
+  /// Silencieux : un échec ne doit pas casser la recherche, les cartes
+  /// s'affichent simplement sans badge.
+  Future<void> _refreshStatutsSuivis() async {
+    try {
+      final mes = await _candidatures.getMesCandidatures();
+      statutsSuivis = {for (final c in mes) c.logement.id: c.statut};
+      notifyListeners();
+    } on ApiException {
+      // non bloquant
+    }
+  }
 
   final villeController = TextEditingController();
 
@@ -87,6 +112,9 @@ class RechercheViewModel extends BaseViewModel {
     } finally {
       setBusy(false);
     }
+    // Les badges de suivi sont rafraîchis à chaque recherche : le statut a pu
+    // changer depuis l'écran Candidatures entre-temps.
+    await _refreshStatutsSuivis();
     await _refreshMatchingCard();
   }
 
