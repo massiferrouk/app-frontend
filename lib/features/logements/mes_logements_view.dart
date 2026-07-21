@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
+import '../../shared/widgets/confirmation_dialog.dart';
 import 'mes_logements_viewmodel.dart';
 
 /// Mes logements — onglet Logement du propriétaire, ou écran empilé
@@ -177,26 +178,15 @@ class _LogementCard extends StatelessWidget {
   });
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer ce logement ?'),
-        content: Text(
-            '${logement.type.label} · ${logement.ville} sera définitivement '
-            'supprimé. Cette action est irréversible.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error),
-              child: const Text('Supprimer')),
-        ],
-      ),
+    final confirmed = await confirmerAction(
+      context,
+      titre: 'Supprimer ce logement ?',
+      message: '${logement.type.label} · ${logement.ville} sera définitivement '
+          'supprimé. Cette action est irréversible.',
+      confirmer: 'Supprimer',
+      destructif: true,
     );
-    if (confirmed == true) onSupprimer();
+    if (confirmed) onSupprimer();
   }
 
   (Color, Color) get _statutColors => switch (logement.statut) {

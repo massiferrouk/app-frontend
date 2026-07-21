@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/candidature.dart';
 import '../../shared/models/enums.dart';
+import '../../shared/widgets/confirmation_dialog.dart';
 import '../../shared/widgets/logement_card.dart';
 import '../../shared/widgets/statut_candidature_badge.dart';
 import 'mes_candidatures_viewmodel.dart';
@@ -284,27 +285,15 @@ class MesCandidaturesView extends StackedView<MesCandidaturesViewModel> {
 
   Future<void> _retirer(BuildContext context,
       MesCandidaturesViewModel viewModel, Candidature c) async {
-    final confirme = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Retirer du suivi ?'),
-        content: const Text(
-            'Cette annonce ne sera plus dans tes candidatures. '
-            'Tu pourras la re-suivre depuis la recherche.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Annuler')),
-          ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Retirer')),
-        ],
-      ),
+    final confirme = await confirmerAction(
+      context,
+      titre: 'Retirer du suivi ?',
+      message: 'Cette annonce ne sera plus dans tes candidatures. '
+          'Tu pourras la re-suivre depuis la recherche.',
+      confirmer: 'Retirer',
+      destructif: true,
     );
-    if (confirme != true) return;
+    if (!confirme) return;
     final erreur = await viewModel.retirer(c);
     if (erreur != null && context.mounted) {
       ScaffoldMessenger.of(context)

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/accord.dart';
 import '../../shared/models/enums.dart';
+import '../../shared/widgets/confirmation_dialog.dart';
 import 'mes_accords_viewmodel.dart';
 
 /// Mes accords — tabs par statut, actions accepter/refuser/annuler.
@@ -146,21 +147,13 @@ class MesAccordsView extends StackedView<MesAccordsViewModel> {
     String question,
     Future<String?> Function() action,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(question),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Non')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Oui')),
-        ],
-      ),
+    final confirmed = await confirmerAction(
+      context,
+      titre: question,
+      confirmer: 'Oui',
+      annuler: 'Non',
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     final error = await action();
     if (context.mounted) {
@@ -353,15 +346,10 @@ class _AccordCard extends StatelessWidget {
               child: const Text('Annuler ma demande',
                   style: TextStyle(fontSize: 13)),
             ),
-          ] else if (accord.statut == AccordStatut.TERMINE) ...[
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton.icon(
-              onPressed: onAvis,
-              icon: const Icon(Icons.star_border, size: 16),
-              label: const Text('Laisser un avis',
-                  style: TextStyle(fontSize: 13)),
-            ),
           ],
+          // Bouton « Laisser un avis » retiré (APP-119) : un accord n'atteint
+          // jamais le statut TERMINE dans cette version — dépôt d'avis
+          // reporté en V2, backend et écran conservés.
         ],
       ),
     );
