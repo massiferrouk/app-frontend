@@ -160,12 +160,43 @@ class _ConversationTile extends StatelessWidget {
           ),
         ),
       ),
-      title: Text(
-        conversation.partnerName,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w500,
-        ),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              conversation.partnerName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+          // Annonce concernée (APP-119) : distingue deux fils avec le même
+          // propriétaire quand il publie plusieurs logements.
+          if (conversation.logementLabel != null) ...[
+            const SizedBox(width: AppSpacing.xs),
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceDark,
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusChip),
+                ),
+                child: Text(
+                  conversation.logementLabel!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
       subtitle: Text(
         // Jamais de ligne vide : à défaut de message, une invite claire.

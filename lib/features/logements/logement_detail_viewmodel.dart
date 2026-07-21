@@ -80,20 +80,16 @@ class LogementDetailViewModel extends BaseViewModel {
 
   /// Ouvre le chat avec le propriétaire (nouvelle conversation au 1er message).
   ///
-  /// APP-117 : contacter, c'est postuler. On enregistre donc l'annonce dans le
-  /// suivi en statut « Contacté » — c'est précisément ce qui évite le « j'ai
-  /// déjà postulé à celle-là ou pas ? ». L'échec est silencieux : le suivi ne
-  /// doit jamais empêcher d'ouvrir la conversation.
+  /// APP-117 : contacter, c'est postuler — l'annonce passe en « Contacté »
+  /// dans le suivi, ce qui évite le « j'ai déjà postulé à celle-là ou pas ? ».
+  ///
+  /// APP-119 : mais on ne l'enregistre PLUS ici. Ouvrir la discussion n'est pas
+  /// postuler : l'utilisateur peut faire demi-tour sans rien écrire, et
+  /// l'annonce se retrouvait quand même en « Contacté ». C'est désormais le
+  /// premier message RÉELLEMENT envoyé qui pose le statut. Au retour du chat,
+  /// on rafraîchit donc l'état du suivi.
   Future<void> contacter() async {
-    try {
-      await _candidatures.suivre(
-          logementId: logement.id, statut: CandidatureStatut.CONTACTE);
-      isSuivi = true;
-      notifyListeners();
-    } on ApiException {
-      // silencieux
-    }
-    _nav.navigateTo(
+    await _nav.navigateTo(
       Routes.chatView,
       arguments: ChatViewArguments(
         conversation: ConversationSummary(
@@ -102,9 +98,24 @@ class LogementDetailViewModel extends BaseViewModel {
           partnerName: logement.ownerPrenom ?? 'Le propriétaire',
           lastMessage: '',
           unreadCount: 0,
+          // La discussion porte sur CETTE annonce (APP-119) : un propriétaire
+          // qui publie plusieurs biens a un fil par bien.
+          logementId: logement.id,
+          logementVille: logement.ville,
+          logementType: logement.type,
         ),
       ),
     );
+
+    // Un message a peut-être été envoyé pendant la discussion : le suivi a
+    // alors changé côté serveur, on resynchronise le bouton.
+    try {
+      final mes = await _candidatures.getMesCandidatures();
+      isSuivi = mes.any((c) => c.logement.id == logement.id);
+      notifyListeners();
+    } on ApiException {
+      // non bloquant : le bouton garde son état actuel
+    }
   }
 
   /// Charge les données secondaires. Chacune peut échouer sans bloquer

@@ -31,11 +31,24 @@ class MessageService {
   }
 
   /// POST /messages/send/{receiverId} — envoi (persiste ET broadcast
-  /// WebSocket côté backend)
-  Future<ChatMessage> sendMessage(String receiverId, String content) async {
+  /// WebSocket côté backend).
+  ///
+  /// [logementId] : annonce concernée (APP-119). Le backend range le message
+  /// dans le fil de CETTE annonce — un propriétaire avec plusieurs logements a
+  /// un fil par bien. Laissé null pour une discussion de personne à personne.
+  Future<ChatMessage> sendMessage(
+    String receiverId,
+    String content, {
+    String? logementId,
+  }) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/messages/send/$receiverId',
-      data: {'content': content},
+      data: {
+        'content': content,
+        // Omis du corps si null : le backend traite l'absence comme
+        // « discussion de personne à personne »
+        'logementId': ?logementId,
+      },
     );
     return ChatMessage.fromJson(data);
   }

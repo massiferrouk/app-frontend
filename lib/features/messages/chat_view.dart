@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:stacked/stacked.dart';
@@ -5,6 +6,7 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../shared/models/conversation_summary.dart';
+import '../../shared/models/logement.dart';
 import '../../shared/models/message.dart';
 import 'chat_viewmodel.dart';
 
@@ -22,10 +24,37 @@ class ChatView extends StackedView<ChatViewModel> {
   ) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(viewModel.conversation.partnerName)),
+      // L'annonce concernée est rappelée sous le nom (APP-119) : avec un
+      // propriétaire qui publie plusieurs biens, on doit savoir de quel
+      // logement on parle sans remonter tout le fil.
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(viewModel.conversation.partnerName),
+            if (viewModel.conversation.logementLabel != null)
+              Text(
+                viewModel.conversation.logementLabel!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textSecondary),
+              ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
+            // Carte de l'annonce, cliquable → détail (APP-119)
+            if (viewModel.logement != null)
+              _AnnonceCard(
+                logement: viewModel.logement!,
+                onTap: viewModel.ouvrirAnnonce,
+              ),
             Expanded(child: _buildMessages(context, viewModel)),
             _InputBar(viewModel: viewModel),
           ],
@@ -75,6 +104,96 @@ class ChatView extends StackedView<ChatViewModel> {
 }
 
 // ─── Widgets internes ─────────────────────────────────────────────
+
+/// Carte de l'annonce en tête de conversation (APP-119) — photo, type · ville
+/// et loyer, cliquable pour ouvrir le détail. Comme sur leboncoin : on sait
+/// toujours de quel bien on parle, et on y retourne en un tap.
+///
+/// Dégradation propre : si la photo manque ou ne charge pas (MinIO), on garde
+/// une vignette neutre — l'info utile reste le texte.
+class _AnnonceCard extends StatelessWidget {
+  final Logement logement;
+  final VoidCallback onTap;
+
+  const _AnnonceCard({required this.logement, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final photo = logement.photoUrls.isEmpty ? null : logement.photoUrls.first;
+
+    return Material(
+      color: AppColors.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenPadding, vertical: AppSpacing.sm),
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppColors.border)),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: photo == null
+                      ? const _VignetteVide()
+                      : CachedNetworkImage(
+                          imageUrl: photo,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => const _VignetteVide(),
+                          errorWidget: (_, __, ___) => const _VignetteVide(),
+                        ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${logement.type.label} · ${logement.ville}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${logement.loyer.round()} €/mois',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.echange),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right,
+                  size: 20, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Vignette de repli quand il n'y a pas de photo exploitable
+class _VignetteVide extends StatelessWidget {
+  const _VignetteVide();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        color: AppColors.surfaceDark,
+        alignment: Alignment.center,
+        child: const Icon(Icons.home_outlined,
+            size: 22, color: AppColors.textTertiary),
+      );
+}
 
 class _Bubble extends StatelessWidget {
   final ChatMessage message;
