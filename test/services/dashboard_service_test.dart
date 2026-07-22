@@ -19,14 +19,14 @@ void main() {
         .thenAnswer((_) async => {
               'prochainAccords': [],
               'accordsEnAttente': [],
-              'economiesEstimees': 600.0,
-              'nbAccordsTermines': 2,
+              'economiePossibleMax': 600.0,
+              'nbMatchesCompatibles': 2,
             });
 
     final dashboard = await service.getAlternantDashboard();
 
-    expect(dashboard.economiesEstimees, 600.0);
-    expect(dashboard.nbAccordsTermines, 2);
+    expect(dashboard.economiePossibleMax, 600.0);
+    expect(dashboard.nbMatchesCompatibles, 2);
   });
 
   test('getProprietaireDashboard parse KPIs et logements', () async {

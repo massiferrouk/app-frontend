@@ -10,11 +10,13 @@ import '../../core/api/api_exception.dart';
 import '../../services/candidature_service.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/logement_service.dart';
+import '../../services/matching_service.dart';
 import '../../services/message_service.dart';
 import '../../services/profile_service.dart';
 import '../../shared/models/conversation_summary.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
+import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/message.dart';
 
 /// Logique de l'écran de chat.
@@ -24,6 +26,7 @@ class ChatViewModel extends BaseViewModel {
   final ChatSocketService _socket;
   final CandidatureService _candidatures;
   final LogementService _logements;
+  final MatchingService _matching;
   final NavigationService _nav;
   final ConversationSummary conversation;
 
@@ -34,12 +37,14 @@ class ChatViewModel extends BaseViewModel {
     ChatSocketService? chatSocketService,
     CandidatureService? candidatureService,
     LogementService? logementService,
+    MatchingService? matchingService,
     NavigationService? navigationService,
   })  : _messages = messageService ?? locator<MessageService>(),
         _profile = profileService ?? locator<ProfileService>(),
         _socket = chatSocketService ?? locator<ChatSocketService>(),
         _candidatures = candidatureService ?? locator<CandidatureService>(),
         _logements = logementService ?? locator<LogementService>(),
+        _matching = matchingService ?? locator<MatchingService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
   /// Annonce sur laquelle porte la discussion — chargée depuis son id pour
@@ -71,6 +76,64 @@ class ChatViewModel extends BaseViewModel {
     );
   }
 
+  // ─── Contexte alternant ↔ alternant (APP-120) ────────────────────
+
+  /// Match qui a mis les deux alternants en relation — null si la discussion
+  /// porte sur une annonce (étudiant/proprio) ou s'ils ne sont plus
+  /// compatibles (profil modifié depuis).
+  ///
+  /// Ici le sujet de la conversation n'est PAS une annonce mais un
+  /// arrangement : il peut y avoir deux logements, un seul, ou aucun. Le seul
+  /// contexte valable dans tous les cas, c'est le match lui-même.
+  MatchingSuggestion? matchPartenaire;
+
+  /// Cherche le match correspondant au partenaire. Silencieux : sans match,
+  /// on n'affiche simplement aucune carte.
+  Future<void> _loadMatch() async {
+    // Une discussion rattachée à une annonce a déjà sa carte
+    if (conversation.logementId != null) return;
+    final partnerId = conversation.partnerId;
+    if (partnerId == null) return;
+    try {
+      final suggestions = await _matching.getSuggestions();
+      final trouve = suggestions.where((s) => s.userId == partnerId);
+      matchPartenaire = trouve.isEmpty ? null : trouve.first;
+      notifyListeners();
+    } on ApiException {
+      // non bloquant : pas de carte, la conversation reste utilisable
+    }
+  }
+
+  /// Le partenaire a-t-il publié un logement ? (accès secondaire de la carte)
+  bool get partenaireAUnLogement => matchPartenaire?.logementBId != null;
+
+  /// Tap principal : le calendrier de compatibilité — l'écran qui explique
+  /// pourquoi ces deux-là se parlent (semaines, options, économies).
+  void ouvrirCompatibilite() {
+    final match = matchPartenaire;
+    if (match == null) return;
+    _nav.navigateTo(
+      Routes.compatibiliteView,
+      arguments: CompatibiliteViewArguments(suggestion: match),
+    );
+  }
+
+  /// Accès secondaire : l'annonce du partenaire, quand il en a publié une.
+  /// Chargée à la demande — la suggestion ne porte que son identifiant.
+  Future<void> ouvrirLogementPartenaire() async {
+    final logementId = matchPartenaire?.logementBId;
+    if (logementId == null) return;
+    try {
+      final l = await _logements.getLogement(logementId);
+      await _nav.navigateTo(
+        Routes.logementDetailView,
+        arguments: LogementDetailViewArguments(logement: l),
+      );
+    } on ApiException {
+      // silencieux : l'annonce a pu être dépubliée entre-temps
+    }
+  }
+
   /// Conversation à laquelle on est abonné en temps réel
   String? _subscribedConversationId;
 
@@ -95,8 +158,10 @@ class ChatViewModel extends BaseViewModel {
   Future<void> init() async {
     currentUserId = await _profile.currentUserId();
     _conversationId = conversation.conversationId;
-    // L'annonce se charge en parallèle : elle n'est pas requise pour discuter
+    // Le contexte (annonce OU match) se charge en parallèle : il n'est pas
+    // requis pour discuter. Les deux s'excluent — voir _loadMatch.
     unawaited(_loadLogement());
+    unawaited(_loadMatch());
     await _resolveExistingConversation();
     await load();
     initializing = false;

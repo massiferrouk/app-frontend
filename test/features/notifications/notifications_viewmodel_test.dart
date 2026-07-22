@@ -4,20 +4,16 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/notifications/notifications_viewmodel.dart';
-import 'package:studup_app/services/accord_service.dart';
 import 'package:studup_app/services/dashboard_service.dart';
 import 'package:studup_app/services/matching_service.dart';
 import 'package:studup_app/services/notification_service.dart';
 import 'package:studup_app/services/profile_service.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/proprietaire_dashboard.dart';
-import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/shared/models/app_notification.dart';
 import 'package:studup_app/shared/models/matching_suggestion.dart';
 
 class MockNotificationService extends Mock implements NotificationService {}
-
-class MockAccordService extends Mock implements AccordService {}
 
 class MockMatchingService extends Mock implements MatchingService {}
 
@@ -29,7 +25,6 @@ class MockDashboardService extends Mock implements DashboardService {}
 
 void main() {
   late MockNotificationService service;
-  late MockAccordService accords;
   late MockMatchingService matching;
   late MockNavigationService nav;
   late MockProfileService profile;
@@ -45,17 +40,6 @@ void main() {
         'body': 'Thomas D. est compatible à 87%',
         'isRead': isRead,
         'deepLink': deepLink,
-        'createdAt': DateTime.now().toIso8601String(),
-      });
-
-  Accord buildAccord(String id) => Accord.fromJson({
-        'id': id,
-        'initiatorId': 'u-1',
-        'receiverId': 'u-2',
-        'type': 'ECHANGE_TOTAL',
-        'statut': 'EN_ATTENTE',
-        'dateDebut': '2026-09-01',
-        'dateFin': '2026-12-31',
         'createdAt': DateTime.now().toIso8601String(),
       });
 
@@ -83,7 +67,6 @@ void main() {
 
   setUp(() {
     service = MockNotificationService();
-    accords = MockAccordService();
     matching = MockMatchingService();
     nav = MockNavigationService();
     profile = MockProfileService();
@@ -92,7 +75,6 @@ void main() {
     when(() => profile.currentRole()).thenAnswer((_) async => UserRole.ETUDIANT);
     viewModel = NotificationsViewModel(
       notificationService: service,
-      accordService: accords,
       matchingService: matching,
       profileService: profile,
       dashboardService: dashboard,
@@ -177,13 +159,11 @@ void main() {
   });
 
   group('ouvrirNotification (deep links, APP-101)', () {
-    test('accord/{id} : charge l\'accord et ouvre le détail', () async {
+    test('accord/{id} : marque lue sans rien ouvrir (APP-120)', () async {
+      // Les accords ont été retirés de l'app, mais d'anciennes notifications
+      // restent en base : le tap ne doit ni planter ni naviguer dans le vide.
       when(() => service.getNotifications())
           .thenAnswer((_) async => [build(id: 'n1', deepLink: 'accord/a42')]);
-      when(() => accords.getAccord('a42'))
-          .thenAnswer((_) async => buildAccord('a42'));
-      when(() => nav.navigateTo(any(), arguments: any(named: 'arguments')))
-          .thenAnswer((_) async => null);
       await viewModel.load();
 
       final error =
@@ -191,8 +171,8 @@ void main() {
 
       expect(error, isNull);
       expect(viewModel.unreadCount, 0); // marquée lue au passage
-      verify(() => nav.navigateTo(Routes.accordDetailView,
-          arguments: any(named: 'arguments'))).called(1);
+      verifyNever(
+          () => nav.navigateTo(any(), arguments: any(named: 'arguments')));
     });
 
     test('match/{userId} : retrouve la suggestion et ouvre la compatibilité',
@@ -243,22 +223,6 @@ void main() {
           () => nav.navigateTo(any(), arguments: any(named: 'arguments')));
     });
 
-    test('erreur API au chargement de l\'accord : message, pas de crash',
-        () async {
-      when(() => service.getNotifications())
-          .thenAnswer((_) async => [build(id: 'n1', deepLink: 'accord/a42')]);
-      when(() => accords.getAccord('a42')).thenThrow(const ApiException(
-          code: 'NOT_FOUND', message: 'Accord introuvable', statusCode: 404));
-      await viewModel.load();
-
-      final error =
-          await viewModel.ouvrirNotification(viewModel.notifications.first);
-
-      expect(error, 'Accord introuvable');
-      expect(viewModel.isBusy, isFalse);
-      verifyNever(
-          () => nav.navigateTo(any(), arguments: any(named: 'arguments')));
-    });
   });
 
   group('markAsRead', () {

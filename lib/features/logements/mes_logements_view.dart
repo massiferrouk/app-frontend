@@ -123,8 +123,6 @@ class MesLogementsView extends StackedView<MesLogementsViewModel> {
                     villeEntreprise: viewModel.villeEntreprise,
                     onPublish: () => _handleAction(
                         context, () => viewModel.publish(l)),
-                    onAssocier: (ville) => _handleAction(
-                        context, () => viewModel.associer(l, ville)),
                     onSupprimer: () => _handleAction(
                         context, () => viewModel.supprimer(l)),
                     onModifier: () => viewModel.goToModifier(l),
@@ -162,7 +160,6 @@ class _LogementCard extends StatelessWidget {
   final String? villeEcole; // villeA du profil
   final String? villeEntreprise; // villeB du profil
   final VoidCallback onPublish;
-  final void Function(VilleAssociee) onAssocier;
   final VoidCallback onSupprimer;
   final VoidCallback onModifier;
 
@@ -172,10 +169,23 @@ class _LogementCard extends StatelessWidget {
     required this.villeEcole,
     required this.villeEntreprise,
     required this.onPublish,
-    required this.onAssocier,
     required this.onSupprimer,
     required this.onModifier,
   });
+
+  /// Pourquoi ce logement publié n'entre pas dans le matching.
+  /// Deux causes possibles, et l'utilisateur ne peut agir que sur la seconde.
+  String get _raisonHorsMatching {
+    final ville = logement.ville;
+    final estUneVilleDuProfil =
+        ville.toLowerCase() == (villeEcole ?? '').toLowerCase() ||
+            ville.toLowerCase() == (villeEntreprise ?? '').toLowerCase();
+    return estUneVilleDuProfil
+        ? 'Tu as déjà un autre logement rattaché à $ville : seul le premier '
+            'entre dans le matching.'
+        : "$ville n'est ni ta ville d'école ni celle de ton entreprise : ce "
+            "logement n'entre pas dans le matching.";
+  }
 
   Future<void> _confirmDelete(BuildContext context) async {
     final confirmed = await confirmerAction(
@@ -265,37 +275,50 @@ class _LogementCard extends StatelessWidget {
             ],
           ),
 
-          // ─── Actions selon l'état ──────────────────────────
-          if (logement.statut == LogementStatut.BROUILLON ||
-              (isAlternant && logement.villeAssociee == null)) ...[
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                if (logement.statut == LogementStatut.BROUILLON)
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: onPublish,
-                      style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(40)),
-                      child: const Text('Publier',
-                          style: TextStyle(fontSize: 13)),
-                    ),
-                  ),
-                if (logement.statut == LogementStatut.BROUILLON &&
-                    isAlternant &&
-                    logement.villeAssociee == null)
+          // APP-120 : le bouton « Associer à une ville » a disparu. Le choix
+          // n'en était pas un — la ville se déduit du logement et du profil, et
+          // le backend le fait maintenant tout seul à la publication.
+          // Reste à prévenir quand le logement sort des deux villes : il
+          // n'entre alors pas dans le matching, et rien ne le disait avant.
+          if (isAlternant &&
+              logement.statut == LogementStatut.ACTIF &&
+              logement.villeAssociee == null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.chevauchementLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline,
+                      size: 16, color: AppColors.chevauchement),
                   const SizedBox(width: AppSpacing.sm),
-                if (isAlternant && logement.villeAssociee == null)
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _showAssocierDialog(context),
-                      style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(40)),
-                      child: const Text('Associer à une ville',
-                          style: TextStyle(fontSize: 13)),
+                    child: Text(
+                      _raisonHorsMatching,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textPrimary),
                     ),
                   ),
-              ],
+                ],
+              ),
+            ),
+          ],
+
+          // ─── Actions selon l'état ──────────────────────────
+          if (logement.statut == LogementStatut.BROUILLON) ...[
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onPublish,
+                style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(40)),
+                child: const Text('Publier', style: TextStyle(fontSize: 13)),
+              ),
             ),
           ],
 
@@ -322,34 +345,6 @@ class _LogementCard extends StatelessWidget {
     );
   }
 
-  Future<void> _showAssocierDialog(BuildContext context) async {
-    // On affiche les vrais noms de villes du profil pour lever toute
-    // ambiguïté : « Paris (ville de ton école) » plutôt que « Ville A ».
-    final labelEcole = villeEcole != null
-        ? '$villeEcole (ville de ton école)'
-        : 'Ville de ton école';
-    final labelEntreprise = villeEntreprise != null
-        ? '$villeEntreprise (ville de ton entreprise)'
-        : 'Ville de ton entreprise';
-
-    final ville = await showDialog<VilleAssociee>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('Associer ce logement à…'),
-        children: [
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, VilleAssociee.VILLE_A),
-            child: Text(labelEcole),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, VilleAssociee.VILLE_B),
-            child: Text(labelEntreprise),
-          ),
-        ],
-      ),
-    );
-    if (ville != null) onAssocier(ville);
-  }
 }
 
 /// Visuel de repli quand l'annonce n'a pas de photo (ou qu'elle ne charge pas).

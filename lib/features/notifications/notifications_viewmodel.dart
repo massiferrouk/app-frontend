@@ -4,7 +4,6 @@ import 'package:stacked_services/stacked_services.dart';
 import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
-import '../../services/accord_service.dart';
 import '../../services/dashboard_service.dart';
 import '../../services/matching_service.dart';
 import '../../services/notification_service.dart';
@@ -15,7 +14,6 @@ import '../../shared/models/enums.dart';
 /// Logique de l'écran notifications.
 class NotificationsViewModel extends BaseViewModel {
   final NotificationService _notifications;
-  final AccordService _accords;
   final MatchingService _matching;
   final ProfileService _profile;
   final DashboardService _dashboard;
@@ -23,14 +21,12 @@ class NotificationsViewModel extends BaseViewModel {
 
   NotificationsViewModel(
       {NotificationService? notificationService,
-      AccordService? accordService,
       MatchingService? matchingService,
       ProfileService? profileService,
       DashboardService? dashboardService,
       NavigationService? navigationService})
       : _notifications =
             notificationService ?? locator<NotificationService>(),
-        _accords = accordService ?? locator<AccordService>(),
         _matching = matchingService ?? locator<MatchingService>(),
         _profile = profileService ?? locator<ProfileService>(),
         _dashboard = dashboardService ?? locator<DashboardService>(),
@@ -93,7 +89,7 @@ class NotificationsViewModel extends BaseViewModel {
   }
 
   /// Tap sur une notification : marque lue + suit le deepLink (APP-101).
-  /// Formats backend : "accord/{id}" et "match/{userId}".
+  /// Seul format encore routé : "match/{userId}".
   /// Retourne null si OK (ou rien à ouvrir), un message d'erreur sinon.
   Future<String?> ouvrirNotification(AppNotification notification) async {
     await markAsRead(notification);
@@ -101,30 +97,15 @@ class NotificationsViewModel extends BaseViewModel {
     final deepLink = notification.deepLink;
     if (deepLink == null || deepLink.isEmpty) return null;
 
-    if (deepLink.startsWith('accord/')) {
-      return _ouvrirAccord(deepLink.substring('accord/'.length));
-    }
+    // APP-120 : les accords ont été retirés de l'app, mais d'anciennes
+    // notifications "accord/{id}" restent en base côté serveur. On les marque
+    // lues sans rien ouvrir plutôt que de laisser tomber le tap dans le vide.
+    if (deepLink.startsWith('accord/')) return null;
     if (deepLink.startsWith('match/')) {
       return _ouvrirMatch(deepLink.substring('match/'.length));
     }
     // Type sans destination (SYSTEME...) : marquer lue suffit
     return null;
-  }
-
-  Future<String?> _ouvrirAccord(String accordId) async {
-    setBusy(true);
-    try {
-      final accord = await _accords.getAccord(accordId);
-      setBusy(false);
-      await _nav.navigateTo(
-        Routes.accordDetailView,
-        arguments: AccordDetailViewArguments(accord: accord),
-      );
-      return null;
-    } on ApiException catch (e) {
-      setBusy(false);
-      return e.message;
-    }
   }
 
   /// Le deepLink match ne porte qu'un userId : on recharge les suggestions

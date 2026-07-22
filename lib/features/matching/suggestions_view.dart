@@ -391,11 +391,15 @@ class _CompactMatchCard extends StatelessWidget {
                   const Icon(Icons.savings_outlined,
                       size: 18, color: AppColors.echange),
                   const SizedBox(width: AppSpacing.sm),
-                  Text(suggestion.economieLabel,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.echange)),
+                  // Expanded : sans lui le texte débordait de la carte
+                  // (les libellés de coloc sont longs — APP-120)
+                  Expanded(
+                    child: Text(suggestion.economieLabel,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.echange)),
+                  ),
                 ],
               ),
             ],

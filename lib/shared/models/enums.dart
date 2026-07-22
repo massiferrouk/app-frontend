@@ -79,7 +79,7 @@ enum PremiereSemaine {
       rythme == RythmeAlternance.SEMAINE_3_1 ? ENTREPRISE : ECOLE;
 }
 
-// ─── Accords ────────────────────────────────────────────────────
+// ─── Types de match (vocabulaire de l'algorithme) ───────────────
 
 enum AccordType {
   ECHANGE_TOTAL,
@@ -100,28 +100,6 @@ enum AccordType {
       };
 }
 
-enum AccordStatut {
-  EN_ATTENTE,
-  ACCEPTE,
-  REFUSE,
-  EN_COURS,
-  TERMINE,
-  ANNULE,
-  LITIGE;
-
-  static AccordStatut fromJson(String value) => values.byName(value);
-  String toJson() => name;
-
-  String get label => switch (this) {
-        EN_ATTENTE => 'En attente',
-        ACCEPTE => 'Accepté',
-        REFUSE => 'Refusé',
-        EN_COURS => 'En cours',
-        TERMINE => 'Terminé',
-        ANNULE => 'Annulé',
-        LITIGE => 'Litige',
-      };
-}
 
 // ─── Candidatures (APP-117) ─────────────────────────────────────
 

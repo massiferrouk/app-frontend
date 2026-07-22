@@ -4,7 +4,6 @@ import 'package:stacked/stacked.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../shared/models/accord_summary.dart';
 import 'home_alternant_viewmodel.dart';
 
 /// Dashboard alternant — onglet Accueil du shell.
@@ -44,9 +43,6 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
     }
 
     final dash = viewModel.dashboard!;
-    final prochain = dash.prochainAccords.isNotEmpty
-        ? dash.prochainAccords.first
-        : null;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -83,69 +79,44 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
         ],
 
         // ─── KPIs ───────────────────────────────────────────────
+        // APP-120 : « économisés » et « échanges terminés » remplacés. Ils
+        // comptaient des accords TERMINE jamais atteints → 0 à vie. Ici, des
+        // chiffres qui bougent avec le matching. « possibles » et pas
+        // « économisés » : c'est un potentiel, on ne promet rien.
         Row(
           children: [
             Expanded(
               child: _StatCard(
-                value: '${dash.economiesEstimees.toStringAsFixed(0)} €',
-                label: 'économisés',
-                valueColor: AppColors.echange,
+                value: '${dash.nbMatchesCompatibles}',
+                label: dash.nbMatchesCompatibles > 1
+                    ? 'matches compatibles'
+                    : 'match compatible',
+                valueColor: dash.nbMatchesCompatibles > 0
+                    ? AppColors.echange
+                    : AppColors.textPrimary,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: _StatCard(
-                value: '${dash.nbAccordsTermines}',
-                label: dash.nbAccordsTermines > 1
-                    ? 'échanges terminés'
-                    : 'échange terminé',
+                value: '${dash.economiePossibleMax.toStringAsFixed(0)} €',
+                label: 'économies possibles',
+                valueColor: dash.economiePossibleMax > 0
+                    ? AppColors.echange
+                    : AppColors.textPrimary,
               ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // ─── Prochain échange / Premières étapes (APP-117) ──────
-        if (prochain != null) ...[
-          Text('Prochain échange',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.sm),
-          _AccordTile(
-            accord: prochain,
-            onTap: () => viewModel.goToAccordDetail(prochain),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ] else if (viewModel.isNouveau) ...[
-          // Compte neuf : une carte avec UNE action claire, au lieu du vide.
+        // ─── Premières étapes (APP-117) ─────────────────────
+        // APP-120 : « Prochain échange » et « En attente de réponse » ne
+        // lisaient que des accords. L'accord ayant été retiré de l'app, ces
+        // deux blocs n'auraient plus jamais rien affiché — on ne garde que
+        // l'accueil du compte neuf, qui lui guide vraiment.
+        if (viewModel.isNouveau) ...[
           _bienvenueCard(context, viewModel),
-          const SizedBox(height: AppSpacing.lg),
-        ] else ...[
-          Text('Prochain échange',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.sm),
-          const _EmptyCard(
-            text: 'Aucun échange programmé.\nTrouve ton prochain match !',
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-
-        // ─── Accords en attente ─────────────────────────────────
-        if (dash.accordsEnAttente.isNotEmpty) ...[
-          Text(
-            'En attente de réponse',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          ...dash.accordsEnAttente.map(
-            (a) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: _AccordTile(
-                accord: a,
-                showCountdown: true,
-                onTap: () => viewModel.goToAccordDetail(a),
-              ),
-            ),
-          ),
           const SizedBox(height: AppSpacing.lg),
         ],
 
@@ -332,98 +303,6 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(label, style: Theme.of(context).textTheme.bodySmall),
         ],
-      ),
-    );
-  }
-}
-
-class _AccordTile extends StatelessWidget {
-  final AccordSummary accord;
-  final bool showCountdown;
-  final VoidCallback? onTap;
-
-  const _AccordTile({
-    required this.accord,
-    this.showCountdown = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dates =
-        '${DateFormat('dd/MM').format(accord.dateDebut)} → '
-        '${DateFormat('dd/MM/yyyy').format(accord.dateFin)}';
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.echangeLight,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.swap_horiz, color: AppColors.echange),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    accord.type.label,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(dates, style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-            if (showCountdown && accord.heuresAvantExpiration != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.chevauchementLight,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-                ),
-                child: Text(
-                  '${accord.heuresAvantExpiration}h restantes',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.chevauchement,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyCard extends StatelessWidget {
-  final String text;
-
-  const _EmptyCard({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall,
       ),
     );
   }

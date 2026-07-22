@@ -4,10 +4,8 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/auth/profil_creation/profil_creation_viewmodel.dart';
-import 'package:studup_app/services/accord_service.dart';
 import 'package:studup_app/services/auth_service.dart';
 import 'package:studup_app/services/profile_service.dart';
-import 'package:studup_app/shared/models/accord.dart';
 import 'package:studup_app/shared/models/alternant_profile.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/user.dart';
@@ -16,14 +14,11 @@ class MockProfileService extends Mock implements ProfileService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
-class MockAccordService extends Mock implements AccordService {}
-
 class MockAuthService extends Mock implements AuthService {}
 
 void main() {
   late MockProfileService profile;
   late MockNavigationService nav;
-  late MockAccordService accords;
   late MockAuthService auth;
   late ProfilCreationViewModel viewModel;
 
@@ -50,12 +45,10 @@ void main() {
   setUp(() {
     profile = MockProfileService();
     nav = MockNavigationService();
-    accords = MockAccordService();
     auth = MockAuthService();
     viewModel = ProfilCreationViewModel(
       profileService: profile,
       navigationService: nav,
-      accordService: accords,
       authService: auth,
     );
   });
@@ -239,7 +232,6 @@ void main() {
           existingProfile: fakeProfile,
           profileService: profile,
           navigationService: nav,
-          accordService: accords,
       authService: auth,
         );
 
@@ -319,79 +311,11 @@ void main() {
     });
   });
 
-  // ─── Avertissement accord vivant (APP-117 · A-07) ───────────────────
-  group('avertissement accord vivant', () {
-    Accord accordWith(AccordStatut statut) => Accord(
-          id: 'a1',
-          initiatorId: 'user-1',
-          receiverId: 'user-2',
-          type: AccordType.ECHANGE_TOTAL,
-          statut: statut,
-          dateDebut: DateTime(2026, 9, 1),
-          dateFin: DateTime(2027, 8, 31),
-          createdAt: DateTime(2026, 8, 1),
-        );
-
-    ProfilCreationViewModel makeEditVm() => ProfilCreationViewModel(
-          existingProfile: fakeProfile,
-          profileService: profile,
-          navigationService: nav,
-          accordService: accords,
-      authService: auth,
-        );
-
-    test('en création, init ne consulte pas les accords', () async {
-      // viewModel (du setUp) est en mode création
-      await viewModel.init();
-
-      expect(viewModel.hasLivingAccord, isFalse);
-      verifyNever(() => accords.getMesAccords());
-    });
-
-    test('édition avec un accord vivant : hasLivingAccord = true', () async {
-      when(() => accords.getMesAccords())
-          .thenAnswer((_) async => [accordWith(AccordStatut.EN_COURS)]);
-      final vm = makeEditVm();
-
-      await vm.init();
-
-      expect(vm.hasLivingAccord, isTrue);
-    });
-
-    test('édition, accords morts uniquement : hasLivingAccord = false',
-        () async {
-      when(() => accords.getMesAccords()).thenAnswer((_) async => [
-            accordWith(AccordStatut.TERMINE),
-            accordWith(AccordStatut.REFUSE),
-            accordWith(AccordStatut.ANNULE),
-          ]);
-      final vm = makeEditVm();
-
-      await vm.init();
-
-      expect(vm.hasLivingAccord, isFalse);
-    });
-
-    test('erreur backend : silencieuse, pas d\'avertissement', () async {
-      when(() => accords.getMesAccords()).thenThrow(const ApiException(
-        code: 'SERVER_ERROR',
-        message: 'boom',
-        statusCode: 500,
-      ));
-      final vm = makeEditVm();
-
-      await vm.init();
-
-      expect(vm.hasLivingAccord, isFalse);
-    });
-  });
-
   group('annulation du changement de mode (APP-119)', () {
     ProfilCreationViewModel makeVmAvecAnnulation() => ProfilCreationViewModel(
           roleAnnulation: UserRole.ETUDIANT,
           profileService: profile,
           navigationService: nav,
-          accordService: accords,
           authService: auth,
         );
 

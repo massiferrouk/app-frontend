@@ -62,10 +62,15 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
             children: [
               const _Legende(),
               const SizedBox(height: AppSpacing.sm),
-              // Action PRINCIPALE : la messagerie. Décision produit
-              // « messagerie-first » : l'app informe, tout se règle ensuite
-              // entre les deux personnes dans le chat. L'accord n'est plus le
-              // passage obligé.
+              // Seule action de l'écran : la messagerie. Décision produit
+              // « messagerie-first » assumée jusqu'au bout — l'app informe,
+              // tout se règle ensuite entre les deux personnes dans le chat.
+              //
+              // APP-120 : « Formaliser un échange/une coloc » vivait ici. Le
+              // bouton promettait un contrat et ne créait qu'une ligne de
+              // statut : aucun planning, aucun loyer partagé, aucun logement
+              // engagé. Tout ce qui compte dans un échange se décide dans le
+              // chat, donc l'accord et ses écrans ont été retirés.
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -74,16 +79,6 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
                   label: const Text('Contacter'),
                 ),
               ),
-              // Action SECONDAIRE, optionnelle et volontairement discrète :
-              // formaliser l'échange/coloc. Elle sert surtout à débloquer les
-              // avis + le calcul des économies pour ceux qui concluent vraiment.
-              TextButton.icon(
-                onPressed: viewModel.isBusy
-                    ? null
-                    : () => _showProposerSheet(context, viewModel),
-                icon: const Icon(Icons.handshake_outlined, size: 18),
-                label: Text('Formaliser un ${s.typePropose.label.toLowerCase()}'),
-              ),
             ],
           ),
         ),
@@ -91,111 +86,7 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
       body: SafeArea(
         child: Column(
           children: [
-            // ─── Tuiles chiffrées (tap = filtre) ────────────────
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.screenPadding),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _StatTile(
-                      value: s.nbSemainesEchange,
-                      label: s.nbSemainesEchange > 1 ? 'échanges' : 'échange',
-                      color: AppColors.echange,
-                      background: AppColors.echangeLight,
-                      selected: viewModel.filtre == CompatibiliteType.ECHANGE,
-                      dimmed: viewModel.filtre != null &&
-                          viewModel.filtre != CompatibiliteType.ECHANGE,
-                      onTap: () =>
-                          viewModel.toggleFiltre(CompatibiliteType.ECHANGE),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: _StatTile(
-                      value: s.nbSemainesColocation,
-                      label: s.nbSemainesColocation > 1 ? 'colocs' : 'coloc',
-                      color: AppColors.colocation,
-                      background: AppColors.colocationLight,
-                      selected:
-                          viewModel.filtre == CompatibiliteType.COLOCATION,
-                      dimmed: viewModel.filtre != null &&
-                          viewModel.filtre != CompatibiliteType.COLOCATION,
-                      onTap: () =>
-                          viewModel.toggleFiltre(CompatibiliteType.COLOCATION),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: _StatTile(
-                      // Semaines neutres = chacun chez soi (APP-108).
-                      // Calculé depuis la liste : total - échange - coloc.
-                      value: s.semaines.length -
-                          s.nbSemainesEchange -
-                          s.nbSemainesColocation,
-                      label: 'chacun chez soi',
-                      color: AppColors.textSecondary,
-                      background: AppColors.surfaceDark,
-                      selected:
-                          viewModel.filtre == CompatibiliteType.INCOMPATIBLE,
-                      dimmed: viewModel.filtre != null &&
-                          viewModel.filtre != CompatibiliteType.INCOMPATIBLE,
-                      onTap: () => viewModel
-                          .toggleFiltre(CompatibiliteType.INCOMPATIBLE),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ─── Économie estimée (APP-103) ─────────────────────
-            if (s.hasEconomie)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                    0, AppSpacing.screenPadding, AppSpacing.md),
-                child: _EconomieBanner(
-                  label: s.economieLabel,
-                  coloc: s.typePropose == AccordType.COLOCATION_TOURNANTE,
-                ),
-              ),
-
-            // ─── Vos options : les scénarios du moteur (APP-109) ─
-            if (s.scenarios.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                    0, AppSpacing.screenPadding, AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('VOS OPTIONS',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: AppColors.textTertiary)),
-                    const SizedBox(height: AppSpacing.sm),
-                    for (final sc in s.scenarios)
-                      _ScenarioCard(
-                        scenario: sc,
-                        onPublier: viewModel.publierLogement,
-                        onContacter: viewModel.contacter,
-                      ),
-                  ],
-                ),
-              )
-            else if (!s.hasEconomie && s.logementBId == null)
-              // Repli sans scénarios : SON logement manque
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
-                    0, AppSpacing.screenPadding, AppSpacing.md),
-                child: Text(
-                  '${s.displayName} n\'a pas encore publié son logement',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: AppColors.textSecondary),
-                ),
-              ),
+            _EnTete(viewModel: viewModel),
 
             // ─── En-tête de colonnes Toi | Lui ──────────────────
             Padding(
@@ -298,30 +189,6 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
   /// Bottom sheet de proposition d'accord : message uniquement.
   /// Pas de dates : l'app met en relation, l'organisation est laissée aux
   /// deux utilisateurs (période déduite automatiquement côté backend).
-  Future<void> _showProposerSheet(
-      BuildContext context, CompatibiliteViewModel viewModel) async {
-    final result = await showModalBottomSheet<({String? message})>(
-      context: context,
-      isScrollControlled: true, // laisse la place au clavier
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => _ProposerAccordSheet(
-          typeLabel: viewModel.suggestion.typePropose.label),
-    );
-    if (result == null) return;
-
-    final error = await viewModel.proposerAccord(message: result.message);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(error ??
-            'Demande envoyée ! Elle expire dans 72h sans réponse.'),
-        backgroundColor: error == null ? AppColors.echange : AppColors.error,
-      ));
-    }
-  }
-
   @override
   CompatibiliteViewModel viewModelBuilder(BuildContext context) =>
       CompatibiliteViewModel(suggestion: suggestion);
@@ -332,6 +199,252 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
     // à la liste avant de pouvoir calculer l'offset.
     WidgetsBinding.instance.addPostFrameCallback(
         (_) => viewModel.scrollToSemaineCourante());
+  }
+}
+
+/// En-tête de l'écran compatibilité : les tuiles chiffrées, puis UNE barre
+/// qui résume la situation et ouvre les options.
+///
+/// APP-120 : « Vos options » vivait ici, en pleine hauteur, et repoussait le
+/// calendrier jusqu'à le rendre inutilisable. Or le calendrier est le cœur de
+/// l'écran — les options se consultent une fois, le calendrier se parcourt.
+/// Elles sont donc passées dans une bottom sheet, où elles ont toute la place.
+class _EnTete extends StatelessWidget {
+  final CompatibiliteViewModel viewModel;
+
+  const _EnTete({required this.viewModel});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = viewModel.suggestion;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+      // ─── Tuiles chiffrées (tap = filtre) ────────────────
+      Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        child: Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                value: s.nbSemainesEchange,
+                label: s.nbSemainesEchange > 1 ? 'échanges' : 'échange',
+                color: AppColors.echange,
+                background: AppColors.echangeLight,
+                selected: viewModel.filtre == CompatibiliteType.ECHANGE,
+                dimmed: viewModel.filtre != null &&
+                    viewModel.filtre != CompatibiliteType.ECHANGE,
+                onTap: () =>
+                    viewModel.toggleFiltre(CompatibiliteType.ECHANGE),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _StatTile(
+                value: s.nbSemainesColocation,
+                label: s.nbSemainesColocation > 1 ? 'colocs' : 'coloc',
+                color: AppColors.colocation,
+                background: AppColors.colocationLight,
+                selected:
+                    viewModel.filtre == CompatibiliteType.COLOCATION,
+                dimmed: viewModel.filtre != null &&
+                    viewModel.filtre != CompatibiliteType.COLOCATION,
+                onTap: () =>
+                    viewModel.toggleFiltre(CompatibiliteType.COLOCATION),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _StatTile(
+                // Semaines neutres = chacun chez soi (APP-108).
+                // Calculé depuis la liste : total - échange - coloc.
+                value: s.semaines.length -
+                    s.nbSemainesEchange -
+                    s.nbSemainesColocation,
+                label: 'chacun chez soi',
+                color: AppColors.textSecondary,
+                background: AppColors.surfaceDark,
+                selected:
+                    viewModel.filtre == CompatibiliteType.INCOMPATIBLE,
+                dimmed: viewModel.filtre != null &&
+                    viewModel.filtre != CompatibiliteType.INCOMPATIBLE,
+                onTap: () => viewModel
+                    .toggleFiltre(CompatibiliteType.INCOMPATIBLE),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+        // ─── Barre de synthèse : économie + accès aux options ──
+        if (s.scenarios.isNotEmpty || s.hasEconomie)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+                AppSpacing.screenPadding, AppSpacing.md),
+            child: _BarreOptions(viewModel: viewModel),
+          )
+        else if (s.logementBId == null)
+          // Repli : SON logement manque, rien à proposer pour l'instant
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+                AppSpacing.screenPadding, AppSpacing.md),
+            child: Text(
+              '${s.displayName} n\'a pas encore publié son logement',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: AppColors.textSecondary),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Barre unique de synthèse (APP-120) — remplace la bannière d'économie ET le
+/// bloc « Vos options ». Une ligne : le gain qui donne envie, le nombre
+/// d'options, un chevron. Cliquable seulement s'il y a des options à montrer.
+class _BarreOptions extends StatelessWidget {
+  final CompatibiliteViewModel viewModel;
+
+  const _BarreOptions({required this.viewModel});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = viewModel.suggestion;
+    final nbOptions = s.scenarios.length;
+    final cliquable = nbOptions > 0;
+
+    // Le gain mis en avant : celui du match s'il est chiffré, sinon le plus
+    // élevé parmi les options. Jamais de chiffre inventé : 0 = on n'affiche rien.
+    final meilleurGain = s.hasEconomie
+        ? s.economieMensuelle
+        : s.scenarios.fold<int>(
+            0,
+            (max, sc) =>
+                sc.economieMensuelle > max ? sc.economieMensuelle : max);
+
+    final coloc = s.typePropose == AccordType.COLOCATION_TOURNANTE;
+    final accent = coloc ? AppColors.colocation : AppColors.echange;
+    final fond = coloc ? AppColors.colocationLight : AppColors.echangeLight;
+
+    return Material(
+      color: fond,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        onTap: cliquable ? () => _ouvrirOptions(context) : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              Icon(cliquable ? Icons.lightbulb_outline : Icons.savings_outlined,
+                  size: 20, color: accent),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      cliquable
+                          ? (nbOptions > 1
+                              ? '$nbOptions options pour économiser'
+                              : 'Une option pour économiser')
+                          : 'Économie estimée',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: accent),
+                    ),
+                    if (meilleurGain > 0)
+                      Text('jusqu\'à $meilleurGain €/mois',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+              if (cliquable)
+                Icon(Icons.chevron_right, size: 20, color: accent),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Ouvre les options dans une feuille — elles y ont toute la hauteur
+  /// nécessaire, sans jamais empiéter sur le calendrier.
+  void _ouvrirOptions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.background,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => _OptionsSheet(viewModel: viewModel),
+    );
+  }
+}
+
+/// Feuille des options d'arrangement (APP-120).
+class _OptionsSheet extends StatelessWidget {
+  final CompatibiliteViewModel viewModel;
+
+  const _OptionsSheet({required this.viewModel});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = viewModel.suggestion;
+
+    return SafeArea(
+      child: ConstrainedBox(
+        // Jamais plein écran : on garde le calendrier visible derrière
+        constraints:
+            BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.75),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              AppSpacing.sm, AppSpacing.screenPadding, AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text('Vos options avec ${s.displayName}',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.md),
+              // Les actions ferment la feuille avant de naviguer
+              for (final sc in s.scenarios)
+                _ScenarioCard(
+                  scenario: sc,
+                  onPublier: () {
+                    Navigator.pop(context);
+                    viewModel.publierLogement();
+                  },
+                  onContacter: () {
+                    Navigator.pop(context);
+                    viewModel.contacter();
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -593,9 +706,15 @@ class _MoisCard extends StatelessWidget {
                       fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
-              Text(_resume,
-                  style: const TextStyle(
-                      fontSize: 10, color: AppColors.textSecondary)),
+              // Flexible : le décompte peut être long (« 3 éch · 1 coloc ·
+              // 2 à gérer ») et la carte ne fait qu'une demi-largeur (APP-120)
+              Flexible(
+                child: Text(_resume,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 10, color: AppColors.textSecondary)),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -714,42 +833,6 @@ class _ScenarioCard extends StatelessWidget {
                       style: TextStyle(fontSize: 12)),
                 ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Bandeau d'économie estimée — vert pour l'échange, bleu pour la coloc
-class _EconomieBanner extends StatelessWidget {
-  final String label;
-  final bool coloc;
-
-  const _EconomieBanner({required this.label, required this.coloc});
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = coloc ? AppColors.colocation : AppColors.echange;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm, horizontal: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: coloc ? AppColors.colocationLight : AppColors.echangeLight,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.savings_outlined, size: 18, color: accent),
-          const SizedBox(width: AppSpacing.sm),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w700, color: accent),
-            ),
           ),
         ],
       ),
@@ -1185,67 +1268,3 @@ class _PositionCard extends StatelessWidget {
   }
 }
 
-// ─── Bottom sheet de proposition ──────────────────────────────────
-
-class _ProposerAccordSheet extends StatefulWidget {
-  final String typeLabel;
-
-  const _ProposerAccordSheet({required this.typeLabel});
-
-  @override
-  State<_ProposerAccordSheet> createState() => _ProposerAccordSheetState();
-}
-
-class _ProposerAccordSheetState extends State<_ProposerAccordSheet> {
-  final _messageController = TextEditingController();
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      // Remonte le sheet au-dessus du clavier
-      padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Proposer un ${widget.typeLabel.toLowerCase()}',
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Vous entrez en contact. Vous organisez ensuite les détails '
-              'entre vous — l\'app ne fixe pas les dates.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: _messageController,
-              maxLines: 3,
-              maxLength: 500,
-              decoration: const InputDecoration(
-                  hintText: 'Message (optionnel)', counterText: ''),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, (
-                    message: _messageController.text.trim().isEmpty
-                        ? null
-                        : _messageController.text.trim(),
-                  )),
-              child: const Text('Envoyer la demande'),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ),
-      ),
-    );
-  }
-}

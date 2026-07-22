@@ -13,7 +13,6 @@ import 'package:stacked_services/src/snackbar/snackbar_service.dart';
 import 'package:stacked_shared/stacked_shared.dart';
 
 import '../core/api/api_client.dart';
-import '../services/accord_service.dart';
 import '../services/auth_service.dart';
 import '../services/calendrier_service.dart';
 import '../services/candidature_service.dart';
@@ -25,7 +24,6 @@ import '../services/message_service.dart';
 import '../services/notification_service.dart';
 import '../services/onboarding_service.dart';
 import '../services/profile_service.dart';
-import '../services/review_service.dart';
 import '../services/token_storage_service.dart';
 
 final locator = StackedLocator.instance;
@@ -52,10 +50,8 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => CalendrierService());
   locator.registerLazySingleton(() => MatchingService());
   locator.registerLazySingleton(() => LogementService());
-  locator.registerLazySingleton(() => AccordService());
   locator.registerLazySingleton(() => CandidatureService());
   locator.registerLazySingleton(() => NotificationService());
-  locator.registerLazySingleton(() => ReviewService());
   locator.registerLazySingleton(() => MessageService());
   locator.registerLazySingleton(() => ChatSocketService());
   locator.registerLazySingleton(() => OnboardingService());

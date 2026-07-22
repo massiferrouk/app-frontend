@@ -53,8 +53,8 @@ class MesLogementsViewModel extends BaseViewModel {
   /// L'association VILLE_A/VILLE_B n'a de sens que pour un alternant
   bool isAlternant = false;
 
-  /// Noms réels des villes du profil, pour un affichage explicite lors de
-  /// l'association (« Paris (ville de ton école) » plutôt que « Ville A »).
+  /// Villes du profil — servent à expliquer pourquoi un logement publié
+  /// reste hors matching (ville étrangère au profil, ou ville déjà prise).
   String? villeEcole; // villeA
   String? villeEntreprise; // villeB
 
@@ -97,20 +97,6 @@ class MesLogementsViewModel extends BaseViewModel {
     } on ApiException catch (e) {
       return e.isConflict
           ? 'Ce logement est lié à un accord et ne peut pas être supprimé'
-          : e.message;
-    }
-  }
-
-  /// Associe un logement à une ville du profil.
-  /// Le 409 (ville déjà occupée) remonte avec le message backend.
-  Future<String?> associer(Logement logement, VilleAssociee ville) async {
-    try {
-      await _logements.associerVille(logement.id, ville);
-      await load();
-      return null;
-    } on ApiException catch (e) {
-      return e.isConflict
-          ? 'Tu as déjà un logement associé à cette ville'
           : e.message;
     }
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:stacked/stacked.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -8,12 +7,11 @@ import '../../shared/widgets/logement_card.dart';
 import 'home_etudiant_viewmodel.dart';
 
 /// Dashboard étudiant — onglet Accueil.
-/// [onSearch] bascule sur l'onglet Recherche, [onAccords] sur Accords.
+/// [onSearch] bascule sur l'onglet Recherche.
 class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
   final VoidCallback? onSearch;
-  final VoidCallback? onAccords;
 
-  const HomeEtudiantView({super.key, this.onSearch, this.onAccords});
+  const HomeEtudiantView({super.key, this.onSearch});
 
   @override
   Widget builder(
@@ -117,53 +115,6 @@ class HomeEtudiantView extends StackedView<HomeEtudiantViewModel> {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-
-        // ─── Accords en cours ────────────────────────────────
-        if (viewModel.accordsEnCours.isNotEmpty) ...[
-          Text('Mes accords en cours',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.sm),
-          ...viewModel.accordsEnCours.take(2).map((a) => GestureDetector(
-                onTap: onAccords,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.echangeLight,
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusCard),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.description_outlined,
-                          color: AppColors.echange),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(a.type.label,
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600)),
-                            Text(
-                              '${a.statut.label} · '
-                              '${DateFormat('dd/MM').format(a.dateDebut)} → '
-                              '${DateFormat('dd/MM/yyyy').format(a.dateFin)}',
-                              style:
-                                  Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right,
-                          color: AppColors.textTertiary),
-                    ],
-                  ),
-                ),
-              )),
           const SizedBox(height: AppSpacing.lg),
         ],
 

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
+import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/features/logements/logement_detail_viewmodel.dart';
 import 'package:studup_app/services/candidature_service.dart';
 import 'package:studup_app/services/logement_service.dart';
@@ -24,6 +25,8 @@ void main() {
   late MockLogementService logementService;
   late MockProfileService profileService;
   late MockMatchingService matchingService;
+  late MockCandidatureService candidatureService;
+  late MockNavigationService navigationService;
   late LogementDetailViewModel viewModel;
 
   final logement = Logement.fromJson({
@@ -74,16 +77,19 @@ void main() {
     when(() => logementService.getLogement('log-1'))
         .thenAnswer((_) async => logement);
     // APP-117 : loadExtras vérifie si l'annonce est déjà suivie
-    final candidatureService = MockCandidatureService();
+    candidatureService = MockCandidatureService();
     when(() => candidatureService.getMesCandidatures())
         .thenAnswer((_) async => []);
+    navigationService = MockNavigationService();
+    when(() => navigationService.navigateTo(any(),
+        arguments: any(named: 'arguments'))).thenAnswer((_) async => null);
     viewModel = LogementDetailViewModel(
       logement: logement,
       logementService: logementService,
       matchingService: matchingService,
       profileService: profileService,
       candidatureService: candidatureService,
-      navigationService: MockNavigationService(),
+      navigationService: navigationService,
     );
   });
 
@@ -131,6 +137,58 @@ void main() {
       await viewModel.loadExtras();
 
       verifyNever(() => matchingService.getSuggestions());
+    });
+  });
+
+  group('contacter l\'annonce d\'un match (APP-120)', () {
+    /// Place l'annonceur parmi mes matches
+    Future<void> chargerAvecMatch() async {
+      when(() => profileService.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+      when(() => matchingService.getSuggestions())
+          .thenAnswer((_) async => [buildSuggestion('owner-1')]);
+      await viewModel.loadExtras();
+    }
+
+    test('annonceur matché : réutilise le fil par personne, sans logementId',
+        () async {
+      await chargerAvecMatch();
+
+      await viewModel.contacter();
+
+      // La discussion porte sur l'arrangement, pas sur cette annonce :
+      // sans ça on ouvrait un SECOND fil avec la même personne
+      final capture = verify(() => navigationService.navigateTo(
+          any(), arguments: captureAny(named: 'arguments'))).captured.last;
+      final args = capture as ChatViewArguments;
+      expect(args.conversation.logementId, isNull);
+      expect(args.conversation.partnerId, 'owner-1');
+    });
+
+    test('annonceur matché : aucune candidature consultée ni créée', () async {
+      await chargerAvecMatch();
+      clearInteractions(candidatureService);
+
+      await viewModel.contacter();
+
+      // Le suivi est déjà porté par Matches — rien à faire côté candidatures
+      verifyNever(() => candidatureService.getMesCandidatures());
+      verifyNever(() => candidatureService.suivre(
+            logementId: any(named: 'logementId'),
+            statut: any(named: 'statut'),
+          ));
+    });
+
+    test('annonceur non matché : fil rattaché à l\'annonce', () async {
+      // Rôle étudiant par défaut → aucun match chargé
+      await viewModel.loadExtras();
+
+      await viewModel.contacter();
+
+      final capture = verify(() => navigationService.navigateTo(
+          any(), arguments: captureAny(named: 'arguments'))).captured.last;
+      final args = capture as ChatViewArguments;
+      expect(args.conversation.logementId, 'log-1');
     });
   });
 

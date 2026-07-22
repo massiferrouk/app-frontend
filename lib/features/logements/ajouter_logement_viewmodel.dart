@@ -108,11 +108,6 @@ class AjouterLogementViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  void clearAddressSuggestions() {
-    addressSuggestions = [];
-    notifyListeners();
-  }
-
   void selectType(LogementType? type) {
     if (type == null) return;
     selectedType = type;

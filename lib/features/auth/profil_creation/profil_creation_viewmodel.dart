@@ -6,7 +6,6 @@ import '../../../app/app.locator.dart';
 import '../../../app/app.router.dart';
 import '../../../core/api/api_exception.dart';
 import '../../../core/utils/validators.dart';
-import '../../../services/accord_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/profile_service.dart';
 import '../../../shared/models/alternant_profile.dart';
@@ -17,7 +16,6 @@ import '../../../shared/models/enums.dart';
 /// formulaire et l'envoi passe par PUT au lieu de POST.
 class ProfilCreationViewModel extends BaseViewModel {
   final ProfileService _profile;
-  final AccordService _accords;
   final AuthService _auth;
   final NavigationService _nav;
 
@@ -36,11 +34,9 @@ class ProfilCreationViewModel extends BaseViewModel {
     this.existingProfile,
     this.roleAnnulation,
     ProfileService? profileService,
-    AccordService? accordService,
     AuthService? authService,
     NavigationService? navigationService,
   })  : _profile = profileService ?? locator<ProfileService>(),
-        _accords = accordService ?? locator<AccordService>(),
         _auth = authService ?? locator<AuthService>(),
         _nav = navigationService ?? locator<NavigationService>() {
     // Pré-remplissage en mode édition (les controllers sont déjà initialisés
@@ -86,32 +82,6 @@ class ProfilCreationViewModel extends BaseViewModel {
     }
   }
 
-  /// APP-117 (A-07) : true si l'utilisateur a un accord VIVANT. En édition, on
-  /// l'avertit alors que modifier son profil n'affecte PAS cet accord (figé côté
-  /// backend, plan gelé dans accord_semaines) mais recalcule ses futurs matchs.
-  /// On n'empêche JAMAIS la modification (décision « autoriser + avertir »).
-  bool hasLivingAccord = false;
-
-  /// Appelé à l'ouverture de l'écran (onViewModelReady). Silencieux en cas
-  /// d'erreur : l'avertissement est secondaire, il ne doit pas bloquer l'édition.
-  Future<void> init() async {
-    if (!isEdition) return;
-    try {
-      final accords = await _accords.getMesAccords();
-      hasLivingAccord = accords.any((a) => _estVivant(a.statut));
-      notifyListeners();
-    } on ApiException {
-      // avertissement non affiché : on n'empêche pas la modification pour autant
-    }
-  }
-
-  // Accord « vivant » = négociation ou contrat en cours (mêmes statuts que le
-  // verrou backend A-06). Les accords morts (REFUSE/ANNULE/TERMINE) n'avertissent pas.
-  bool _estVivant(AccordStatut s) =>
-      s == AccordStatut.EN_ATTENTE ||
-      s == AccordStatut.ACCEPTE ||
-      s == AccordStatut.EN_COURS ||
-      s == AccordStatut.LITIGE;
 
   final villeAController = TextEditingController();
   final villeBController = TextEditingController();
@@ -168,8 +138,8 @@ class ProfilCreationViewModel extends BaseViewModel {
             entrepriseController.text, 'Le nom de l\'entreprise');
     if (requiredError != null) return requiredError;
 
-    // 🟣 Règle métier StudUp : les deux villes doivent être différentes,
-    // sinon il n'y a rien à échanger (même contrainte CHECK côté BDD)
+    // Les deux villes doivent être différentes, sinon il n'y a rien à
+    // échanger (même contrainte CHECK côté BDD)
     final villeA = villeAController.text.trim().toLowerCase();
     final villeB = villeBController.text.trim().toLowerCase();
     if (villeA == villeB) {

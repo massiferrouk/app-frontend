@@ -4,7 +4,6 @@ import 'package:studup_app/core/api/api_client.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/shared/models/enums.dart';
-import 'package:studup_app/shared/models/logement.dart' show VilleAssociee;
 
 class MockApiClient extends Mock implements ApiClient {}
 
@@ -89,17 +88,6 @@ void main() {
       expect(result.first.type, DisponibiliteType.LIBRE);
     });
 
-    test('getReputation parse le score', () async {
-      when(() => api.get<Map<String, dynamic>>('/reputation/user/u1'))
-          .thenAnswer((_) async => {
-                'userId': 'u1',
-                'avgRating': 4.5,
-                'totalReviews': 10,
-              });
-
-      expect((await service.getReputation('u1')).avgRating, 4.5);
-    });
-
     test('autocompleteAddress transmet la requête', () async {
       when(() => api.get<List<dynamic>>('/geocoding/autocomplete',
           queryParameters: any(named: 'queryParameters'))).thenAnswer(
@@ -168,20 +156,6 @@ void main() {
 
       verify(() => api.put<Map<String, dynamic>>('/logements/l1/publish'))
           .called(1);
-    });
-
-    test('associerVille envoie villeAssociee', () async {
-      when(() => api.patch<Map<String, dynamic>>('/logements/l1/ville',
-          data: any(named: 'data'))).thenAnswer((_) async => logementJson);
-
-      await service.associerVille('l1', VilleAssociee.VILLE_A);
-
-      final sent = verify(() => api.patch<Map<String, dynamic>>(
-              '/logements/l1/ville',
-              data: captureAny(named: 'data')))
-          .captured
-          .single as Map<String, dynamic>;
-      expect(sent['villeAssociee'], 'VILLE_A');
     });
 
     test('delete appelle DELETE et propage un conflit 409', () async {

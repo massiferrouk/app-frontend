@@ -12,7 +12,8 @@ class NavTab {
 }
 
 /// Les onglets par rôle — source de vérité unique de la navigation.
-/// 🟣 Chaque profil StudUp a sa propre navigation (cf. CLAUDE.md).
+/// Chaque profil a des besoins distincts : l'alternant cherche un binôme,
+/// l'étudiant une location, le propriétaire gère ses annonces.
 List<NavTab> navTabsForRole(UserRole role) {
   switch (role) {
     case UserRole.ALTERNANT:
@@ -29,7 +30,7 @@ List<NavTab> navTabsForRole(UserRole role) {
         NavTab(label: 'Recherche', icon: Icons.search),
         // APP-117 : le suivi des candidatures remplace les accords, qui
         // restaient vides pour un étudiant (aucun parcours n'en crée).
-        // « Mes accords » reste accessible depuis le Profil.
+        // APP-120 : les accords ont été retirés de l'app pour de bon.
         NavTab(label: 'Candidatures', icon: Icons.fact_check_outlined),
         NavTab(label: 'Messages', icon: Icons.chat_bubble_outline),
         NavTab(label: 'Profil', icon: Icons.person_outline),

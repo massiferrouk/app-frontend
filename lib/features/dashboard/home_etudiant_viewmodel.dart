@@ -4,30 +4,25 @@ import 'package:stacked_services/stacked_services.dart';
 import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
-import '../../services/accord_service.dart';
 import '../../services/candidature_service.dart';
 import '../../services/logement_service.dart';
 import '../../services/notification_service.dart';
-import '../../shared/models/accord.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
 
-/// Logique du dashboard étudiant : logements en vedette + accords en cours.
+/// Logique du dashboard étudiant : aperçu des annonces publiées.
 class HomeEtudiantViewModel extends BaseViewModel {
   final LogementService _logements;
-  final AccordService _accords;
   final NotificationService _notifications;
   final CandidatureService _candidatures;
   final NavigationService _nav;
 
   HomeEtudiantViewModel({
     LogementService? logementService,
-    AccordService? accordService,
     NotificationService? notificationService,
     CandidatureService? candidatureService,
     NavigationService? navigationService,
   })  : _logements = logementService ?? locator<LogementService>(),
-        _accords = accordService ?? locator<AccordService>(),
         _notifications = notificationService ?? locator<NotificationService>(),
         _candidatures = candidatureService ?? locator<CandidatureService>(),
         _nav = navigationService ?? locator<NavigationService>();
@@ -51,14 +46,17 @@ class HomeEtudiantViewModel extends BaseViewModel {
   }
 
   List<Logement> vedettes = [];
-  List<Accord> accordsEnCours = [];
   String? errorMessage;
   int unreadCount = 0;
 
-  /// Compte « neuf/inactif » : aucun accord en cours → on affiche le bloc
+  /// Compte « neuf/inactif » : aucune annonce suivie → on affiche le bloc
   /// « Bien démarrer » pour guider l'étudiant plutôt que de laisser du vide
   /// (APP-117 — équivalent des « premières étapes » de l'accueil alternant).
-  bool get isNouveau => accordsEnCours.isEmpty;
+  ///
+  /// APP-120 : le critère était « aucun accord en cours ». Les accords ayant
+  /// été retirés, on prend le signal qui les avait déjà remplacés partout
+  /// ailleurs pour l'étudiant — ses candidatures.
+  bool get isNouveau => statutsSuivis.isEmpty;
 
   Future<void> load() async {
     setBusy(true);
@@ -72,16 +70,6 @@ class HomeEtudiantViewModel extends BaseViewModel {
       errorMessage = e.message;
     }
 
-    // Enrichissement non bloquant
-    try {
-      final accords = await _accords.getMesAccords();
-      accordsEnCours = accords
-          .where((a) =>
-              a.statut == AccordStatut.EN_ATTENTE ||
-              a.statut == AccordStatut.ACCEPTE ||
-              a.statut == AccordStatut.EN_COURS)
-          .toList();
-    } on ApiException {/* section vide */}
 
     setBusy(false);
     await _refreshStatutsSuivis();

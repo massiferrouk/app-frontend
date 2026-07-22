@@ -136,17 +136,6 @@ class ProfilView extends StackedView<ProfilViewModel> {
               onTap: viewModel.goToGererLogements,
             ),
 
-          // Mes accords : réservé aux modes chercheur (étudiant/alternant).
-          // Un accord n'existe qu'entre deux alternants via le matching ; le
-          // propriétaire (compte séparé, sans matching) n'en a jamais — la
-          // tuile ouvrirait un écran toujours vide.
-          if (isChercheur)
-            _ProfilTile(
-              icon: Icons.description_outlined,
-              title: 'Mes accords',
-              onTap: viewModel.goToMesAccords,
-            ),
-
           // Mode : la valeur à droite montre le mode courant, le tap le change
           if (viewModel.canChangeMode)
             _ProfilTile(
@@ -158,9 +147,11 @@ class ProfilView extends StackedView<ProfilViewModel> {
                   : () => _confirmChangeMode(context, viewModel),
             ),
 
-          // Section « Avis reçus » retirée (APP-119) : les avis exigent un
-          // accord TERMINE, statut jamais atteint dans cette version —
-          // fonctionnalité reportée en V2, backend conservé.
+          // APP-120 : « Mes accords » et la section « Avis reçus » ont été
+          // retirées. L'accord ne produisait qu'un changement de statut — ni
+          // planning, ni logement engagé — et les avis en dépendaient. Tout se
+          // règle dans la messagerie ; ces deux briques sont reportées en V2
+          // (backend conservé).
 
           const SizedBox(height: AppSpacing.md),
           _ProfilTile(

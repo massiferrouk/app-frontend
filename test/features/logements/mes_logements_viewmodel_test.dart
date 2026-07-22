@@ -5,6 +5,7 @@ import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/logements/mes_logements_viewmodel.dart';
 import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/services/profile_service.dart';
+import 'package:studup_app/shared/models/alternant_profile.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/logement.dart';
 
@@ -70,6 +71,32 @@ void main() {
       expect(viewModel.logements.first.statut, LogementStatut.BROUILLON);
     });
 
+    test('alternant : expose les deux villes du profil', () async {
+      // La fiche s'en sert pour dire POURQUOI un logement publié reste hors
+      // matching : ville étrangère au profil, ou ville déjà rattachée.
+      when(() => profileService.getMyAlternantProfile()).thenAnswer(
+        (_) async => AlternantProfile(
+          id: 'p1',
+          userId: 'u1',
+          villeA: 'Bordeaux',
+          villeB: 'Paris',
+          ecole: 'YNOV',
+          entreprise: 'ACME',
+          dateDebut: DateTime(2026, 9, 1),
+          dateFin: DateTime(2027, 8, 31),
+          rythme: RythmeAlternance.SEMAINE_3_1,
+          premiereSemaine: PremiereSemaine.ECOLE,
+        ),
+      );
+      when(() => logementService.getMesLogements())
+          .thenAnswer((_) async => [build()]);
+
+      await viewModel.load();
+
+      expect(viewModel.villeEcole, 'Bordeaux');
+      expect(viewModel.villeEntreprise, 'Paris');
+    });
+
     test('erreur API : message stocké', () async {
       when(() => logementService.getMesLogements())
           .thenThrow(const ApiException(
@@ -95,41 +122,6 @@ void main() {
           (_) async => build(statut: LogementStatut.ACTIF));
 
       final error = await viewModel.publish(viewModel.logements.first);
-
-      expect(error, isNull);
-      verify(() => logementService.getMesLogements()).called(2);
-    });
-  });
-
-  group('associer', () {
-    test('409 : message métier clair sur ville déjà occupée', () async {
-      when(() => logementService.getMesLogements())
-          .thenAnswer((_) async => [build()]);
-      await viewModel.load();
-
-      when(() => logementService.associerVille(any(), any()))
-          .thenThrow(const ApiException(
-        code: 'CONFLICT',
-        message: 'Conflit',
-        statusCode: 409,
-      ));
-
-      final error = await viewModel.associer(
-          viewModel.logements.first, VilleAssociee.VILLE_A);
-
-      expect(error, 'Tu as déjà un logement associé à cette ville');
-    });
-
-    test('succès : associe puis recharge', () async {
-      when(() => logementService.getMesLogements())
-          .thenAnswer((_) async => [build()]);
-      await viewModel.load();
-
-      when(() => logementService.associerVille('log-1', VilleAssociee.VILLE_B))
-          .thenAnswer((_) async => build());
-
-      final error = await viewModel.associer(
-          viewModel.logements.first, VilleAssociee.VILLE_B);
 
       expect(error, isNull);
       verify(() => logementService.getMesLogements()).called(2);
