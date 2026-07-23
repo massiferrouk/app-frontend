@@ -9,7 +9,32 @@ Le détail fin est traçable dans l'historique Git (tickets Jira APP-XX) et les 
 
 ## [Non publié]
 
-_Rien pour l'instant._
+### Ajouté
+- **Candidatures** : l'étudiant suit les annonces auxquelles il a postulé.
+  L'onglet « Accords » de la navigation étudiant devient « Candidatures » (APP-117)
+
+### Modifié
+- **Retrait des accords de l'application** (APP-120). Un accord ne produisait qu'un
+  changement de statut : ni planning semaine par semaine, ni loyer partagé, ni logement
+  réellement engagé — tout ce qui compte se décide dans la messagerie. Sont supprimés le
+  bouton « Formaliser un échange / une coloc » de l'écran de compatibilité, « Mes accords »
+  pour les trois profils, le détail d'un accord, les tuiles accords des accueils, et le
+  dépôt d'avis qui en dépendait.
+  Le backend est conservé en l'état, ses endpoints simplement plus appelés.
+  `AccordType` reste : c'est le vocabulaire du matching, pas la fonctionnalité accord.
+
+### Corrigé — anomalies relevées en recette
+- L'historique de conversation s'affiche désormais à l'ouverture d'un chat depuis
+  « Contacter » : quand l'identifiant de conversation est vide, la conversation existante
+  avec ce partenaire est retrouvée avant le chargement de l'historique (A-02)
+- Écran de modification du profil d'alternance : un utilisateur qui s'est trompé à
+  l'inscription (rythme, villes, dates, première semaine) peut désormais se corriger.
+  Le endpoint backend existait déjà mais n'était appelé par aucun écran (A-04)
+
+### Qualité & accessibilité
+- 273 tests (ViewModels, services, modèles, widgets, accessibilité)
+- Trois guidelines d'accessibilité vérifiées à chaque build : contraste des textes,
+  taille des zones tactiles, présence d'un intitulé sur les éléments actionnables
 
 ## [1.0.0+1] — 2026-07-18
 

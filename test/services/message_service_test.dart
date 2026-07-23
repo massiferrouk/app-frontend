@@ -77,4 +77,20 @@ void main() {
 
     verify(() => api.patch<dynamic>('/messages/m1/read')).called(1);
   });
+  group('signalement (APP-121)', () {
+    test('reportMessage poste le motif', () async {
+      when(() => api.post<Map<String, dynamic>>('/messages/m1/report',
+          data: any(named: 'data'))).thenAnswer((_) async => {});
+
+      await service.reportMessage('m1', 'Propos insultants');
+
+      final envoye = verify(() => api.post<Map<String, dynamic>>(
+                  '/messages/m1/report',
+                  data: captureAny(named: 'data')))
+              .captured
+              .single as Map<String, dynamic>;
+      // Obligatoire côté serveur : sans motif, 400
+      expect(envoye['motif'], 'Propos insultants');
+    });
+  });
 }

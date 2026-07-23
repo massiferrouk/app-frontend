@@ -37,6 +37,10 @@ class Logement {
   /// Prénom du propriétaire (pour le bouton « Contacter »). Nullable.
   final String? ownerPrenom;
 
+  /// Motif de la suspension par un administrateur (APP-121).
+  /// Null tant que l'annonce n'a pas été modérée, ou après republication.
+  final String? moderationNote;
+
   const Logement({
     required this.id,
     required this.ownerId,
@@ -56,6 +60,7 @@ class Logement {
     this.villeAssociee,
     this.photoUrls = const [],
     this.ownerPrenom,
+    this.moderationNote,
   });
 
   factory Logement.fromJson(Map<String, dynamic> json) {
@@ -84,6 +89,7 @@ class Logement {
           .map((e) => e.toString())
           .toList(),
       ownerPrenom: json['ownerPrenom'] as String?,
+      moderationNote: json['moderationNote'] as String?,
     );
   }
 }

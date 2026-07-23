@@ -54,6 +54,25 @@ class LogementDetailViewModel extends BaseViewModel {
   /// true si l'annonce est déjà dans mes candidatures (APP-117)
   bool isSuivi = false;
 
+  /// Signaler n'a de sens que sur l'annonce de quelqu'un d'autre — même
+  /// condition que « Contacter ».
+  bool get peutSignaler => canContact;
+
+  /// Signale l'annonce à la modération (APP-121).
+  /// Retourne null si OK, un message d'erreur sinon.
+  Future<String?> signaler(String motif) async {
+    final saisie = motif.trim();
+    if (saisie.isEmpty) return 'Explique brièvement le problème';
+
+    try {
+      await _logements.reportLogement(logement.id, saisie);
+      return null;
+    } on ApiException catch (e) {
+      // 409 : sa propre annonce, ou déjà signalée par cette personne
+      return e.isConflict ? e.message : e.message;
+    }
+  }
+
   /// Ouvre l'écran « Mes candidatures » (depuis le bouton « Dans mes
   /// candidatures ») pour que l'utilisateur retrouve l'annonce sans la chercher.
   void voirMesCandidatures() => _nav.navigateTo(

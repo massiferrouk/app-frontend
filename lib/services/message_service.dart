@@ -56,4 +56,18 @@ class MessageService {
   /// PATCH /messages/{messageId}/read
   Future<void> markAsRead(String messageId) =>
       _api.patch<dynamic>('/messages/$messageId/read');
+
+  /// POST /messages/{id}/report — signale un message à la modération.
+  ///
+  /// C'est le seul point d'entrée de la file de modération : sans lui, la
+  /// table des signalements reste vide et l'écran admin n'affiche jamais rien
+  /// (APP-121).
+  ///
+  /// Le motif est obligatoire côté serveur (400 si vide). Un 409 signifie que
+  /// l'utilisateur a déjà signalé ce message — contrainte d'unicité en base.
+  Future<void> reportMessage(String messageId, String motif) =>
+      _api.post<Map<String, dynamic>>(
+        '/messages/$messageId/report',
+        data: {'motif': motif},
+      );
 }

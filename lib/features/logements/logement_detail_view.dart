@@ -172,6 +172,23 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                       ),
                     ],
                   ],
+
+                  // Signalement (APP-121) — volontairement discret, en bas et
+                  // en texte seul : c'est un geste rare, il ne doit pas
+                  // concurrencer « Contacter ».
+                  if (viewModel.peutSignaler) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () => _signaler(context, viewModel),
+                        icon: const Icon(Icons.flag_outlined, size: 16),
+                        style: TextButton.styleFrom(
+                            foregroundColor: AppColors.textTertiary),
+                        label: const Text('Signaler cette annonce',
+                            style: TextStyle(fontSize: 13)),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -179,6 +196,30 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
         ),
       ),
     );
+  }
+
+  /// Le motif est obligatoire côté serveur — on le demande avant d'envoyer.
+  Future<void> _signaler(
+      BuildContext context, LogementDetailViewModel viewModel) async {
+    final motif = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => const _SignalementSheet(),
+    );
+    if (motif == null) return;
+
+    final error = await viewModel.signaler(motif);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text(error ?? "Annonce signalée — un modérateur va l'examiner"),
+        backgroundColor: error == null ? AppColors.echange : AppColors.error,
+      ));
+    }
   }
 
   /// Durée d'affichage du bandeau de confirmation — court, il ne doit pas
@@ -508,6 +549,73 @@ class _OwnerCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Saisie du motif de signalement (APP-121) ─────────────────────
+
+class _SignalementSheet extends StatefulWidget {
+  const _SignalementSheet();
+
+  @override
+  State<_SignalementSheet> createState() => _SignalementSheetState();
+}
+
+class _SignalementSheetState extends State<_SignalementSheet> {
+  final _controller = TextEditingController();
+
+  bool get _valide => _controller.text.trim().isNotEmpty;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Signaler cette annonce',
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              "Un modérateur l'examinera. L'annonce reste visible tant "
+              "qu'aucune décision n'est prise.",
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              maxLines: 3,
+              maxLength: 500,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                hintText: "Qu'est-ce qui pose problème ?",
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ElevatedButton(
+              onPressed: _valide
+                  ? () => Navigator.pop(context, _controller.text.trim())
+                  : null,
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+              child: const Text('Signaler'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
       ),
     );
   }

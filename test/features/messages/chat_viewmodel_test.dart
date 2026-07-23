@@ -584,4 +584,58 @@ void main() {
       expect(viewModel.messages, hasLength(2));
     });
   });
+  group("signalement d'un message (APP-121)", () {
+    test('envoie le motif nettoyé', () async {
+      final viewModel = makeViewModel();
+      when(() => messageService.reportMessage(any(), any()))
+          .thenAnswer((_) async {});
+
+      final error = await viewModel.signaler(
+          buildMessage(id: 'm1'), '  Propos insultants  ');
+
+      expect(error, isNull);
+      verify(() => messageService.reportMessage('m1', 'Propos insultants'))
+          .called(1);
+    });
+
+    test('motif vide : refusé sans appel réseau', () async {
+      final viewModel = makeViewModel();
+
+      final error = await viewModel.signaler(buildMessage(id: 'm1'), '   ');
+
+      expect(error, 'Explique brièvement le problème');
+      verifyNever(() => messageService.reportMessage(any(), any()));
+    });
+
+    test("409 : message métier, pas l'erreur brute", () async {
+      final viewModel = makeViewModel();
+      // Contrainte d'unicité (messageId, reporterId) côté base
+      when(() => messageService.reportMessage(any(), any()))
+          .thenThrow(const ApiException(
+        code: 'CONFLICT',
+        message: 'Conflit',
+        statusCode: 409,
+      ));
+
+      final error =
+          await viewModel.signaler(buildMessage(id: 'm1'), 'Motif');
+
+      expect(error, 'Tu as déjà signalé ce message');
+    });
+
+    test('erreur réseau : message remonté tel quel', () async {
+      final viewModel = makeViewModel();
+      when(() => messageService.reportMessage(any(), any()))
+          .thenThrow(const ApiException(
+        code: 'NETWORK_ERROR',
+        message: 'Impossible de joindre le serveur',
+        statusCode: 0,
+      ));
+
+      final error =
+          await viewModel.signaler(buildMessage(id: 'm1'), 'Motif');
+
+      expect(error, 'Impossible de joindre le serveur');
+    });
+  });
 }

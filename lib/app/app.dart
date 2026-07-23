@@ -5,6 +5,7 @@ import '../core/api/api_client.dart';
 import '../features/auth/login/login_view.dart';
 import '../features/auth/profil_creation/profil_creation_view.dart';
 import '../features/auth/register/register_view.dart';
+import '../features/admin/mots_interdits_view.dart';
 import '../features/calendrier/mon_calendrier_view.dart';
 import '../features/candidatures/mes_candidatures_view.dart';
 import '../features/logements/ajouter_logement_view.dart';
@@ -17,6 +18,7 @@ import '../features/notifications/notifications_view.dart';
 import '../features/onboarding/onboarding_view.dart';
 import '../features/recherche/recherche_view.dart';
 import '../features/startup/startup_view.dart';
+import '../services/admin_service.dart';
 import '../services/auth_service.dart';
 import '../services/calendrier_service.dart';
 import '../services/candidature_service.dart';
@@ -44,6 +46,7 @@ import '../services/token_storage_service.dart';
     MaterialRoute(page: RegisterView),
     MaterialRoute(page: ProfilCreationView),
     MaterialRoute(page: MainView),
+    MaterialRoute(page: MotsInterditsView),
     MaterialRoute(page: MonCalendrierView),
     MaterialRoute(page: CompatibiliteView),
     MaterialRoute(page: AjouterLogementView),
@@ -63,6 +66,7 @@ import '../services/token_storage_service.dart';
     // Services StudUp
     LazySingleton(classType: TokenStorageService),
     LazySingleton(classType: ApiClient),
+    LazySingleton(classType: AdminService),
     LazySingleton(classType: AuthService),
     LazySingleton(classType: ProfileService),
     LazySingleton(classType: DashboardService),

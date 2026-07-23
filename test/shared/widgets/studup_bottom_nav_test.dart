@@ -51,6 +51,25 @@ void main() {
       expect(find.text('Recherche'), findsNothing);
     });
 
+    testWidgets('admin : sa propre nav, plus celle du propriétaire',
+        (tester) async {
+      await tester.pumpWidget(wrap(StudUpBottomNav(
+        role: UserRole.ADMIN,
+        currentIndex: 0,
+        onTap: (_) {},
+      )));
+
+      expect(find.text('Accueil'), findsOneWidget);
+      expect(find.text('Comptes'), findsOneWidget);
+      expect(find.text('Annonces'), findsOneWidget);
+      expect(find.text('Modération'), findsOneWidget);
+      expect(find.text('Profil'), findsOneWidget);
+      // APP-121 : l'admin héritait de la nav propriétaire et atterrissait sur
+      // des écrans qui ne le concernent pas.
+      expect(find.text('Alertes'), findsNothing);
+      expect(find.text('Messages'), findsNothing);
+    });
+
     testWidgets('le tap remonte l\'index sélectionné', (tester) async {
       int? tapped;
       await tester.pumpWidget(wrap(StudUpBottomNav(
