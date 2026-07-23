@@ -189,4 +189,18 @@ class LogementService {
         .put<Map<String, dynamic>>('/logements/$logementId/publish');
     return Logement.fromJson(data);
   }
+
+  /// POST /logements/{id}/report — signale une annonce à la modération.
+  ///
+  /// Seul point d'entrée de la file d'annonces signalées : sans lui, un
+  /// administrateur ne pourrait repérer une annonce frauduleuse qu'en
+  /// parcourant toute la liste (APP-121).
+  ///
+  /// 409 : soit c'est sa propre annonce, soit elle a déjà été signalée par
+  /// cette personne (contrainte d'unicité en base).
+  Future<void> reportLogement(String logementId, String motif) =>
+      _api.post<Map<String, dynamic>>(
+        '/logements/$logementId/report',
+        data: {'motif': motif},
+      );
 }

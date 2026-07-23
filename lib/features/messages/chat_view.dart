@@ -104,9 +104,43 @@ class ChatView extends StackedView<ChatViewModel> {
       itemCount: reversed.length,
       itemBuilder: (context, index) {
         final m = reversed[index];
-        return _Bubble(message: m, isMine: viewModel.isMine(m));
+        final isMine = viewModel.isMine(m);
+        return _Bubble(
+          message: m,
+          isMine: isMine,
+          // On ne signale pas ses propres messages : l'action n'aurait
+          // aucun sens et encombrerait la modération.
+          onSignaler: isMine ? null : () => _signaler(context, viewModel, m),
+        );
       },
     );
+  }
+
+  /// Signalement d'un message (APP-121).
+  /// Le motif est obligatoire côté serveur — on le demande avant d'envoyer.
+  Future<void> _signaler(
+    BuildContext context,
+    ChatViewModel viewModel,
+    ChatMessage message,
+  ) async {
+    final motif = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true, // laisse la place au clavier
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _SignalementSheet(contenu: message.content),
+    );
+    if (motif == null) return;
+
+    final error = await viewModel.signaler(message, motif);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(error ?? 'Message signalé — un modérateur va l\'examiner'),
+        backgroundColor: error == null ? AppColors.echange : AppColors.error,
+      ));
+    }
   }
 
   @override
@@ -337,13 +371,21 @@ class _Bubble extends StatelessWidget {
   final ChatMessage message;
   final bool isMine;
 
-  const _Bubble({required this.message, required this.isMine});
+  /// Null pour ses propres messages : rien à signaler.
+  final VoidCallback? onSignaler;
+
+  const _Bubble(
+      {required this.message, required this.isMine, this.onSignaler});
 
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
+      child: GestureDetector(
+        // Appui long plutôt qu'une icône permanente : signaler reste un geste
+        // rare, il ne doit pas alourdir chaque bulle.
+        onLongPress: onSignaler,
+        child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: 10),
@@ -379,7 +421,8 @@ class _Bubble extends StatelessWidget {
                     : AppColors.textTertiary,
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -435,6 +478,88 @@ class _InputBar extends StatelessWidget {
                 : const Icon(Icons.send, color: Colors.white, size: 20),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Signalement d'un message (APP-121) ───────────────────────────
+
+class _SignalementSheet extends StatefulWidget {
+  /// Contenu rappelé à l'écran : on signale un message précis, pas la
+  /// conversation — l'utilisateur doit voir lequel avant de valider.
+  final String contenu;
+
+  const _SignalementSheet({required this.contenu});
+
+  @override
+  State<_SignalementSheet> createState() => _SignalementSheetState();
+}
+
+class _SignalementSheetState extends State<_SignalementSheet> {
+  final _controller = TextEditingController();
+
+  bool get _valide => _controller.text.trim().isNotEmpty;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Signaler ce message',
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Text(
+                widget.contenu,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              maxLines: 3,
+              maxLength: 500,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                hintText: 'Qu\'est-ce qui pose problème ?',
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ElevatedButton(
+              onPressed: _valide
+                  ? () => Navigator.pop(context, _controller.text.trim())
+                  : null,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error),
+              child: const Text('Signaler'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
       ),
     );
   }

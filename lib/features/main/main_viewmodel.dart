@@ -48,10 +48,16 @@ class MainViewModel extends BaseViewModel {
   int rechercheReloadKey = 0;
   int candidaturesReloadKey = 0;
   int alertesReloadKey = 0;
+  int moderationReloadKey = 0;
+  int annoncesReloadKey = 0;
 
   /// Index de l'onglet Messages selon le rôle (voir _pagesForRole).
-  int get _messagesTabIndex =>
-      (role == UserRole.PROPRIETAIRE || role == UserRole.ADMIN) ? 2 : 3;
+  /// -1 pour l'admin : sa navigation n'a pas d'onglet Messages (APP-121).
+  int get _messagesTabIndex => switch (role) {
+        UserRole.PROPRIETAIRE => 2,
+        UserRole.ADMIN => -1,
+        _ => 3,
+      };
 
   /// Index de l'onglet Recherche : alternant = 2, étudiant = 1, aucun ailleurs.
   int get _rechercheTabIndex => switch (role) {
@@ -60,13 +66,17 @@ class MainViewModel extends BaseViewModel {
         _ => -1,
       };
 
+  /// Onglets « Annonces » et « Modération » — admin uniquement (APP-121).
+  /// L'accueil admin occupe l'index 0, comme pour les autres rôles.
+  int get _annoncesTabIndex => role == UserRole.ADMIN ? 2 : -1;
+  int get _moderationTabIndex => role == UserRole.ADMIN ? 3 : -1;
+
   /// Index de l'onglet Candidatures : étudiant uniquement (APP-117).
   int get _candidaturesTabIndex => role == UserRole.ETUDIANT ? 2 : -1;
 
-  /// Onglet « Alertes » — propriétaire (et admin, même nav) uniquement.
+  /// Onglet « Alertes » — propriétaire uniquement.
   /// -1 pour les autres rôles : aucun onglet ne correspond.
-  int get _alertesTabIndex =>
-      role == UserRole.PROPRIETAIRE || role == UserRole.ADMIN ? 3 : -1;
+  int get _alertesTabIndex => role == UserRole.PROPRIETAIRE ? 3 : -1;
 
   /// userId abonné au topic personnel — pour se désabonner au dispose
   String? _subscribedUserId;
@@ -105,6 +115,8 @@ class MainViewModel extends BaseViewModel {
     // monté qu'une fois, donc une notification arrivée depuis n'apparaissait
     // qu'après un passage par un autre écran (APP-119).
     if (index == _alertesTabIndex) alertesReloadKey++;
+    if (index == _annoncesTabIndex) annoncesReloadKey++;
+    if (index == _moderationTabIndex) moderationReloadKey++;
     notifyListeners();
     // Chaque changement d'onglet rafraîchit le badge : en quittant
     // Messages il retombe à zéro, ailleurs il capte les nouveautés.
@@ -113,6 +125,8 @@ class MainViewModel extends BaseViewModel {
 
   /// Le badge est secondaire : une erreur réseau ne doit rien bloquer.
   Future<void> refreshMessagesBadge() async {
+    // L'admin n'a pas d'onglet Messages : inutile de charger ses conversations.
+    if (role == UserRole.ADMIN) return;
     try {
       final conversations = await _messages.getConversations();
       conversationsNonLues =
@@ -121,9 +135,8 @@ class MainViewModel extends BaseViewModel {
     } on ApiException {
       // silencieux
     }
-    // Badge Alertes : uniquement pour le proprio/admin (seuls rôles
-    // avec l'onglet) — inutile de charger pour les autres.
-    if (role == UserRole.PROPRIETAIRE || role == UserRole.ADMIN) {
+    // Badge Alertes : le propriétaire est le seul rôle à avoir cet onglet.
+    if (role == UserRole.PROPRIETAIRE) {
       try {
         notificationsNonLues = await _notifications.getUnreadCount();
         notifyListeners();

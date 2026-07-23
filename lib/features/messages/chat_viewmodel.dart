@@ -155,6 +155,25 @@ class ChatViewModel extends BaseViewModel {
 
   bool isMine(ChatMessage m) => m.senderId == currentUserId;
 
+  /// Signale un message à la modération (APP-121).
+  ///
+  /// Seul point d'entrée de la file admin : sans lui, elle reste vide à vie.
+  /// Retourne null si OK, un message d'erreur sinon.
+  Future<String?> signaler(ChatMessage message, String motif) async {
+    final saisie = motif.trim();
+    if (saisie.isEmpty) return 'Explique brièvement le problème';
+
+    try {
+      await _messages.reportMessage(message.id, saisie);
+      return null;
+    } on ApiException catch (e) {
+      // 409 = contrainte d'unicité (messageId, reporterId) côté base
+      return e.isConflict
+          ? 'Tu as déjà signalé ce message'
+          : e.message;
+    }
+  }
+
   Future<void> init() async {
     currentUserId = await _profile.currentUserId();
     _conversationId = conversation.conversationId;

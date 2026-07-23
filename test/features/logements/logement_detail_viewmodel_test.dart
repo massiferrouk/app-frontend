@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:studup_app/core/api/api_exception.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/features/logements/logement_detail_viewmodel.dart';
@@ -189,6 +190,40 @@ void main() {
           any(), arguments: captureAny(named: 'arguments'))).captured.last;
       final args = capture as ChatViewArguments;
       expect(args.conversation.logementId, 'log-1');
+    });
+  });
+
+  group("signalement d'annonce (APP-121)", () {
+    test('envoie le motif nettoyé', () async {
+      when(() => logementService.reportLogement(any(), any()))
+          .thenAnswer((_) async {});
+
+      final error = await viewModel.signaler('  Annonce frauduleuse  ');
+
+      expect(error, isNull);
+      verify(() => logementService.reportLogement('log-1', 'Annonce frauduleuse'))
+          .called(1);
+    });
+
+    test('motif vide : refusé sans appel réseau', () async {
+      final error = await viewModel.signaler('   ');
+
+      expect(error, 'Explique brièvement le problème');
+      verifyNever(() => logementService.reportLogement(any(), any()));
+    });
+
+    test('409 : le message du serveur est affiché tel quel', () async {
+      // Sa propre annonce, ou déjà signalée : le backend distingue les deux
+      when(() => logementService.reportLogement(any(), any()))
+          .thenThrow(const ApiException(
+        code: 'CONFLICT',
+        message: 'Vous avez déjà signalé cette annonce',
+        statusCode: 409,
+      ));
+
+      final error = await viewModel.signaler('Motif');
+
+      expect(error, 'Vous avez déjà signalé cette annonce');
     });
   });
 

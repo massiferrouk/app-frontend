@@ -165,4 +165,20 @@ void main() {
       expect(service.delete('l1'), throwsA(isA<ApiException>()));
     });
   });
+  group('signalement (APP-121)', () {
+    test('reportLogement poste le motif', () async {
+      when(() => api.post<Map<String, dynamic>>('/logements/l1/report',
+          data: any(named: 'data'))).thenAnswer((_) async => {});
+
+      await service.reportLogement('l1', 'Annonce frauduleuse');
+
+      final envoye = verify(() => api.post<Map<String, dynamic>>(
+                  '/logements/l1/report',
+                  data: captureAny(named: 'data')))
+              .captured
+              .single as Map<String, dynamic>;
+      // Obligatoire côté serveur : sans motif, 400
+      expect(envoye['motif'], 'Annonce frauduleuse');
+    });
+  });
 }

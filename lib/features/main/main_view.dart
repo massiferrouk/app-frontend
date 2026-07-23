@@ -4,6 +4,10 @@ import 'package:stacked/stacked.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/models/enums.dart';
 import '../../shared/widgets/studup_bottom_nav.dart';
+import '../admin/accueil_admin_view.dart';
+import '../admin/annonces_view.dart';
+import '../admin/comptes_view.dart';
+import '../admin/moderation_view.dart';
 import '../candidatures/mes_candidatures_view.dart';
 import '../dashboard/home_alternant_view.dart';
 import '../dashboard/home_etudiant_view.dart';
@@ -86,8 +90,29 @@ class MainView extends StackedView<MainViewModel> {
           _conversationsTab(viewModel),
           const ProfilView(),
         ];
-      case UserRole.PROPRIETAIRE:
       case UserRole.ADMIN:
+        return [
+          // Le tableau de bord ouvre sur l'onglet Modération (index 3) quand
+          // des signalements attendent.
+          AccueilAdminView(
+            key: _homeKey(viewModel),
+            onSeeModeration: () => viewModel.setIndex(3),
+          ),
+          const ComptesView(),
+          // Rechargée à chaque entrée : une annonce publiée entre-temps doit
+          // apparaître sans relancer l'app (IndexedStack garde l'onglet monté).
+          AnnoncesView(
+            key: ValueKey('annonces-${viewModel.annoncesReloadKey}'),
+          ),
+          // Clé rechargée à chaque entrée : dans un IndexedStack l'onglet
+          // reste monté, donc un signalement arrivé entre-temps n'apparaîtrait
+          // jamais sans ça (même mécanique que l'onglet Alertes, APP-119).
+          ModerationView(
+            key: ValueKey('moderation-${viewModel.moderationReloadKey}'),
+          ),
+          const ProfilView(),
+        ];
+      case UserRole.PROPRIETAIRE:
         return [
           HomeProprioView(
             key: _homeKey(viewModel),

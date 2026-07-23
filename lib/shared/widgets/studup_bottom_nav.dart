@@ -36,12 +36,22 @@ List<NavTab> navTabsForRole(UserRole role) {
         NavTab(label: 'Profil', icon: Icons.person_outline),
       ];
     case UserRole.PROPRIETAIRE:
-    case UserRole.ADMIN: // l'admin mobile voit la nav propriétaire
       return const [
         NavTab(label: 'Accueil', icon: Icons.home_outlined),
         NavTab(label: 'Logements', icon: Icons.apartment_outlined),
         NavTab(label: 'Messages', icon: Icons.chat_bubble_outline),
         NavTab(label: 'Alertes', icon: Icons.notifications_outlined),
+        NavTab(label: 'Profil', icon: Icons.person_outline),
+      ];
+    case UserRole.ADMIN:
+      // APP-121 : l'admin héritait de la nav propriétaire et atterrissait sur
+      // « Mes logements » et « Alertes », qui ne le concernent pas — sans
+      // aucun accès à ses propres outils.
+      return const [
+        NavTab(label: 'Accueil', icon: Icons.home_outlined),
+        NavTab(label: 'Comptes', icon: Icons.people_outline),
+        NavTab(label: 'Annonces', icon: Icons.apartment_outlined),
+        NavTab(label: 'Modération', icon: Icons.flag_outlined),
         NavTab(label: 'Profil', icon: Icons.person_outline),
       ];
   }
