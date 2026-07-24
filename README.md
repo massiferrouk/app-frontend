@@ -185,9 +185,13 @@ pas la même personne qui utilise l'app :
 | **Alternant** | Accueil · Matches · Recherche · Messages · Profil |
 | **Étudiant** | Accueil · Recherche · Candidatures · Messages · Profil |
 | **Propriétaire** | Accueil · Logements · Messages · Alertes · Profil |
+| **Administrateur** | Accueil · Comptes · Annonces · Modération · Profil |
 
 Étudiant et alternant sont deux situations d'une même personne : le mode se change
 depuis le profil, sans recréer de compte. Le propriétaire est un compte distinct.
+L'administrateur en est un aussi : à la connexion, l'application bascule automatiquement
+sur son espace de supervision (aucune adresse ni build séparés — le rôle est lu dans le
+jeton). Compte de démonstration : `admin@studup.demo` / `Demo1234!`.
 
 ---
 
