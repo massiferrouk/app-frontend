@@ -32,7 +32,7 @@ Le détail fin est traçable dans l'historique Git (tickets Jira APP-XX) et les 
   Le endpoint backend existait déjà mais n'était appelé par aucun écran (A-04)
 
 ### Qualité & accessibilité
-- 273 tests (ViewModels, services, modèles, widgets, accessibilité)
+- 344 tests (ViewModels, services, modèles, widgets, accessibilité)
 - Trois guidelines d'accessibilité vérifiées à chaque build : contraste des textes,
   taille des zones tactiles, présence d'un intitulé sur les éléments actionnables
 
@@ -63,7 +63,7 @@ Première version complète et fonctionnelle de l'application.
 - Recherche étudiant, tableau de bord propriétaire (APP-79, APP-80)
 
 ### Qualité & accessibilité
-- 252 tests (ViewModels, services, widgets) ; couverture services 71 %
+- 344 tests (ViewModels, services, widgets) ; couverture ViewModels 75 %, services 67 %
 - Accessibilité OPQUAST : contrastes AA, alternatives textuelles, intitulés (APP-112)
 - Pipeline CI GitHub Actions : analyze + tests sur chaque push et PR
 
