@@ -11,8 +11,9 @@ import 'api_config.dart';
 /// Rôle 2 (onError) : si le serveur répond 401 (access token expiré),
 /// tente un refresh via POST /auth/refresh, sauvegarde les nouveaux tokens
 /// puis REJOUE la requête d'origine. L'utilisateur ne voit rien.
-/// Si le refresh échoue (refresh token expiré/révoqué) : purge les tokens —
-/// l'utilisateur devra se reconnecter.
+/// Si le refresh échoue (refresh token expiré/révoqué, compte suspendu ou
+/// banni par un admin) : purge les tokens ET prévient l'application via
+/// [onSessionExpiree], pour qu'elle ramène l'utilisateur au login.
 ///
 /// QueuedInterceptor (et pas Interceptor) : si 5 requêtes reçoivent 401 en
 /// même temps, elles sont traitées une par une → un seul refresh, pas cinq.
@@ -24,9 +25,17 @@ class AuthInterceptor extends QueuedInterceptor {
   /// redéclencherait l'intercepteur → boucle infinie.
   final Dio _plainDio;
 
+  /// Appelé quand la session ne peut plus être rétablie.
+  ///
+  /// C'est un callback et non un NavigationService : la couche API n'a pas à
+  /// connaître la navigation. L'application branche la redirection dessus,
+  /// les tests peuvent l'omettre.
+  final Future<void> Function()? onSessionExpiree;
+
   AuthInterceptor({
     required TokenStorageService tokenStorage,
     required Dio plainDio,
+    this.onSessionExpiree,
   })  : _tokenStorage = tokenStorage,
         _plainDio = plainDio;
 
@@ -57,10 +66,18 @@ class AuthInterceptor extends QueuedInterceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final is401 = err.response?.statusCode == 401;
-    final isRefreshCall = err.requestOptions.path.endsWith('/auth/refresh');
 
-    // On ne tente le refresh que sur un 401 d'une requête normale
-    if (!is401 || isRefreshCall) {
+    // Aucune route publique ne déclenche de refresh (APP-121).
+    //
+    // Auparavant seul /auth/refresh était exclu : un login refusé (mauvais
+    // mot de passe, compte suspendu) partait donc en tentative de refresh,
+    // qui échouait à son tour et déclenchait la redirection « session
+    // terminée » — écrasant le vrai message d'erreur du login.
+    final estRoutePublique = ApiConfig.publicPaths
+        .any((p) => err.requestOptions.path.endsWith(p));
+
+    // On ne tente le refresh que sur un 401 d'une requête authentifiée
+    if (!is401 || estRoutePublique) {
       handler.next(err);
       return;
     }
@@ -108,8 +125,13 @@ class AuthInterceptor extends QueuedInterceptor {
       handler.resolve(retryResponse);
     } catch (_) {
       // Refresh échoué : session terminée, on purge.
-      // (La redirection vers Login sera gérée en APP-63.)
+      //
+      // APP-121 : purger ne suffisait pas. Un compte banni pendant qu'il
+      // utilise l'app restait sur ses écrans, chaque appel échouant en
+      // « une erreur s'est produite » — sans jamais comprendre pourquoi.
+      // On le ramène donc au login avec une explication.
       await _tokenStorage.clearTokens();
+      await onSessionExpiree?.call();
       handler.next(err);
     }
   }

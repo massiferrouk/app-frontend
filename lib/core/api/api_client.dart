@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:stacked_services/stacked_services.dart';
 
 import '../../app/app.locator.dart';
+import '../../app/app.router.dart';
 import '../../services/token_storage_service.dart';
 import 'api_config.dart';
 import 'api_exception.dart';
@@ -33,7 +35,30 @@ class ApiClient {
     _dio.interceptors.add(AuthInterceptor(
       tokenStorage: storage,
       plainDio: Dio(), // Dio nu pour refresh + rejeu (voir AuthInterceptor)
+      // Session irrécupérable (token expiré, compte suspendu ou banni) :
+      // on ramène au login plutôt que de laisser l'utilisateur sur des
+      // écrans qui échouent en boucle (APP-121).
+      onSessionExpiree: _retourAuLogin,
     ));
+  }
+
+  /// Ramène au login en vidant la pile de navigation : aucun écran
+  /// authentifié ne doit rester accessible par le bouton retour.
+  ///
+  /// Le locator est interrogé ici et non au constructeur : ApiClient est créé
+  /// très tôt, la navigation ne l'est pas forcément encore.
+  Future<void> _retourAuLogin() async {
+    try {
+      await locator<NavigationService>().clearStackAndShow(
+        Routes.loginView,
+        arguments: const LoginViewArguments(
+          messageSession: 'Ta session a pris fin. Reconnecte-toi.',
+        ),
+      );
+    } catch (_) {
+      // Navigation indisponible (tests, démarrage) : la purge des tokens
+      // suffit, l'utilisateur retombera sur le login au prochain lancement.
+    }
   }
 
   // ─── Méthodes HTTP — miroir des verbes de l'API backend ───────

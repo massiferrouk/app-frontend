@@ -70,6 +70,11 @@ class ChatView extends StackedView<ChatViewModel> {
                     : null,
               ),
             Expanded(child: _buildMessages(context, viewModel)),
+            // APP-121 : l'erreur d'envoi était stockée dans le ViewModel mais
+            // jamais affichée. Un message bloqué par le filtre de modération
+            // disparaissait donc sans un mot d'explication.
+            if (viewModel.errorMessage != null)
+              _BandeauErreur(message: viewModel.errorMessage!),
             _InputBar(viewModel: viewModel),
           ],
         ),
@@ -379,6 +384,37 @@ class _Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Message masqué par la modération (APP-121) : on n'affiche plus son
+    // contenu, et il n'est plus signalable (le geste n'aurait plus d'objet).
+    if (message.isHidden) {
+      return Align(
+        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.visibility_off_outlined,
+                  size: 14, color: AppColors.textTertiary),
+              const SizedBox(width: 6),
+              Text('Message masqué par la modération',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      color: AppColors.textTertiary)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
@@ -560,6 +596,36 @@ class _SignalementSheetState extends State<_SignalementSheet> {
             const SizedBox(height: AppSpacing.sm),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Erreur d'envoi affichée au-dessus de la barre de saisie (APP-121).
+/// Reste visible jusqu'au prochain envoi réussi : un message refusé demande
+/// une correction, pas une notification fugace.
+class _BandeauErreur extends StatelessWidget {
+  final String message;
+
+  const _BandeauErreur({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenPadding, vertical: AppSpacing.sm),
+      color: AppColors.errorLight,
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(message,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textPrimary)),
+          ),
+        ],
       ),
     );
   }
