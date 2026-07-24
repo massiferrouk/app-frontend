@@ -67,5 +67,5 @@ Première version complète et fonctionnelle de l'application.
 - Accessibilité OPQUAST : contrastes AA, alternatives textuelles, intitulés (APP-112)
 - Pipeline CI GitHub Actions : analyze + tests sur chaque push et PR
 
-[Non publié]: https://github.com/massiferrouk/studup-frontend/compare/v1.0.0...HEAD
-[1.0.0+1]: https://github.com/massiferrouk/studup-frontend/releases/tag/v1.0.0
+[Non publié]: https://github.com/massiferrouk/app-frontend/compare/v1.0.0...HEAD
+[1.0.0+1]: https://github.com/massiferrouk/app-frontend/releases/tag/v1.0.0
