@@ -7,6 +7,10 @@ class ChatMessage {
   final bool isRead;
   final DateTime createdAt;
 
+  /// Masqué par la modération (APP-121). Le contenu reste transmis pour la
+  /// traçabilité côté serveur, mais l'app remplace le texte par un libellé.
+  final bool isHidden;
+
   const ChatMessage({
     required this.id,
     required this.conversationId,
@@ -14,6 +18,7 @@ class ChatMessage {
     required this.content,
     required this.isRead,
     required this.createdAt,
+    this.isHidden = false,
   });
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
@@ -24,6 +29,7 @@ class ChatMessage {
       content: json['content'] as String,
       isRead: json['isRead'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      isHidden: json['isHidden'] as bool? ?? false,
     );
   }
 }

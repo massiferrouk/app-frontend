@@ -7,7 +7,11 @@ import 'login_viewmodel.dart';
 
 /// Écran de connexion — UI pure, toute la logique est dans le ViewModel.
 class LoginView extends StackedView<LoginViewModel> {
-  const LoginView({super.key});
+  /// Message affiché à l'arrivée, quand la session a été interrompue
+  /// (expiration, suspension ou bannissement par un admin — APP-121).
+  final String? messageSession;
+
+  const LoginView({super.key, this.messageSession});
 
   @override
   Widget builder(
@@ -116,7 +120,8 @@ class LoginView extends StackedView<LoginViewModel> {
   }
 
   @override
-  LoginViewModel viewModelBuilder(BuildContext context) => LoginViewModel();
+  LoginViewModel viewModelBuilder(BuildContext context) =>
+      LoginViewModel(messageInitial: messageSession);
 }
 
 // ─── En-tête de marque (logo rond + nom + accroche) ───────────────

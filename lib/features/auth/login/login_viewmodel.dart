@@ -19,9 +19,13 @@ class LoginViewModel extends BaseViewModel {
     AuthService? authService,
     ProfileService? profileService,
     NavigationService? navigationService,
+    String? messageInitial,
   })  : _auth = authService ?? locator<AuthService>(),
         _profile = profileService ?? locator<ProfileService>(),
-        _nav = navigationService ?? locator<NavigationService>();
+        _nav = navigationService ?? locator<NavigationService>(),
+        // Message porté depuis l'écran précédent (session interrompue) :
+        // il s'affiche dans le même bandeau que les erreurs de connexion.
+        errorMessage = messageInitial;
 
   // Les controllers vivent dans le ViewModel : la View reste sans état
   final emailController = TextEditingController();
@@ -29,6 +33,7 @@ class LoginViewModel extends BaseViewModel {
 
   /// Message d'erreur affiché sous le formulaire (null = pas d'erreur)
   String? errorMessage;
+
 
   /// Affichage en clair du mot de passe (bouton œil) — même UX que l'inscription
   bool passwordVisible = false;
@@ -68,6 +73,11 @@ class LoginViewModel extends BaseViewModel {
       if (e.code == 'EMAIL_NOT_CONFIRMED') {
         errorMessage =
             'Confirme ton adresse email avant de te connecter (vérifie ta boîte mail)';
+      } else if (e.code == 'ACCOUNT_LOCKED') {
+        // Un compte suspendu ou banni renvoie aussi un 401 : sans ce cas, on
+        // affichait « mot de passe incorrect » et la personne cherchait un
+        // problème d'identifiants qui n'existait pas (APP-121).
+        errorMessage = 'Ce compte a été suspendu. Contacte le support.';
       } else if (e.isUnauthorized) {
         errorMessage = 'Email ou mot de passe incorrect';
       } else {

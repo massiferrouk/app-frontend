@@ -15,7 +15,11 @@ void main() {
   late Dio plainDio; // Dio nu utilisé par l'intercepteur (refresh + rejeu)
   late DioAdapter plainAdapter;
 
+  /// Observe le signal de session irrécupérable (APP-121).
+  var sessionExpireeAppelee = false;
+
   setUp(() {
+    sessionExpireeAppelee = false;
     tokenStorage = MockTokenStorage();
 
     plainDio = Dio();
@@ -24,7 +28,11 @@ void main() {
     dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
     dioAdapter = DioAdapter(dio: dio);
     dio.interceptors.add(
-      AuthInterceptor(tokenStorage: tokenStorage, plainDio: plainDio),
+      AuthInterceptor(
+        tokenStorage: tokenStorage,
+        plainDio: plainDio,
+        onSessionExpiree: () async => sessionExpireeAppelee = true,
+      ),
     );
   });
 
@@ -129,6 +137,67 @@ void main() {
       );
 
       verify(() => tokenStorage.clearTokens()).called(1);
+      // APP-121 : purger ne suffit pas. Sans ce signal, un compte banni en
+      // pleine session restait sur ses écrans, chaque appel échouant en
+      // « une erreur s'est produite ».
+      expect(sessionExpireeAppelee, isTrue);
+    });
+
+    test('un refresh réussi ne déclenche pas la fin de session', () async {
+      when(() => tokenStorage.getAccessToken())
+          .thenAnswer((_) async => 'token-expire');
+      when(() => tokenStorage.getRefreshToken())
+          .thenAnswer((_) async => 'refresh-valide');
+      when(() => tokenStorage.saveTokens(
+            accessToken: any(named: 'accessToken'),
+            refreshToken: any(named: 'refreshToken'),
+          )).thenAnswer((_) async {});
+
+      dioAdapter.onGet(
+        '/logements/mes-logements',
+        (server) => server.reply(401, {'message': 'Token expiré'}),
+      );
+      plainAdapter.onPost(
+        '${ApiConfig.baseUrl}/auth/refresh',
+        (server) => server.reply(200, {
+          'accessToken': 'nouveau-access',
+          'refreshToken': 'nouveau-refresh',
+        }),
+        data: Matchers.any,
+      );
+      plainAdapter.onGet(
+        '${ApiConfig.baseUrl}/logements/mes-logements',
+        (server) => server.reply(200, {'logements': []}),
+      );
+
+      await dio.get('/logements/mes-logements');
+
+      // La session est rétablie : ne pas éjecter l'utilisateur pour rien
+      expect(sessionExpireeAppelee, isFalse);
+    });
+
+    test('un login refusé ne déclenche ni refresh ni fin de session',
+        () async {
+      // Un compte suspendu reçoit 401 au login. Sans exclusion des routes
+      // publiques, l'interceptor tentait un refresh, échouait, et la
+      // redirection « session terminée » écrasait le vrai message d'erreur.
+      when(() => tokenStorage.getRefreshToken())
+          .thenAnswer((_) async => 'vieux-refresh');
+      when(() => tokenStorage.clearTokens()).thenAnswer((_) async {});
+
+      dioAdapter.onPost(
+        '/auth/login',
+        (server) => server.reply(401, {'code': 'ACCOUNT_LOCKED'}),
+        data: Matchers.any,
+      );
+
+      await expectLater(
+        dio.post('/auth/login', data: {'email': 'x', 'password': 'y'}),
+        throwsA(isA<DioException>()),
+      );
+
+      expect(sessionExpireeAppelee, isFalse);
+      verifyNever(() => tokenStorage.clearTokens());
     });
 
     test('sans refresh token : erreur propagée sans tentative de refresh',

@@ -134,7 +134,8 @@ class StackedRouter extends _i1.RouterBase {
         orElse: () => const LoginViewArguments(),
       );
       return _i18.MaterialPageRoute<dynamic>(
-        builder: (context) => _i4.LoginView(key: args.key),
+        builder: (context) =>
+            _i4.LoginView(key: args.key, messageSession: args.messageSession),
         settings: data,
       );
     },
@@ -321,24 +322,26 @@ class OnboardingViewArguments {
 }
 
 class LoginViewArguments {
-  const LoginViewArguments({this.key});
+  const LoginViewArguments({this.key, this.messageSession});
 
   final _i18.Key? key;
 
+  final String? messageSession;
+
   @override
   String toString() {
-    return '{"key": "$key"}';
+    return '{"key": "$key", "messageSession": "$messageSession"}';
   }
 
   @override
   bool operator ==(covariant LoginViewArguments other) {
     if (identical(this, other)) return true;
-    return other.key == key;
+    return other.key == key && other.messageSession == messageSession;
   }
 
   @override
   int get hashCode {
-    return key.hashCode;
+    return key.hashCode ^ messageSession.hashCode;
   }
 }
 
@@ -709,6 +712,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
 
   Future<dynamic> navigateToLoginView({
     _i18.Key? key,
+    String? messageSession,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -717,7 +721,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }) async {
     return navigateTo<dynamic>(
       Routes.loginView,
-      arguments: LoginViewArguments(key: key),
+      arguments: LoginViewArguments(key: key, messageSession: messageSession),
       id: routerId,
       preventDuplicates: preventDuplicates,
       parameters: parameters,
@@ -1021,6 +1025,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
 
   Future<dynamic> replaceWithLoginView({
     _i18.Key? key,
+    String? messageSession,
     int? routerId,
     bool preventDuplicates = true,
     Map<String, String>? parameters,
@@ -1029,7 +1034,7 @@ extension NavigatorStateExtension on _i24.NavigationService {
   }) async {
     return replaceWith<dynamic>(
       Routes.loginView,
-      arguments: LoginViewArguments(key: key),
+      arguments: LoginViewArguments(key: key, messageSession: messageSession),
       id: routerId,
       preventDuplicates: preventDuplicates,
       parameters: parameters,

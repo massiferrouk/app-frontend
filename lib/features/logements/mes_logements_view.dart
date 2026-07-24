@@ -275,6 +275,36 @@ class _LogementCard extends StatelessWidget {
             ],
           ),
 
+          // Motif de suspension par la modération (APP-121) : le propriétaire
+          // recevait la notification mais la fiche ne disait pas pourquoi son
+          // annonce était retirée — il ne pouvait pas savoir quoi corriger.
+          if (logement.statut == LogementStatut.SUSPENDU &&
+              logement.moderationNote != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.gavel_outlined,
+                      size: 16, color: AppColors.error),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Retirée par la modération : ${logement.moderationNote}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // APP-120 : le bouton « Associer à une ville » a disparu. Le choix
           // n'en était pas un — la ville se déduit du logement et du profil, et
           // le backend le fait maintenant tout seul à la publication.

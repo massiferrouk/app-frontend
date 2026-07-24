@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
+import 'package:studup_app/app/app.router.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/dashboard/home_alternant_viewmodel.dart';
 import 'package:studup_app/services/calendrier_service.dart';
@@ -27,6 +28,7 @@ void main() {
   late MockNotificationService notificationService;
   late MockCalendrierService calendrierService;
   late MockLogementService logementService;
+  late MockNavigationService navigationService;
   late HomeAlternantViewModel viewModel;
 
   setUp(() {
@@ -43,12 +45,15 @@ void main() {
         const ApiException(code: 'X', message: 'no cal', statusCode: 404));
     when(() => logementService.getMesLogements())
         .thenAnswer((_) async => const []);
+    navigationService = MockNavigationService();
+    when(() => navigationService.navigateTo(any(),
+        arguments: any(named: 'arguments'))).thenAnswer((_) async => null);
     viewModel = HomeAlternantViewModel(
       dashboardService: dashboardService,
       calendrierService: calendrierService,
       logementService: logementService,
       notificationService: notificationService,
-      navigationService: MockNavigationService(),
+      navigationService: navigationService,
     );
   });
 
@@ -259,6 +264,24 @@ void main() {
       expect(viewModel.semaineCourante, isNull);
       expect(viewModel.semaineAAfficher, isNotNull);
       expect(viewModel.semaineAAfficher!.id, 's1');
+    });
+  });
+  group('actions rapides (APP-121)', () {
+    test('Gérer mes logements ouvre l\'écran puis recharge au retour',
+        () async {
+      when(() => dashboardService.getAlternantDashboard())
+          .thenAnswer((_) async => AlternantDashboard.fromJson(const {
+                'economiePossibleMax': 0,
+                'nbMatchesCompatibles': 0,
+              }));
+
+      await viewModel.goToGererLogements();
+
+      verify(() => navigationService.navigateTo(Routes.mesLogementsView,
+          arguments: any(named: 'arguments'))).called(1);
+      // Recharge au retour : l'alternant a pu publier, l'accueil doit refléter
+      // le nouvel état sans qu'il relance l'app.
+      verify(() => dashboardService.getAlternantDashboard()).called(1);
     });
   });
 }

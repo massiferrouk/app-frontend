@@ -584,6 +584,35 @@ void main() {
       expect(viewModel.messages, hasLength(2));
     });
   });
+  group('message masqué (APP-121)', () {
+    test('isHidden absent du JSON vaut false', () {
+      final m = ChatMessage.fromJson({
+        'id': 'm1',
+        'conversationId': 'c1',
+        'senderId': 'lui',
+        'content': 'coucou',
+        'isRead': false,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+
+      expect(m.isHidden, isFalse);
+    });
+
+    test('isHidden true est bien lu', () {
+      final m = ChatMessage.fromJson({
+        'id': 'm1',
+        'conversationId': 'c1',
+        'senderId': 'lui',
+        'content': 'contenu masqué',
+        'isRead': false,
+        'createdAt': DateTime.now().toIso8601String(),
+        'isHidden': true,
+      });
+
+      expect(m.isHidden, isTrue);
+    });
+  });
+
   group("signalement d'un message (APP-121)", () {
     test('envoie le motif nettoyé', () async {
       final viewModel = makeViewModel();

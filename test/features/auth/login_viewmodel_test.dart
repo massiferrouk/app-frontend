@@ -150,4 +150,53 @@ void main() {
       expect(viewModel.errorMessage, contains('Impossible de joindre'));
     });
   });
+  group('compte suspendu ou banni (APP-121)', () {
+    test('ACCOUNT_LOCKED : message explicite, pas « mot de passe incorrect »',
+        () async {
+      viewModel.emailController.text = 'banni@studup.fr';
+      viewModel.passwordController.text = 'Password123!';
+      when(() => auth.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'))).thenThrow(const ApiException(
+        code: 'ACCOUNT_LOCKED',
+        message: 'Ce compte a été suspendu',
+        statusCode: 401,
+      ));
+
+      await viewModel.login();
+
+      // Sans ce cas, l'utilisateur cherchait un problème d'identifiants
+      // qui n'existait pas.
+      expect(viewModel.errorMessage, contains('suspendu'));
+      expect(viewModel.errorMessage, isNot(contains('incorrect')));
+    });
+
+    test('un 401 sans code métier reste « identifiants incorrects »', () async {
+      viewModel.emailController.text = 'bob@studup.fr';
+      viewModel.passwordController.text = 'MauvaisMdp1!';
+      when(() => auth.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'))).thenThrow(const ApiException(
+        code: 'UNAUTHORIZED',
+        message: 'Bad credentials',
+        statusCode: 401,
+      ));
+
+      await viewModel.login();
+
+      expect(viewModel.errorMessage, 'Email ou mot de passe incorrect');
+    });
+
+    test('message de session porté depuis la redirection', () {
+      final vm = LoginViewModel(
+        authService: auth,
+        profileService: profile,
+        navigationService: nav,
+        messageInitial: 'Ta session a pris fin. Reconnecte-toi.',
+      );
+
+      // Affiché dès l'ouverture, dans le même bandeau que les erreurs
+      expect(vm.errorMessage, 'Ta session a pris fin. Reconnecte-toi.');
+    });
+  });
 }

@@ -176,11 +176,27 @@ class ModerationView extends StackedView<ModerationViewModel> {
           final signalement = viewModel.annoncesSignalees[index];
           return _SignalementAnnonceCard(
             signalement: signalement,
+            onOuvrir: () => _ouvrirAnnonce(context, viewModel, signalement),
             onRetirer: () => _retirerAnnonce(context, viewModel, signalement),
           );
         },
       ),
     );
+  }
+
+  /// Ouvre la fiche de l'annonce pour vérifier le bien-fondé du signalement.
+  Future<void> _ouvrirAnnonce(
+    BuildContext context,
+    ModerationViewModel viewModel,
+    LogementReport signalement,
+  ) async {
+    final error = await viewModel.ouvrirAnnonceSignalee(signalement);
+    if (error != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(error),
+        backgroundColor: AppColors.error,
+      ));
+    }
   }
 
   /// Retirer l'annonce depuis la file : elle en sort d'elle-même ensuite,
@@ -485,10 +501,13 @@ class _Bascule extends StatelessWidget {
 
 class _SignalementAnnonceCard extends StatelessWidget {
   final LogementReport signalement;
+  final VoidCallback onOuvrir;
   final VoidCallback onRetirer;
 
   const _SignalementAnnonceCard(
-      {required this.signalement, required this.onRetirer});
+      {required this.signalement,
+      required this.onOuvrir,
+      required this.onRetirer});
 
   @override
   Widget build(BuildContext context) {
@@ -515,37 +534,56 @@ class _SignalementAnnonceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
+          // Encadré cliquable (APP-121) : ouvre la fiche de l'annonce pour
+          // vérifier si le motif est fondé. Sans ça, le modérateur tranche
+          // sur un simple résumé.
+          Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: signalement.annonceDisponible ? onOuvrir : null,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: signalement.annonceDisponible
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(signalement.logementLibelle!,
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                                if (signalement.proprietaire != null) ...[
+                                  const SizedBox(height: 2),
+                                  Text('Publiée par ${signalement.proprietaire}',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary)),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right,
+                              color: AppColors.textTertiary),
+                        ],
+                      )
+                    : const Text(
+                        "Cette annonce n'existe plus : rien à modérer.",
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                            color: AppColors.textTertiary),
+                      ),
+              ),
             ),
-            child: signalement.annonceDisponible
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(signalement.logementLibelle!,
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600)),
-                      if (signalement.proprietaire != null) ...[
-                        const SizedBox(height: 2),
-                        Text('Publiée par ${signalement.proprietaire}',
-                            style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary)),
-                      ],
-                    ],
-                  )
-                : const Text(
-                    "Cette annonce n'existe plus : rien à modérer.",
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic,
-                        color: AppColors.textTertiary),
-                  ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(

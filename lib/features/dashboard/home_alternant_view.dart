@@ -127,6 +127,16 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
           label: const Text('Voir mes matches'),
         ),
         const SizedBox(height: AppSpacing.sm),
+        // APP-121 : « Gérer mes logements » était enterré (Profil → Mes
+        // logements → +). Or publier son logement est ce qui active les
+        // échanges de l'alternant : l'action doit être accessible depuis
+        // l'accueil, en permanence — pas seulement pour le compte neuf.
+        OutlinedButton.icon(
+          onPressed: viewModel.goToGererLogements,
+          icon: const Icon(Icons.apartment_outlined),
+          label: const Text('Gérer mes logements'),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         OutlinedButton.icon(
           onPressed: viewModel.goToCalendrier,
           icon: const Icon(Icons.calendar_month_outlined),
