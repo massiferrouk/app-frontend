@@ -4,12 +4,15 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/admin/moderation_viewmodel.dart';
 import 'package:studup_app/services/admin_service.dart';
+import 'package:studup_app/services/logement_service.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/logement.dart';
 import 'package:studup_app/shared/models/logement_report.dart';
 import 'package:studup_app/shared/models/message_report.dart';
 
 class MockAdminService extends Mock implements AdminService {}
+
+class MockLogementService extends Mock implements LogementService {}
 
 class MockNavigationService extends Mock implements NavigationService {}
 
@@ -42,11 +45,17 @@ void main() {
   }) =>
       (signalements: items, hasNext: hasNext, total: total ?? items.length);
 
+  late MockLogementService logementService;
+  late MockNavigationService navigationService;
+
   setUp(() {
     adminService = MockAdminService();
+    logementService = MockLogementService();
+    navigationService = MockNavigationService();
     viewModel = ModerationViewModel(
       adminService: adminService,
-      navigationService: MockNavigationService(),
+      logementService: logementService,
+      navigationService: navigationService,
     );
   });
 
@@ -167,6 +176,49 @@ void main() {
     setUp(() {
       when(() => adminService.annoncesSignalees(page: any(named: 'page')))
           .thenAnswer((_) async => pageA([annonce('r1')]));
+    });
+
+    test('ouvrir une annonce signalée charge sa fiche et navigue', () async {
+      final logement = Logement(
+        id: 'l1',
+        ownerId: 'o1',
+        adresse: '1 rue X',
+        ville: 'Paris',
+        codePostal: '75001',
+        type: LogementType.STUDIO,
+        surface: 25,
+        nbPieces: 1,
+        loyer: 700,
+        charges: 0,
+        statut: LogementStatut.ACTIF,
+        isVerified: false,
+        isMeuble: true,
+      );
+      when(() => logementService.getLogement('l1'))
+          .thenAnswer((_) async => logement);
+      when(() => navigationService.navigateTo(any(),
+          arguments: any(named: 'arguments'))).thenAnswer((_) async => null);
+
+      final error = await viewModel.ouvrirAnnonceSignalee(annonce('r1'));
+
+      expect(error, isNull);
+      // Le modérateur doit voir la vraie annonce, pas juste le résumé
+      verify(() => logementService.getLogement('l1')).called(1);
+      verify(() => navigationService.navigateTo(any(),
+          arguments: any(named: 'arguments'))).called(1);
+    });
+
+    test('annonce supprimée entre-temps : message clair, pas de navigation',
+        () async {
+      when(() => logementService.getLogement('l1')).thenThrow(
+          const ApiException(
+              code: 'NOT_FOUND', message: 'Introuvable', statusCode: 404));
+
+      final error = await viewModel.ouvrirAnnonceSignalee(annonce('r1'));
+
+      expect(error, "Cette annonce n'existe plus");
+      verifyNever(() => navigationService.navigateTo(any(),
+          arguments: any(named: 'arguments')));
     });
 
     test("basculer sur les annonces charge l'autre file", () async {

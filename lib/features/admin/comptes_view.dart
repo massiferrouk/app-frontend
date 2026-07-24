@@ -349,6 +349,24 @@ class _CompteCard extends StatelessWidget {
   /// Les actions dépendent de l'état : on ne propose jamais un geste sans
   /// effet (suspendre un compte déjà suspendu, réactiver un compte actif).
   Widget _actions() {
+    // APP-121 : un administrateur ne peut ni se sanctionner lui-même ni
+    // sanctionner un pair — le backend le refuse (checkNotAdmin). Afficher
+    // les boutons menait donc forcément à un message d'erreur : on les
+    // retire et on explique pourquoi.
+    if (user.role == UserRole.ADMIN) {
+      return const Row(
+        children: [
+          Icon(Icons.shield_outlined, size: 16, color: AppColors.textTertiary),
+          SizedBox(width: 6),
+          Expanded(
+            child: Text('Un compte administrateur ne peut pas être sanctionné.',
+                style: TextStyle(
+                    fontSize: 12, color: AppColors.textTertiary)),
+          ),
+        ],
+      );
+    }
+
     return switch (user.etat) {
       EtatCompte.actif => Row(
           children: [

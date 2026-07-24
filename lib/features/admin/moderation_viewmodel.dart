@@ -5,22 +5,44 @@ import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/admin_service.dart';
+import '../../services/logement_service.dart';
 import '../../shared/models/logement_report.dart';
 import '../../shared/models/message_report.dart';
 
 /// Logique de l'écran Modération (APP-121).
 class ModerationViewModel extends BaseViewModel {
   final AdminService _admin;
+  final LogementService _logements;
   final NavigationService _nav;
 
   ModerationViewModel(
-      {AdminService? adminService, NavigationService? navigationService})
+      {AdminService? adminService,
+      LogementService? logementService,
+      NavigationService? navigationService})
       : _admin = adminService ?? locator<AdminService>(),
+        _logements = logementService ?? locator<LogementService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
   /// Les mots interdits sont un réglage, consulté rarement : ils n'ont pas
   /// leur place dans la bottom nav, mais bien ici, à côté de la file.
   void ouvrirMotsInterdits() => _nav.navigateTo(Routes.motsInterditsView);
+
+  /// Ouvre la fiche de l'annonce signalée pour vérifier si le motif est fondé
+  /// (APP-121). La carte ne montre qu'un résumé — impossible de trancher sans
+  /// voir l'annonce elle-même. Retourne un message d'erreur si le chargement
+  /// échoue (annonce supprimée entre-temps).
+  Future<String?> ouvrirAnnonceSignalee(LogementReport signalement) async {
+    try {
+      final logement = await _logements.getLogement(signalement.logementId);
+      await _nav.navigateTo(
+        Routes.logementDetailView,
+        arguments: LogementDetailViewArguments(logement: logement),
+      );
+      return null;
+    } on ApiException catch (e) {
+      return e.isNotFound ? "Cette annonce n'existe plus" : e.message;
+    }
+  }
 
   List<MessageReport> signalements = [];
 
