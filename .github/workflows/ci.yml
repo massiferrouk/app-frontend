@@ -15,7 +15,7 @@ jobs:
     steps:
       # Récupère le code de la branche
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Installe Flutter stable avec cache (accélère les runs suivants)
       - name: Setup Flutter
