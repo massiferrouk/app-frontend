@@ -221,6 +221,28 @@ class _EnTete extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+      // ─── Rythme de l'autre alternant (APP-122) ──────────
+      // « Rythme de Inès : 3 sem. Paris / 1 sem. Lyon » — l'info qu'on devait
+      // sinon déduire à la main depuis le détail des semaines.
+      if (s.rythmeLabel.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding,
+              AppSpacing.md, AppSpacing.screenPadding, 0),
+          child: Row(
+            children: [
+              const Icon(Icons.event_repeat_outlined,
+                  size: 15, color: AppColors.textTertiary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Rythme de ${s.prenom} : ${s.rythmeLabel}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+
       // ─── Tuiles chiffrées (tap = filtre) ────────────────
       Padding(
         padding: const EdgeInsets.all(AppSpacing.screenPadding),

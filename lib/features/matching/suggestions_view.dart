@@ -333,9 +333,10 @@ class _CompactMatchCard extends StatelessWidget {
                           const Icon(Icons.swap_horiz,
                               size: 15, color: AppColors.textTertiary),
                           const SizedBox(width: 4),
+                          // Rythme de l'autre alternant (APP-122)
                           Flexible(
                             child: Text(
-                                '${suggestion.villeA} ⇄ ${suggestion.villeB}',
+                                suggestion.rythmeLigne,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.bodySmall),

@@ -37,6 +37,11 @@ class MatchingSuggestion {
   /// est le scénario principal affiché sur la match card (APP-109).
   final List<Scenario> scenarios;
 
+  /// Rythme de l'autre alternant, prêt à afficher (APP-122) :
+  /// « 3 sem. Paris / 1 sem. Lyon ». Construit par le backend. Peut être vide
+  /// si l'API est ancienne (repli sur les villes à l'affichage).
+  final String rythmeLabel;
+
   const MatchingSuggestion({
     required this.profileId,
     required this.userId,
@@ -58,6 +63,7 @@ class MatchingSuggestion {
     this.logementBId,
     this.economieMensuelle = 0,
     this.scenarios = const [],
+    this.rythmeLabel = '',
   });
 
   factory MatchingSuggestion.fromJson(Map<String, dynamic> json) {
@@ -88,8 +94,14 @@ class MatchingSuggestion {
       scenarios: (json['scenarios'] as List? ?? [])
           .map((e) => Scenario.fromJson(e as Map<String, dynamic>))
           .toList(),
+      rythmeLabel: json['rythmeLabel'] as String? ?? '',
     );
   }
+
+  /// Ligne rythme prête à afficher, avec repli sur les villes si le backend
+  /// n'a pas fourni le libellé (ancienne version de l'API).
+  String get rythmeLigne =>
+      rythmeLabel.isNotEmpty ? rythmeLabel : '$villeA ⇄ $villeB';
 
   /// Le scénario prioritaire à montrer sur la match card (null si aucun)
   Scenario? get scenarioPrincipal =>

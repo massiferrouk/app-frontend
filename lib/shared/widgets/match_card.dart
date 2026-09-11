@@ -87,8 +87,11 @@ class MatchCard extends StatelessWidget {
                       Text(suggestion.displayName,
                           style: const TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600)),
+                      // Rythme de l'autre alternant (APP-122) : « 3 sem. Paris /
+                      // 1 sem. Lyon ». Remplace l'ancienne ligne des villes —
+                      // elle contient déjà les deux villes, mais en dit plus.
                       Text(
-                        '${suggestion.villeA} ⇄ ${suggestion.villeB}',
+                        suggestion.rythmeLigne,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
