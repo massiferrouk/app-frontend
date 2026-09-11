@@ -7,6 +7,7 @@ import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/scenario.dart';
 import 'suggestions_viewmodel.dart';
 import '../../shared/widgets/match_card.dart';
+import '../../shared/widgets/match_status_pill.dart';
 
 /// Mes matches — onglet Matches du shell alternant (refonte APP-107).
 /// Hiérarchie : économies possibles en sous-titre, tuiles filtrantes,
@@ -288,7 +289,9 @@ class _CompactMatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actif = suggestion.isMatchActif;
-    final accent = actif ? AppColors.echange : AppColors.textTertiary;
+    // Neutre : avatar et score ne portent plus de couleur de type — ils se
+    // distinguent par la taille, pas par la teinte (APP-122).
+    final neutre = actif ? AppColors.textPrimary : AppColors.textSecondary;
 
     return InkWell(
       onTap: onTap,
@@ -308,14 +311,13 @@ class _CompactMatchCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  radius: 26,
-                  backgroundColor:
-                      actif ? AppColors.echangeLight : AppColors.surfaceDark,
+                  radius: 22,
+                  backgroundColor: AppColors.surfaceDark,
                   child: Text(suggestion.initials,
                       style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: accent)),
+                          color: neutre)),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -331,9 +333,10 @@ class _CompactMatchCard extends StatelessWidget {
                           const Icon(Icons.swap_horiz,
                               size: 15, color: AppColors.textTertiary),
                           const SizedBox(width: 4),
+                          // Rythme de l'autre alternant (APP-122)
                           Flexible(
                             child: Text(
-                                '${suggestion.villeA} ⇄ ${suggestion.villeB}',
+                                suggestion.rythmeLigne,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.bodySmall),
@@ -344,59 +347,43 @@ class _CompactMatchCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                // Anneau de score — repère visuel fort du match
-                Container(
-                  width: 52,
-                  height: 52,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color:
-                        actif ? AppColors.echangeLight : AppColors.surfaceDark,
-                  ),
-                  child: Text('${suggestion.scorePercent}%',
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: accent)),
-                ),
+                // Score en neutre : lisible par sa taille, pas par sa couleur
+                Text('${suggestion.scorePercent}%',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: neutre)),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // Statut + type d'arrangement, en pastilles
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
+            // Statut + arrangement sur une seule ligne (APP-122) — une pastille
+            // de statut au lieu de deux pastilles colorées empilées.
+            Row(
               children: [
-                _MatchTag(
-                  label: actif ? 'Match actif' : 'Match potentiel',
-                  color: actif ? AppColors.echange : AppColors.textSecondary,
-                  background:
-                      actif ? AppColors.echangeLight : AppColors.surfaceDark,
-                ),
-                _MatchTag(
-                  label: suggestion.typePropose.label,
-                  color: AppColors.colocation,
-                  background: AppColors.colocationLight,
+                MatchStatusPill(isActif: actif),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(suggestion.arrangementLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall),
                 ),
               ],
             ),
 
-            // Économie mise en valeur (le cœur de la proposition)
+            // Économie — le seul repère coloré de la carte
             if (suggestion.hasEconomie) ...[
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
                   const Icon(Icons.savings_outlined,
-                      size: 18, color: AppColors.echange),
-                  const SizedBox(width: AppSpacing.sm),
-                  // Expanded : sans lui le texte débordait de la carte
-                  // (les libellés de coloc sont longs — APP-120)
+                      size: 16, color: AppColors.echange),
+                  const SizedBox(width: 6),
                   Expanded(
-                    child: Text(suggestion.economieLabel,
+                    child: Text(suggestion.economieLabelCourt,
                         style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: AppColors.echange)),
                   ),
@@ -408,25 +395,39 @@ class _CompactMatchCard extends StatelessWidget {
             const Divider(height: 1),
             const SizedBox(height: AppSpacing.sm),
 
-            // Actions : déblocage des potentiels + contacter
+            // Actions : le bouton de gauche est TOUJOURS une action claire.
+            // « Publier pour débloquer » quand je peux débloquer le match en
+            // publiant un logement (APP-106/109) ; sinon « Voir la compatibilité »
+            // (même destination qu'un tap sur la carte). Avant, ce second cas
+            // (match actif, ou potentiel où c'est le logement de l'autre qui
+            // manque) retombait sur un Spacer : l'emplacement restait vide (APP-122).
             Row(
               children: [
-                if (onPublier != null)
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onPublier,
-                      icon: const Icon(Icons.add_home_outlined, size: 16),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(40),
-                        foregroundColor: AppColors.echange,
-                        side: const BorderSide(color: AppColors.echange),
-                      ),
-                      label: const Text('Publier pour débloquer',
-                          style: TextStyle(fontSize: 12)),
-                    ),
-                  )
-                else
-                  const Spacer(),
+                Expanded(
+                  child: onPublier != null
+                      ? OutlinedButton.icon(
+                          onPressed: onPublier,
+                          icon: const Icon(Icons.add_home_outlined, size: 16),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(40),
+                            foregroundColor: AppColors.echange,
+                            side: const BorderSide(color: AppColors.echange),
+                          ),
+                          label: const Text('Publier pour débloquer',
+                              style: TextStyle(fontSize: 12)),
+                        )
+                      : OutlinedButton.icon(
+                          onPressed: onTap,
+                          icon: const Icon(Icons.swap_horiz, size: 16),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(40),
+                            foregroundColor: AppColors.textPrimary,
+                            side: const BorderSide(color: AppColors.border),
+                          ),
+                          label: const Text('Voir la compatibilité',
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 TextButton.icon(
                   onPressed: onContact,
@@ -438,31 +439,6 @@ class _CompactMatchCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Pastille (statut du match, type d'arrangement). L'info n'est jamais portée
-/// par la seule couleur : le libellé texte l'accompagne toujours (OPQUAST).
-class _MatchTag extends StatelessWidget {
-  final String label;
-  final Color color;
-  final Color background;
-
-  const _MatchTag(
-      {required this.label, required this.color, required this.background});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: color)),
     );
   }
 }

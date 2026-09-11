@@ -1,12 +1,16 @@
 import 'package:stacked/stacked.dart';
+import 'package:stacked_services/stacked_services.dart';
 
 import '../../app/app.locator.dart';
+import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/message_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/profile_service.dart';
+import '../../shared/models/app_notification.dart';
 import '../../shared/models/enums.dart';
+import '../../shared/widgets/top_notification_banner.dart';
 
 /// ViewModel du shell de navigation.
 /// Lit le rôle dans le JWT et pilote l'onglet courant.
@@ -15,16 +19,19 @@ class MainViewModel extends BaseViewModel {
   final MessageService _messages;
   final NotificationService _notifications;
   final ChatSocketService _socket;
+  final NavigationService _nav;
 
   MainViewModel(
       {ProfileService? profileService,
       MessageService? messageService,
       NotificationService? notificationService,
-      ChatSocketService? chatSocketService})
+      ChatSocketService? chatSocketService,
+      NavigationService? navigationService})
       : _profile = profileService ?? locator<ProfileService>(),
         _messages = messageService ?? locator<MessageService>(),
         _notifications = notificationService ?? locator<NotificationService>(),
-        _socket = chatSocketService ?? locator<ChatSocketService>();
+        _socket = chatSocketService ?? locator<ChatSocketService>(),
+        _nav = navigationService ?? locator<NavigationService>();
 
   /// Rôle par défaut le temps de lire le token (évite un écran vide)
   UserRole role = UserRole.ALTERNANT;
@@ -88,10 +95,13 @@ class MainViewModel extends BaseViewModel {
 
     // Temps réel (APP-102) : tout message qui m'est adressé rafraîchit le
     // badge instantanément, quel que soit l'onglet ouvert.
+    // Temps réel (APP-122) : toute notification qui m'est adressée met à jour
+    // le badge Alertes et fait descendre une bannière, sans changer d'onglet.
     final userId = await _profile.currentUserId();
     if (userId != null) {
       _subscribedUserId = userId;
       _socket.subscribeToUserMessages(userId, (_) => refreshMessagesBadge());
+      _socket.subscribeToUserNotifications(userId, _onNotificationRecue);
     }
   }
 
@@ -99,8 +109,36 @@ class MainViewModel extends BaseViewModel {
   void dispose() {
     if (_subscribedUserId != null) {
       _socket.unsubscribeFromUserMessages(_subscribedUserId!);
+      _socket.unsubscribeFromUserNotifications(_subscribedUserId!);
     }
     super.dispose();
+  }
+
+  /// Notification reçue en temps réel (APP-122).
+  /// 1. Badge Alertes : +1 immédiat pour l'effet instantané. Il se resynchronise
+  ///    avec le serveur au prochain changement d'onglet (refreshMessagesBadge).
+  /// 2. Bannière en haut de l'écran, tapable — visible quel que soit l'onglet.
+  void _onNotificationRecue(AppNotification notif) {
+    notificationsNonLues++;
+    notifyListeners();
+    TopNotificationBanner.show(
+      title: notif.title,
+      body: notif.body,
+      onTap: _ouvrirNotifications,
+    );
+  }
+
+  /// Tap sur la bannière : le propriétaire a un onglet Alertes → on y bascule ;
+  /// les autres rôles n'ont pas cet onglet → on pousse l'écran Notifications.
+  void _ouvrirNotifications() {
+    if (_alertesTabIndex != -1) {
+      setIndex(_alertesTabIndex);
+    } else {
+      _nav.navigateTo(
+        Routes.notificationsView,
+        arguments: const NotificationsViewArguments(standalone: true),
+      );
+    }
   }
 
   void setIndex(int index) {

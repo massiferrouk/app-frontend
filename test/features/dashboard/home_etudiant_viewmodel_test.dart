@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -102,5 +104,30 @@ void main() {
         .thenAnswer((_) async => [candidature('l1')]);
     await viewModel.load();
     expect(viewModel.isNouveau, isFalse);
+  });
+
+  // APP-122 : anti-flash. Avant, la carte de bienvenue apparaissait dès que les
+  // annonces étaient chargées (candidatures pas encore là → statutsSuivis vide
+  // → isNouveau true), puis disparaissait à l'arrivée des candidatures. On ne
+  // décide plus « neuf » tant que les candidatures ne sont pas chargées.
+  test('isNouveau reste false tant que les candidatures ne sont pas chargées',
+      () async {
+    when(() => logementService.search()).thenAnswer(
+        (_) async => (logements: <Logement>[], hasNext: false, total: 0));
+    // Candidatures en attente : simule le délai réseau du second appel
+    final pending = Completer<List<Candidature>>();
+    when(() => candidatureService.getMesCandidatures())
+        .thenAnswer((_) => pending.future);
+
+    final future = viewModel.load();
+    // Annonces chargées, candidatures encore en vol → on ne doit PAS afficher
+    // la carte (c'est exactement le moment où elle clignotait avant).
+    await Future<void>.delayed(Duration.zero);
+    expect(viewModel.isNouveau, isFalse);
+
+    // Candidatures arrivées et vides → maintenant on sait : vraiment nouveau.
+    pending.complete(<Candidature>[]);
+    await future;
+    expect(viewModel.isNouveau, isTrue);
   });
 }

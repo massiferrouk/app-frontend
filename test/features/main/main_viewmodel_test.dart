@@ -1,11 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/main/main_viewmodel.dart';
 import 'package:studup_app/services/chat_socket_service.dart';
 import 'package:studup_app/services/message_service.dart';
 import 'package:studup_app/services/notification_service.dart';
 import 'package:studup_app/services/profile_service.dart';
+import 'package:studup_app/shared/models/app_notification.dart';
 import 'package:studup_app/shared/models/conversation_summary.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/message.dart';
@@ -18,11 +20,14 @@ class MockChatSocketService extends Mock implements ChatSocketService {}
 
 class MockNotificationService extends Mock implements NotificationService {}
 
+class MockNavigationService extends Mock implements NavigationService {}
+
 void main() {
   late MockProfileService profile;
   late MockMessageService messages;
   late MockChatSocketService socket;
   late MockNotificationService notifications;
+  late MockNavigationService navigation;
   late MainViewModel viewModel;
 
   ConversationSummary buildConv({required int unread}) => ConversationSummary(
@@ -34,7 +39,12 @@ void main() {
       );
 
   setUpAll(() {
+    // La réception d'une notif déclenche TopNotificationBanner.show, qui lit
+    // l'overlay du navigatorKey global → nécessite un binding initialisé.
+    // En test il n'y a aucun widget monté : la bannière se retire d'elle-même.
+    TestWidgetsFlutterBinding.ensureInitialized();
     registerFallbackValue((ChatMessage _) {});
+    registerFallbackValue((AppNotification _) {});
   });
 
   setUp(() {
@@ -42,17 +52,21 @@ void main() {
     messages = MockMessageService();
     socket = MockChatSocketService();
     notifications = MockNotificationService();
+    navigation = MockNavigationService();
     // Par défaut : aucune conversation ni notification (badges à 0)
     when(() => messages.getConversations()).thenAnswer((_) async => []);
     when(() => notifications.getUnreadCount()).thenAnswer((_) async => 0);
     when(() => profile.currentUserId()).thenAnswer((_) async => 'moi');
     when(() => socket.subscribeToUserMessages(any(), any()))
         .thenAnswer((_) {});
+    when(() => socket.subscribeToUserNotifications(any(), any()))
+        .thenAnswer((_) {});
     viewModel = MainViewModel(
       profileService: profile,
       messageService: messages,
       notificationService: notifications,
       chatSocketService: socket,
+      navigationService: navigation,
     );
   });
 
@@ -212,6 +226,46 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(viewModel.conversationsNonLues, 1);
+    });
+  });
+
+  group('badge Alertes temps réel (APP-122)', () {
+    test('init s\'abonne au topic notifications personnel', () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.PROPRIETAIRE);
+
+      await viewModel.init();
+
+      verify(() => socket.subscribeToUserNotifications('moi', any())).called(1);
+    });
+
+    test('notification reçue en temps réel : le badge Alertes s\'incrémente',
+        () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.PROPRIETAIRE);
+      // Capture le callback passé au socket pour simuler une notif entrante
+      void Function(AppNotification)? onNotif;
+      when(() => socket.subscribeToUserNotifications(any(), any()))
+          .thenAnswer((invocation) {
+        onNotif = invocation.positionalArguments[1]
+            as void Function(AppNotification);
+      });
+
+      await viewModel.init();
+      expect(viewModel.notificationsNonLues, 0);
+
+      // Un étudiant met l'annonce en favori → notif poussée par le backend
+      onNotif!(AppNotification(
+        id: 'n1',
+        type: NotificationType.ANNONCE_SUIVIE,
+        title: 'Votre annonce intéresse',
+        body: 'Quelqu\'un a ajouté votre annonce en favoris',
+        isRead: false,
+        createdAt: DateTime.now(),
+      ));
+
+      // Badge mis à jour instantanément, sans changement d'onglet
+      expect(viewModel.notificationsNonLues, 1);
     });
   });
 }

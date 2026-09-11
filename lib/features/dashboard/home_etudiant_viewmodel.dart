@@ -34,11 +34,18 @@ class HomeEtudiantViewModel extends BaseViewModel {
 
   CandidatureStatut? statutPour(String logementId) => statutsSuivis[logementId];
 
+  /// Passe à true dès que les candidatures ont été chargées au moins une fois.
+  /// Tant qu'il est false, on ne sait pas encore si le compte est « neuf » :
+  /// c'est ce qui évite d'afficher la carte de bienvenue par erreur pendant le
+  /// chargement (voir [isNouveau], APP-122).
+  bool _statutsCharges = false;
+
   /// Silencieux : un échec n'empêche pas l'accueil de s'afficher.
   Future<void> _refreshStatutsSuivis() async {
     try {
       final mes = await _candidatures.getMesCandidatures();
       statutsSuivis = {for (final c in mes) c.logement.id: c.statut};
+      _statutsCharges = true;
       notifyListeners();
     } on ApiException {
       // non bloquant : les cartes s'affichent sans badge
@@ -56,7 +63,13 @@ class HomeEtudiantViewModel extends BaseViewModel {
   /// APP-120 : le critère était « aucun accord en cours ». Les accords ayant
   /// été retirés, on prend le signal qui les avait déjà remplacés partout
   /// ailleurs pour l'étudiant — ses candidatures.
-  bool get isNouveau => statutsSuivis.isEmpty;
+  ///
+  /// APP-122 : la carte n'est décidée qu'une fois les candidatures chargées
+  /// ([_statutsCharges]). Sinon, le « vide initial » (rien chargé) était
+  /// confondu avec « vraiment nouveau » (rien suivi) : la carte apparaissait
+  /// après le chargement des annonces, puis disparaissait quelques secondes
+  /// plus tard quand les candidatures arrivaient. On attend de savoir.
+  bool get isNouveau => _statutsCharges && statutsSuivis.isEmpty;
 
   Future<void> load() async {
     setBusy(true);
