@@ -103,6 +103,22 @@ class MatchingSuggestion {
       ? 'Divisez vos loyers : ≈ $economieMensuelle €/mois économisés chacun'
       : 'Économise ≈ $economieMensuelle €/mois';
 
+  /// Version courte pour les cartes de match, allégées (APP-122) — le vert de
+  /// l'économie est le seul repère coloré, inutile de le noyer dans une phrase.
+  String get economieLabelCourt =>
+      typePropose == AccordType.COLOCATION_TOURNANTE
+          ? '≈ $economieMensuelle €/mois chacun'
+          : '≈ $economieMensuelle €/mois';
+
+  /// Type d'arrangement + nombre de semaines exploitables, en une ligne
+  /// (ex. « Colocation tournante · 22 semaines ») — remplace l'empilement
+  /// pastille de type + résumé des semaines sur les cartes (APP-122).
+  String get arrangementLabel {
+    final sem = nbSemainesEchange + nbSemainesColocation;
+    if (sem <= 0) return typePropose.label;
+    return '${typePropose.label} · $sem semaine${sem > 1 ? 's' : ''}';
+  }
+
   /// Nom affiché : "Thomas D."
   String get displayName =>
       '$prenom ${nom.isNotEmpty ? '${nom[0]}.' : ''}'.trim();
