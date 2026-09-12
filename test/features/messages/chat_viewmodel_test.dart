@@ -157,6 +157,38 @@ void main() {
       verifyNever(() => messageService.markAsRead('m-lu'));
     });
 
+    // APP-122 — « Contacter » ne doit plus refaire un aller-retour réseau à
+    // chaque ouverture : si la liste des conversations est déjà en cache, on
+    // résout l'id depuis le cache, sans appel serveur (fin du spinner répété).
+    test('ouverture via "Contacter" : résout depuis le cache, sans réseau',
+        () async {
+      const viaContacter = ConversationSummary(
+        conversationId: '',
+        partnerId: 'lui',
+        partnerName: 'Thomas D.',
+        lastMessage: '',
+        unreadCount: 0,
+      );
+      when(() => messageService.cachedConversations).thenReturn(const [
+        ConversationSummary(
+          conversationId: 'conv-existante',
+          partnerId: 'lui',
+          partnerName: 'Thomas D.',
+          lastMessage: 'Salut',
+          unreadCount: 0,
+        ),
+      ]);
+      when(() => messageService.getHistory('conv-existante'))
+          .thenAnswer((_) async => [buildMessage(id: 'ancien')]);
+
+      final viewModel = makeViewModel(viaContacter);
+      await viewModel.init();
+
+      expect(viewModel.messages.map((m) => m.id), ['ancien']);
+      // Résolu depuis le cache → aucun appel réseau à getConversations
+      verifyNever(() => messageService.getConversations());
+    });
+
     test(
         'ouverture via "Contacter" (id vide) mais conversation existante : '
         'charge l\'historique (A-02)', () async {
