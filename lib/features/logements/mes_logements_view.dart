@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 
@@ -231,11 +232,19 @@ class _LogementCard extends StatelessWidget {
             child: AspectRatio(
               aspectRatio: 16 / 9,
               child: logement.photoUrls.isNotEmpty
-                  ? Image.network(logement.photoUrls.first,
-                      fit: BoxFit.cover,
-                      semanticLabel:
-                          'Photo du logement à ${logement.ville}',
-                      errorBuilder: (_, _, _) => const _PhotoFallback())
+                  ? Semantics(
+                      image: true,
+                      label: 'Photo du logement à ${logement.ville}',
+                      // Clé de cache stable (chemin sans la signature) : évite le
+                      // re-téléchargement des photos à URL signée (APP-122).
+                      child: CachedNetworkImage(
+                        imageUrl: logement.photoUrls.first,
+                        cacheKey: logement.photoUrls.first.split('?').first,
+                        fit: BoxFit.cover,
+                        placeholder: (_, _) => const _PhotoFallback(),
+                        errorWidget: (_, _, _) => const _PhotoFallback(),
+                      ),
+                    )
                   : const _PhotoFallback(),
             ),
           ),

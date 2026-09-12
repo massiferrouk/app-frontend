@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -52,11 +53,21 @@ class LogementCard extends StatelessWidget {
                   aspectRatio: 16 / 9,
                   child: logement.photoUrls.isEmpty
                       ? const _PhotoFallback()
-                      : Image.network(
-                          logement.photoUrls.first,
-                          fit: BoxFit.cover,
-                          semanticLabel: 'Photo du logement à ${logement.ville}',
-                          errorBuilder: (_, _, _) => const _PhotoFallback(),
+                      : Semantics(
+                          image: true,
+                          label: 'Photo du logement à ${logement.ville}',
+                          // Clé de cache STABLE (le chemin sans la signature) :
+                          // les URLs MinIO sont signées et changent à chaque
+                          // chargement — sans ça, un rafraîchissement de la liste
+                          // re-télécharge la photo (elle disparaît puis
+                          // réapparaît) au changement d'onglet (APP-122).
+                          child: CachedNetworkImage(
+                            imageUrl: logement.photoUrls.first,
+                            cacheKey: logement.photoUrls.first.split('?').first,
+                            fit: BoxFit.cover,
+                            placeholder: (_, _) => const _PhotoFallback(),
+                            errorWidget: (_, _, _) => const _PhotoFallback(),
+                          ),
                         ),
                 ),
                 // Statut du suivi, posé sur la photo (APP-119)
