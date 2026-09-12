@@ -58,6 +58,14 @@ class ChatViewModel extends BaseViewModel {
   Future<void> _loadLogement() async {
     final logementId = conversation.logementId;
     if (logementId == null) return;
+    // Affiche tout de suite la carte d'annonce depuis le cache (annonce déjà
+    // consultée ou conversation déjà ouverte) puis rafraîchit en fond (APP-122)
+    // — la carte ne « pop » plus après coup, au-dessus de la discussion.
+    final cache = _logements.cachedLogement(logementId);
+    if (cache != null) {
+      logement = cache;
+      notifyListeners();
+    }
     try {
       logement = await _logements.getLogement(logementId);
       notifyListeners();
