@@ -195,6 +195,10 @@ class _AnnonceCard extends StatelessWidget {
                       ? const _VignetteVide()
                       : CachedNetworkImage(
                           imageUrl: photo,
+                          // Clé stable : URL MinIO signée qui change à chaque
+                          // chargement — sans ça la vignette re-télécharge à
+                          // chaque rafraîchissement du contexte (APP-122).
+                          cacheKey: photo.split('?').first,
                           fit: BoxFit.cover,
                           placeholder: (_, _) => const _VignetteVide(),
                           errorWidget: (_, _, _) => const _VignetteVide(),
