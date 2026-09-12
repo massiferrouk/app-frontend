@@ -60,7 +60,7 @@ void main() {
     expect(viewModel.dashboard!.logements, hasLength(3));
   });
 
-  test('alertes dérivées : brouillons non publiés + actifs vacants',
+  test('alertes dérivées : seuls les brouillons non publiés (APP-122)',
       () async {
     when(() => dashboardService.getProprietaireDashboard())
         .thenAnswer((_) async => ProprietaireDashboard.fromJson({
@@ -77,9 +77,11 @@ void main() {
 
     await viewModel.load();
 
-    expect(viewModel.alertes, hasLength(2));
-    expect(viewModel.alertes[0], contains('brouillon'));
-    expect(viewModel.alertes[1], contains('sans locataire'));
+    // « Actif sans locataire » n'est plus une alerte (état normal d'une annonce
+    // disponible) : seul le brouillon non publié est signalé.
+    expect(viewModel.alertes, hasLength(1));
+    expect(viewModel.alertes.single, contains('brouillon'));
+    expect(viewModel.alertes.any((a) => a.contains('sans locataire')), isFalse);
   });
 
   test('aucune alerte quand tout est publié et occupé', () async {

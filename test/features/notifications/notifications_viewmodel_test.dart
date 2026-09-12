@@ -98,7 +98,7 @@ void main() {
           'logements': logements,
         });
 
-    test('propriétaire : brouillons et logements vacants remontés', () async {
+    test('propriétaire : seuls les brouillons remontés (APP-122)', () async {
       when(() => service.getNotifications()).thenAnswer((_) async => []);
       when(() => profile.currentRole())
           .thenAnswer((_) async => UserRole.PROPRIETAIRE);
@@ -117,10 +117,11 @@ void main() {
 
       await viewModel.load();
 
-      // 2 brouillons (3 - 1) + 1 logement actif sans locataire
-      expect(viewModel.alertesLogements, hasLength(2));
-      expect(viewModel.alertesLogements.first, contains('brouillon'));
-      expect(viewModel.alertesLogements.last, contains('sans locataire'));
+      // 2 brouillons (3 - 1). « Actif sans locataire » retiré (fausse alerte).
+      expect(viewModel.alertesLogements, hasLength(1));
+      expect(viewModel.alertesLogements.single, contains('brouillon'));
+      expect(viewModel.alertesLogements.any((a) => a.contains('sans locataire')),
+          isFalse);
     });
 
     test('autre rôle : aucune alerte de parc', () async {

@@ -38,7 +38,7 @@ class NotificationsViewModel extends BaseViewModel {
   int get unreadCount => notifications.where((n) => !n.isRead).length;
 
   /// Alertes déduites de l'état des annonces du propriétaire (APP-119) :
-  /// brouillons jamais publiés, logements actifs sans locataire.
+  /// brouillons jamais publiés (APP-122 : « actif sans locataire » retiré).
   /// Elles étaient déjà calculées sur l'accueil proprio mais n'apparaissaient
   /// pas dans l'onglet « Alertes », qui restait donc désespérément vide.
   /// Ce ne sont pas des notifications en base : rien à marquer comme lu.
@@ -83,14 +83,8 @@ class NotificationsViewModel extends BaseViewModel {
             ? '$brouillons logements en brouillon — pense à les publier'
             : '1 logement en brouillon — pense à le publier');
       }
-      final vacants = d.logements
-          .where((l) => !l.isOccupe && l.statut.name == 'ACTIF')
-          .length;
-      if (vacants > 0) {
-        result.add(vacants > 1
-            ? '$vacants logements actifs sans locataire'
-            : '1 logement actif sans locataire');
-      }
+      // APP-122 : « logement actif sans locataire » retiré — ce n'est pas une
+      // anomalie mais l'état normal d'une annonce disponible (fausse alerte).
       alertesLogements = result;
       notifyListeners();
     } on ApiException {
