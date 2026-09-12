@@ -155,8 +155,19 @@ class LogementDetailViewModel extends BaseViewModel {
   /// Charge les données secondaires. Chacune peut échouer sans bloquer
   /// l'écran : le logement principal est déjà affichable.
   Future<void> loadExtras() async {
-    setBusy(true);
     currentUserId = await _profile.currentUserId();
+    // SWR (APP-122) : si le détail complet (photos comprises) est déjà en cache
+    // — annonce déjà ouverte —, on affiche la fiche tout de suite et on
+    // rafraîchit en fond. currentUserId (local) est déjà là, donc les boutons
+    // aussi. Plus de loader à la ré-ouverture d'une même annonce.
+    final cache = _logements.cachedLogement(logement.id);
+    if (cache != null) {
+      logement = cache;
+      premierChargement = false;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     // Recharge le logement complet (avec URLs signées des photos) : la version
     // reçue de la recherche n'a pas les photos.
     try {

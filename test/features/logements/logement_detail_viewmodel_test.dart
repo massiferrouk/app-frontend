@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:studup_app/core/api/api_exception.dart';
@@ -243,6 +245,25 @@ void main() {
       await viewModel.loadExtras();
 
       expect(viewModel.premierChargement, isFalse);
+    });
+
+    // APP-122 — ré-ouverture : si le détail est déjà en cache, la fiche est
+    // affichée sans attendre le rafraîchissement (plus de loader d'ouverture).
+    test('détail en cache : affiché sans attendre le refresh', () async {
+      when(() => logementService.cachedLogement('log-1'))
+          .thenReturn(logement);
+      final refresh = Completer<Logement>();
+      when(() => logementService.getLogement('log-1'))
+          .thenAnswer((_) => refresh.future);
+
+      final future = viewModel.loadExtras();
+      await pumpEventQueue();
+
+      // Fiche déjà prête alors que le refresh réseau n'est pas terminé
+      expect(viewModel.premierChargement, isFalse);
+
+      refresh.complete(logement);
+      await future;
     });
   });
 }
