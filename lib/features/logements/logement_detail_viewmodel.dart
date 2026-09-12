@@ -43,6 +43,14 @@ class LogementDetailViewModel extends BaseViewModel {
 
   String? currentUserId;
 
+  /// true jusqu'au premier chargement complet ([loadExtras]). Tant qu'il est
+  /// vrai, la vue affiche un état de chargement plutôt qu'une fiche incomplète.
+  /// Sans ça (APP-122), l'écran s'affichait d'abord SANS photos, SANS le
+  /// compteur « 1/2 » et SANS les boutons (Contacter / Suivre / Signaler), puis
+  /// « se rechargeait » quand loadExtras finissait : ces éléments dépendent de
+  /// données chargées seulement à ce moment (photos, currentUserId).
+  bool premierChargement = true;
+
   /// Si l'annonceur est un alternant compatible avec moi : sa suggestion
   /// de matching (score, économie, semaines) — null sinon (APP-104).
   MatchingSuggestion? matchAnnonceur;
@@ -168,6 +176,9 @@ class LogementDetailViewModel extends BaseViewModel {
       // Non bloquant : le bouton restera sur « Suivre »
     }
     await _loadMatchAnnonceur();
+    // Fiche prête : on bascule d'un coup vers l'affichage complet. Le
+    // setBusy(false) déclenche le rebuild avec premierChargement déjà à false.
+    premierChargement = false;
     setBusy(false);
   }
 

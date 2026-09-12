@@ -11,23 +11,44 @@ class MessageService {
   MessageService({ApiClient? apiClient})
       : _api = apiClient ?? locator<ApiClient>();
 
+  /// Dernière liste de conversations récupérée (APP-122).
+  /// Le service est un singleton, donc ce cache survit au remontage de l'écran
+  /// Messages : la liste peut être réaffichée instantanément pendant qu'un
+  /// rafraîchissement se fait en arrière-plan (stale-while-revalidate), au lieu
+  /// de repartir d'un écran vide + spinner à chaque entrée sur l'onglet.
+  List<ConversationSummary>? cachedConversations;
+
   /// GET /messages/conversations — mes conversations, triées par activité
   Future<List<ConversationSummary>> getConversations() async {
     final data =
         await _api.get<List<dynamic>>('/messages/conversations');
-    return data
+    final conversations = data
         .map((e) => ConversationSummary.fromJson(e as Map<String, dynamic>))
         .toList();
+    cachedConversations = conversations;
+    return conversations;
   }
+
+  /// Dernier historique récupéré, par conversation (APP-122), en ordre
+  /// d'AFFICHAGE (ancien → récent). Permet le stale-while-revalidate du chat :
+  /// rouvrir une conversation réaffiche les messages connus tout de suite, puis
+  /// rafraîchit en fond, au lieu d'un spinner à chaque ouverture.
+  final Map<String, List<ChatMessage>> _historyCache = {};
+
+  List<ChatMessage>? cachedHistory(String conversationId) =>
+      _historyCache[conversationId];
 
   /// GET /messages/{conversationId} — historique paginé
   /// (Page Spring : le backend renvoie les plus récents en premier)
   Future<List<ChatMessage>> getHistory(String conversationId) async {
     final data =
         await _api.get<Map<String, dynamic>>('/messages/$conversationId');
-    return (data['content'] as List? ?? [])
+    final history = (data['content'] as List? ?? [])
         .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
         .toList();
+    // On met en cache en ordre d'affichage (l'API renvoie l'inverse).
+    _historyCache[conversationId] = history.reversed.toList();
+    return history;
   }
 
   /// POST /messages/send/{receiverId} — envoi (persiste ET broadcast

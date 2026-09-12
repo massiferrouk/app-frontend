@@ -25,6 +25,20 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
   ) {
     final l = viewModel.logement;
 
+    // Tant que la fiche n'est pas complètement chargée, on affiche un état de
+    // chargement plutôt qu'une version incomplète qui « se recharge » ensuite
+    // (photos, compteur « 1/2 » et boutons apparaissaient en retard — APP-122).
+    // La barre du haut garde le type + la ville, déjà connus via l'argument.
+    if (viewModel.premierChargement) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: Text('${l.type.label} — ${l.ville}')),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.echange),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: Text('${l.type.label} — ${l.ville}')),

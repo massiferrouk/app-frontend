@@ -97,10 +97,29 @@ class RechercheViewModel extends BaseViewModel {
   /// Ville affichée dans la carte (figée au moment de la recherche)
   String villeMatchs = '';
 
-  /// Nouvelle recherche : repart de la page 0
+  /// true quand aucun filtre de contenu n'est actif — l'état exact au
+  /// (re)montage de l'onglet. Le tri n'entre pas en compte (comme le cache).
+  bool get _rechercheParDefaut =>
+      villeController.text.trim().isEmpty &&
+      loyerMax == null &&
+      !meubleUniquement &&
+      type == null;
+
+  /// Nouvelle recherche : repart de la page 0.
+  /// Stale-while-revalidate (APP-122) : si c'est la recherche par défaut et
+  /// qu'on a un résultat en cache (visite précédente), on l'affiche tout de
+  /// suite et on rafraîchit en fond — plus de spinner à l'entrée sur l'onglet.
   Future<void> search() async {
     _page = 0;
-    setBusy(true);
+    final cache = _logements.cachedDefaultSearch;
+    if (_rechercheParDefaut && cache != null) {
+      resultats = cache.logements;
+      hasNext = cache.hasNext;
+      totalResultats = cache.total;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       final result = await _runSearch(0);
       resultats = result.logements;
@@ -108,7 +127,7 @@ class RechercheViewModel extends BaseViewModel {
       totalResultats = result.total;
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (resultats.isEmpty) errorMessage = e.message;
     } finally {
       setBusy(false);
     }

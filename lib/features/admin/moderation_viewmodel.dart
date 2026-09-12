@@ -62,11 +62,34 @@ class ModerationViewModel extends BaseViewModel {
 
   bool get peutChargerPlus => _hasNext && !isBusy;
 
+  /// Stale-while-revalidate (APP-122) : la file connue (par onglet) s'affiche
+  /// tout de suite et se rafraîchit en fond, plus de spinner à chaque entrée.
   Future<void> load() async {
     _page = 0;
-    setBusy(true);
+    final estMessages = file == FileModeration.messages;
+    if (estMessages) {
+      final cache = _admin.cachedSignalements;
+      if (cache != null) {
+        signalements = cache.signalements;
+        _hasNext = cache.hasNext;
+        total = cache.total;
+        notifyListeners();
+      } else {
+        setBusy(true);
+      }
+    } else {
+      final cache = _admin.cachedAnnoncesSignalees;
+      if (cache != null) {
+        annoncesSignalees = cache.signalements;
+        _hasNext = cache.hasNext;
+        total = cache.total;
+        notifyListeners();
+      } else {
+        setBusy(true);
+      }
+    }
     try {
-      if (file == FileModeration.messages) {
+      if (estMessages) {
         final result = await _admin.signalements();
         signalements = result.signalements;
         _hasNext = result.hasNext;
@@ -79,9 +102,12 @@ class ModerationViewModel extends BaseViewModel {
       }
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      final vide =
+          estMessages ? signalements.isEmpty : annoncesSignalees.isEmpty;
+      if (vide) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
   }
 

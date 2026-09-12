@@ -182,6 +182,14 @@ class ChatViewModel extends BaseViewModel {
     unawaited(_loadLogement());
     unawaited(_loadMatch());
     await _resolveExistingConversation();
+    // SWR (APP-122) : si l'historique est en cache, on lève tout de suite
+    // l'écran de chargement et on rafraîchit en fond — pas de spinner à la
+    // ré-ouverture d'une conversation déjà consultée.
+    if (_conversationId.isNotEmpty &&
+        _messages.cachedHistory(_conversationId) != null) {
+      initializing = false;
+      notifyListeners();
+    }
     await load();
     initializing = false;
     notifyListeners();
@@ -227,14 +235,22 @@ class ChatViewModel extends BaseViewModel {
     // pas encore d'historique. Elle sera créée au premier message envoyé.
     if (_conversationId.isEmpty) return;
 
-    setBusy(true);
+    // Stale-while-revalidate (APP-122) : historique connu affiché tout de
+    // suite, rafraîchi en fond, sans spinner à la ré-ouverture.
+    final cache = _messages.cachedHistory(_conversationId);
+    if (cache != null) {
+      messages = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       // Le backend renvoie du plus récent au plus ancien : on inverse
       final history = await _messages.getHistory(_conversationId);
       messages = history.reversed.toList();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (messages.isEmpty) errorMessage = e.message;
     } finally {
       setBusy(false);
     }

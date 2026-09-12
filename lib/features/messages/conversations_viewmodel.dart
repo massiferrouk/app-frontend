@@ -23,15 +23,30 @@ class ConversationsViewModel extends BaseViewModel {
   /// Filtre de recherche par nom de contact (vide = tout afficher)
   String query = '';
 
+  /// Stale-while-revalidate (APP-122) : si on a déjà une liste en cache (d'une
+  /// visite précédente), on l'affiche IMMÉDIATEMENT et on rafraîchit en fond,
+  /// sans spinner. Seul le tout premier chargement (cache vide) montre le
+  /// loader. Fini l'écran vide + spinner à chaque entrée sur l'onglet Messages.
   Future<void> load() async {
-    setBusy(true);
+    final cache = _messages.cachedConversations;
+    if (cache != null) {
+      // On a du contenu à montrer tout de suite → pas de setBusy, pas de spinner
+      conversations = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
+
     try {
       conversations = await _messages.getConversations();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      // On n'affiche l'erreur que si on n'a rien d'autre à montrer : hors ligne
+      // avec une liste déjà à l'écran, on garde la liste plutôt qu'un message.
+      if (conversations.isEmpty) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
   }
 

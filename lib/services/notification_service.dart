@@ -9,12 +9,19 @@ class NotificationService {
   NotificationService({ApiClient? apiClient})
       : _api = apiClient ?? locator<ApiClient>();
 
+  /// Dernière liste de notifications récupérée (APP-122) — voir le même
+  /// mécanisme sur MessageService : permet le stale-while-revalidate de
+  /// l'onglet Alertes (afficher tout de suite, rafraîchir en fond).
+  List<AppNotification>? cachedNotifications;
+
   /// GET /notifications — Page Spring, on extrait content
   Future<List<AppNotification>> getNotifications() async {
     final data = await _api.get<Map<String, dynamic>>('/notifications');
-    return (data['content'] as List? ?? [])
+    final notifications = (data['content'] as List? ?? [])
         .map((e) => AppNotification.fromJson(e as Map<String, dynamic>))
         .toList();
+    cachedNotifications = notifications;
+    return notifications;
   }
 
   /// GET /notifications/unread-count → {"unreadCount": n}

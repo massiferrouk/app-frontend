@@ -58,8 +58,16 @@ class MesLogementsViewModel extends BaseViewModel {
   String? villeEcole; // villeA
   String? villeEntreprise; // villeB
 
+  /// Stale-while-revalidate (APP-122) : la liste connue s'affiche tout de suite
+  /// et se rafraîchit en fond, plus de spinner à chaque ouverture de l'écran.
   Future<void> load() async {
-    setBusy(true);
+    final cache = _logements.cachedMesLogements;
+    if (cache != null) {
+      logements = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       isAlternant = await _profile.currentRole() == UserRole.ALTERNANT;
       if (isAlternant) {
@@ -70,9 +78,10 @@ class MesLogementsViewModel extends BaseViewModel {
       logements = await _logements.getMesLogements();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (logements.isEmpty) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
   }
 

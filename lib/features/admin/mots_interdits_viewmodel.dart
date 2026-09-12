@@ -19,15 +19,24 @@ class MotsInterditsViewModel extends BaseViewModel {
   List<MotInterdit> mots = [];
   String? errorMessage;
 
+  /// Stale-while-revalidate (APP-122) : la liste connue s'affiche tout de suite
+  /// et se rafraîchit en fond, plus de spinner à chaque ouverture.
   Future<void> load() async {
-    setBusy(true);
+    final cache = _admin.cachedMotsInterdits;
+    if (cache != null) {
+      mots = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       mots = await _admin.motsInterdits();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (mots.isEmpty) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
   }
 
