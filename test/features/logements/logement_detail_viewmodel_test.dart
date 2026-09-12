@@ -233,5 +233,16 @@ void main() {
 
       expect(viewModel.isBusy, isFalse);
     });
+
+    // APP-122 : anti « fiche incomplète puis reload ». La vue reste en état de
+    // chargement tant que premierChargement est vrai ; il ne passe à false
+    // qu'une fois loadExtras terminé, pour un affichage complet d'un seul coup.
+    test('premierChargement : vrai au départ, faux après loadExtras', () async {
+      expect(viewModel.premierChargement, isTrue);
+
+      await viewModel.loadExtras();
+
+      expect(viewModel.premierChargement, isFalse);
+    });
   });
 }
