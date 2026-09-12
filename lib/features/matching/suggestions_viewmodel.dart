@@ -141,6 +141,13 @@ class SuggestionsViewModel extends BaseViewModel {
         if (a.isMatchActif != b.isMatchActif) {
           return a.isMatchActif ? -1 : 1;
         }
+        // Parmi les potentiels : ceux avec un logement publié (donc une photo)
+        // avant ceux sans — les cartes « riches » remontent (APP-122).
+        final aLog = a.logementBId != null;
+        final bLog = b.logementBId != null;
+        if (aLog != bLog) {
+          return aLog ? -1 : 1;
+        }
         // Puis score décroissant
         return b.score.compareTo(a.score);
       });

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../models/logement_apercu.dart';
 import '../models/matching_suggestion.dart';
 import '../models/scenario.dart';
+import 'logement_vignette.dart';
 import 'match_status_pill.dart';
 
 /// Carte du meilleur match — version allégée (APP-122).
@@ -143,6 +145,13 @@ class MatchCard extends StatelessWidget {
               ),
             ],
 
+            // ─── Aperçu du logement de l'autre (APP-122) ───────
+            // Vignette + infos. Le tap sur la carte (onTap) ouvre déjà la fiche.
+            if (suggestion.logementBApercu != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              _ApercuLogementTile(apercu: suggestion.logementBApercu!),
+            ],
+
             // ─── Scénario du moteur, repli message générique ───
             if (!actif && _messagePotentiel != null) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -220,5 +229,60 @@ class MatchCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Sous-carte « Son logement à … » sur le meilleur match (APP-122) : vignette
+/// + ville + type · loyer. Purement visuelle — l'ouverture de la fiche est
+/// portée par le tap sur la carte parente.
+class _ApercuLogementTile extends StatelessWidget {
+  final LogementApercu apercu;
+
+  const _ApercuLogementTile({required this.apercu});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          LogementVignette(photoUrl: apercu.photoUrl, width: 66, height: 50),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Son logement à ${apercu.ville}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(_infoLine(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right,
+              size: 18, color: AppColors.textTertiary),
+        ],
+      ),
+    );
+  }
+
+  String _infoLine() {
+    final parts = <String>[
+      if (apercu.type != null) apercu.type!.label,
+      '${apercu.loyer.toStringAsFixed(0)} €/mois',
+    ];
+    return parts.join(' · ');
   }
 }

@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../shared/models/matching_suggestion.dart';
 import '../../shared/models/scenario.dart';
 import 'suggestions_viewmodel.dart';
+import '../../shared/widgets/logement_vignette.dart';
 import '../../shared/widgets/match_card.dart';
 import '../../shared/widgets/match_status_pill.dart';
 
@@ -292,6 +293,9 @@ class _CompactMatchCard extends StatelessWidget {
     // Neutre : avatar et score ne portent plus de couleur de type — ils se
     // distinguent par la taille, pas par la teinte (APP-122).
     final neutre = actif ? AppColors.textPrimary : AppColors.textSecondary;
+    // Logement de l'autre (APP-122) : s'il a publié, la vignette remplace
+    // l'avatar et la ligne d'info devient « type à ville · loyer ».
+    final apercu = suggestion.logementBApercu;
 
     return InkWell(
       onTap: onTap,
@@ -310,15 +314,17 @@ class _CompactMatchCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: AppColors.surfaceDark,
-                  child: Text(suggestion.initials,
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: neutre)),
-                ),
+                apercu != null
+                    ? LogementVignette(photoUrl: apercu.photoUrl)
+                    : CircleAvatar(
+                        radius: 22,
+                        backgroundColor: AppColors.surfaceDark,
+                        child: Text(suggestion.initials,
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: neutre)),
+                      ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
@@ -328,21 +334,33 @@ class _CompactMatchCard extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          const Icon(Icons.swap_horiz,
-                              size: 15, color: AppColors.textTertiary),
-                          const SizedBox(width: 4),
-                          // Rythme de l'autre alternant (APP-122)
-                          Flexible(
-                            child: Text(
-                                suggestion.rythmeLigne,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodySmall),
-                          ),
-                        ],
-                      ),
+                      // Avec logement : « Studio à Paris · 640 €/mois » ;
+                      // sinon : le rythme de l'autre alternant.
+                      if (apercu != null)
+                        Text(
+                          '${apercu.type != null ? '${apercu.type!.label} à ' : ''}'
+                          '${apercu.ville} · '
+                          '${apercu.loyer.toStringAsFixed(0)} €/mois',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )
+                      else
+                        Row(
+                          children: [
+                            const Icon(Icons.swap_horiz,
+                                size: 15, color: AppColors.textTertiary),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                  suggestion.rythmeLigne,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style:
+                                      Theme.of(context).textTheme.bodySmall),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),

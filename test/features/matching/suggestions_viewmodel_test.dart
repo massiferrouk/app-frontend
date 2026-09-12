@@ -25,8 +25,10 @@ void main() {
     required AccordType type,
     required bool actif,
     int economie = 0,
+    String? logementBId,
   }) =>
       MatchingSuggestion(
+        logementBId: logementBId,
         profileId: 'p-$prenom',
         userId: 'u-$prenom',
         prenom: prenom,
@@ -77,6 +79,29 @@ void main() {
       await viewModel.load();
 
       expect(viewModel.economieMax, 450);
+    });
+
+    // APP-122 : parmi les potentiels, ceux dont l'autre a publié un logement
+    // (donc avec photo) remontent avant ceux sans, même à score inférieur.
+    test('potentiels : ceux avec logement avant ceux sans', () async {
+      when(() => matchingService.getSuggestions()).thenAnswer((_) async => [
+            build(
+                prenom: 'SansLog',
+                score: 0.80,
+                type: AccordType.COLOCATION_TOURNANTE,
+                actif: false),
+            build(
+                prenom: 'AvecLog',
+                score: 0.70,
+                type: AccordType.COLOCATION_TOURNANTE,
+                actif: false,
+                logementBId: 'log-1'),
+          ]);
+
+      await viewModel.load();
+
+      expect(viewModel.suggestions.first.prenom, 'AvecLog');
+      expect(viewModel.suggestions.last.prenom, 'SansLog');
     });
 
     test('meilleurMatch : le meilleur actif, retiré des autres', () async {

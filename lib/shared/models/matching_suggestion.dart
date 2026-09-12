@@ -1,4 +1,5 @@
 import 'enums.dart';
+import 'logement_apercu.dart';
 import 'scenario.dart';
 import 'semaine_compatibilite.dart';
 
@@ -42,6 +43,10 @@ class MatchingSuggestion {
   /// si l'API est ancienne (repli sur les villes à l'affichage).
   final String rythmeLabel;
 
+  /// Aperçu du logement de l'autre alternant (APP-122) : vignette + infos sur
+  /// la carte de match. null si l'autre n'a pas de logement publié.
+  final LogementApercu? logementBApercu;
+
   const MatchingSuggestion({
     required this.profileId,
     required this.userId,
@@ -64,6 +69,7 @@ class MatchingSuggestion {
     this.economieMensuelle = 0,
     this.scenarios = const [],
     this.rythmeLabel = '',
+    this.logementBApercu,
   });
 
   factory MatchingSuggestion.fromJson(Map<String, dynamic> json) {
@@ -95,6 +101,10 @@ class MatchingSuggestion {
           .map((e) => Scenario.fromJson(e as Map<String, dynamic>))
           .toList(),
       rythmeLabel: json['rythmeLabel'] as String? ?? '',
+      logementBApercu: json['logementBApercu'] == null
+          ? null
+          : LogementApercu.fromJson(
+              json['logementBApercu'] as Map<String, dynamic>),
     );
   }
 
