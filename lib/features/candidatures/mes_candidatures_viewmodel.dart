@@ -27,15 +27,25 @@ class MesCandidaturesViewModel extends BaseViewModel {
   /// Filtre actif — null = tout afficher
   CandidatureStatut? filtre;
 
+  /// Stale-while-revalidate (APP-122) : la liste connue s'affiche tout de suite
+  /// et se rafraîchit en fond, plus de spinner à chaque entrée sur l'onglet.
   Future<void> load() async {
-    setBusy(true);
+    final cache = _candidatures.cachedCandidatures;
+    if (cache != null) {
+      _all = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
+
     try {
       _all = await _candidatures.getMesCandidatures();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (_all.isEmpty) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
   }
 

@@ -10,12 +10,19 @@ class CandidatureService {
   CandidatureService({ApiClient? apiClient})
       : _api = apiClient ?? locator<ApiClient>();
 
+  /// Dernière liste de candidatures récupérée (APP-122) — alimente le
+  /// stale-while-revalidate de l'onglet Candidatures. Mise à jour à chaque
+  /// appel de getMesCandidatures (y compris ceux qui alimentent les badges).
+  List<Candidature>? cachedCandidatures;
+
   /// GET /candidatures — mes annonces suivies, la plus récemment modifiée d'abord
   Future<List<Candidature>> getMesCandidatures() async {
     final data = await _api.get<List<dynamic>>('/candidatures');
-    return data
+    final candidatures = data
         .map((e) => Candidature.fromJson(e as Map<String, dynamic>))
         .toList();
+    cachedCandidatures = candidatures;
+    return candidatures;
   }
 
   /// POST /candidatures — suit une annonce.

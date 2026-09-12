@@ -10,17 +10,27 @@ class DashboardService {
   DashboardService({ApiClient? apiClient})
       : _api = apiClient ?? locator<ApiClient>();
 
+  /// Derniers dashboards récupérés (APP-122) — alimentent le stale-while-
+  /// revalidate des accueils : on réaffiche l'accueil connu tout de suite et on
+  /// rafraîchit en fond, au lieu d'un spinner à chaque retour sur l'onglet.
+  AlternantDashboard? cachedAlternantDashboard;
+  ProprietaireDashboard? cachedProprietaireDashboard;
+
   /// GET /dashboard/alternant — données du dashboard de l'utilisateur connecté
   Future<AlternantDashboard> getAlternantDashboard() async {
     final data =
         await _api.get<Map<String, dynamic>>('/dashboard/alternant');
-    return AlternantDashboard.fromJson(data);
+    final dashboard = AlternantDashboard.fromJson(data);
+    cachedAlternantDashboard = dashboard;
+    return dashboard;
   }
 
   /// GET /dashboard/proprietaire — KPIs et logements du propriétaire
   Future<ProprietaireDashboard> getProprietaireDashboard() async {
     final data =
         await _api.get<Map<String, dynamic>>('/dashboard/proprietaire');
-    return ProprietaireDashboard.fromJson(data);
+    final dashboard = ProprietaireDashboard.fromJson(data);
+    cachedProprietaireDashboard = dashboard;
+    return dashboard;
   }
 }

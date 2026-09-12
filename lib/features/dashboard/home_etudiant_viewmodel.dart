@@ -72,7 +72,16 @@ class HomeEtudiantViewModel extends BaseViewModel {
   bool get isNouveau => _statutsCharges && statutsSuivis.isEmpty;
 
   Future<void> load() async {
-    setBusy(true);
+    // Stale-while-revalidate (APP-122) : les dernières annonces connues (cache
+    // de la recherche par défaut) s'affichent tout de suite, on rafraîchit en
+    // fond — plus de spinner à chaque retour sur l'accueil.
+    final cache = _logements.cachedDefaultSearch;
+    if (cache != null) {
+      vedettes = cache.logements.take(3).toList();
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       // Aperçu : seulement les 3 dernières annonces publiées (page 0).
       // La liste complète + filtres + tri, c'est l'écran Recherche (APP-117).
@@ -80,9 +89,8 @@ class HomeEtudiantViewModel extends BaseViewModel {
       vedettes = result.logements.take(3).toList();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (vedettes.isEmpty) errorMessage = e.message;
     }
-
 
     setBusy(false);
     await _refreshStatutsSuivis();

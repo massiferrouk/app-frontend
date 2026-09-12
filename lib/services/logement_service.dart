@@ -16,11 +16,17 @@ class LogementService {
       : _api = apiClient ?? locator<ApiClient>();
 
   /// GET /logements/mes-logements — tous mes logements, brouillons inclus
+  /// Dernière liste « mes logements » récupérée (APP-122) — stale-while-
+  /// revalidate de l'écran Mes logements (affichage immédiat + refresh en fond).
+  List<Logement>? cachedMesLogements;
+
   Future<List<Logement>> getMesLogements() async {
     final data = await _api.get<List<dynamic>>('/logements/mes-logements');
-    return data
+    final logements = data
         .map((e) => Logement.fromJson(e as Map<String, dynamic>))
         .toList();
+    cachedMesLogements = logements;
+    return logements;
   }
 
   /// GET /logements — recherche publique avec filtres (logements ACTIF
@@ -28,6 +34,13 @@ class LogementService {
   /// l'infinite scroll.
   /// [tri] : pertinence (défaut) | prix_asc | prix_desc | surface_desc.
   /// [total] permet d'afficher « X logements » sans attendre toutes les pages.
+  /// Cache du résultat de la recherche « par défaut » (aucun filtre, page 0) —
+  /// APP-122. C'est exactement l'état au (re)montage de l'onglet Recherche :
+  /// on peut réafficher les derniers résultats connus tout de suite puis
+  /// rafraîchir en fond. Une recherche filtrée ou paginée n'est pas mise en
+  /// cache (elle dépend de critères qui, eux, ne survivent pas au remontage).
+  ({List<Logement> logements, bool hasNext, int total})? cachedDefaultSearch;
+
   Future<({List<Logement> logements, bool hasNext, int total})> search({
     String? ville,
     double? loyerMax,
@@ -49,13 +62,23 @@ class LogementService {
         'page': page,
       },
     );
-    return (
+    final result = (
       logements: (data['content'] as List? ?? [])
           .map((e) => Logement.fromJson(e as Map<String, dynamic>))
           .toList(),
       hasNext: data['hasNext'] as bool? ?? false,
       total: (data['totalElements'] as num? ?? 0).toInt(),
     );
+    // Recherche sans filtre de contenu (le tri n'entre pas en compte) → on la
+    // garde pour le stale-while-revalidate de l'onglet Recherche.
+    final sansFiltre = page == 0 &&
+        (ville == null || ville.isEmpty) &&
+        loyerMax == null &&
+        surfaceMin == null &&
+        meuble == null &&
+        type == null;
+    if (sansFiltre) cachedDefaultSearch = result;
+    return result;
   }
 
   /// GET /logements/{id} — détail complet d'un logement

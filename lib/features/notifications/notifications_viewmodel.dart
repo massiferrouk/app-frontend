@@ -44,15 +44,25 @@ class NotificationsViewModel extends BaseViewModel {
   /// Ce ne sont pas des notifications en base : rien à marquer comme lu.
   List<String> alertesLogements = [];
 
+  /// Stale-while-revalidate (APP-122) : la liste connue s'affiche tout de suite
+  /// et se rafraîchit en fond, plus de spinner à chaque entrée sur l'onglet.
   Future<void> load() async {
-    setBusy(true);
+    final cache = _notifications.cachedNotifications;
+    if (cache != null) {
+      notifications = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
+
     try {
       notifications = await _notifications.getNotifications();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (notifications.isEmpty) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
     await _refreshAlertesLogements();
   }

@@ -66,18 +66,29 @@ class HomeAlternantViewModel extends BaseViewModel {
     await _refreshUnreadCount();
   }
 
-  /// Chargement initial ET pull-to-refresh
+  /// Chargement initial ET pull-to-refresh.
+  /// Stale-while-revalidate (APP-122) : l'accueil connu s'affiche tout de suite
+  /// et se rafraîchit en fond, plus de spinner à chaque retour sur l'onglet.
   Future<void> load() async {
-    setBusy(true);
+    final cache = _dashboard.cachedAlternantDashboard;
+    if (cache != null) {
+      dashboard = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       dashboard = await _dashboard.getAlternantDashboard();
       errorMessage = null;
     } on ApiException catch (e) {
-      // Le dashboard est essentiel : son échec affiche l'état d'erreur.
-      errorMessage = e.message;
-      setBusy(false);
-      await _refreshUnreadCount();
-      return;
+      // Le dashboard est essentiel : sans rien à montrer, on affiche l'erreur.
+      // Mais si on a déjà un accueil en cache, on le garde (erreur silencieuse).
+      if (dashboard == null) {
+        errorMessage = e.message;
+        setBusy(false);
+        await _refreshUnreadCount();
+        return;
+      }
     }
 
     // Enrichissements NON bloquants : l'accueil s'affiche même s'ils échouent.
