@@ -15,15 +15,24 @@ class AccueilAdminViewModel extends BaseViewModel {
   AdminDashboard? dashboard;
   String? errorMessage;
 
+  /// Stale-while-revalidate (APP-122) : l'accueil connu s'affiche tout de suite
+  /// et se rafraîchit en fond, plus de spinner à chaque retour sur l'onglet.
   Future<void> load() async {
-    setBusy(true);
+    final cache = _admin.cachedDashboard;
+    if (cache != null) {
+      dashboard = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       dashboard = await _admin.dashboard();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (dashboard == null) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
   }
 

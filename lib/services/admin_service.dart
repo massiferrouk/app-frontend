@@ -15,10 +15,23 @@ class AdminService {
 
   AdminService({ApiClient? apiClient}) : _api = apiClient ?? ApiClient();
 
+  // ─── Caches pour le stale-while-revalidate des écrans admin (APP-122) ──
+  // Ne concernent que la vue « par défaut » (sans filtre, page 0) : c'est
+  // l'état au (re)montage de chaque écran. Filtres et pages ne sont pas cachés.
+  AdminDashboard? cachedDashboard;
+  ({List<Logement> logements, bool hasNext, int total})? cachedDefaultLogements;
+  ({List<MessageReport> signalements, bool hasNext, int total})?
+      cachedSignalements;
+  ({List<LogementReport> signalements, bool hasNext, int total})?
+      cachedAnnoncesSignalees;
+  List<MotInterdit>? cachedMotsInterdits;
+
   /// GET /admin/dashboard — chiffres de la plateforme.
   Future<AdminDashboard> dashboard() async {
     final data = await _api.get<Map<String, dynamic>>('/admin/dashboard');
-    return AdminDashboard.fromJson(data);
+    final dashboard = AdminDashboard.fromJson(data);
+    cachedDashboard = dashboard;
+    return dashboard;
   }
 
   /// GET /admin/users — liste paginée, filtrable par rôle et par état.
@@ -73,13 +86,15 @@ class AdminService {
       '/admin/moderation/messages',
       queryParameters: {'page': page},
     );
-    return (
+    final result = (
       signalements: (data['content'] as List? ?? [])
           .map((e) => MessageReport.fromJson(e as Map<String, dynamic>))
           .toList(),
       hasNext: data['hasNext'] as bool? ?? false,
       total: (data['totalElements'] as num? ?? 0).toInt(),
     );
+    if (page == 0) cachedSignalements = result;
+    return result;
   }
 
   /// PUT /admin/moderation/messages/{id}/hide — masque le message.
@@ -99,9 +114,11 @@ class AdminService {
   Future<List<MotInterdit>> motsInterdits() async {
     final data =
         await _api.get<List<dynamic>>('/admin/moderation/mots-interdits');
-    return data
+    final mots = data
         .map((e) => MotInterdit.fromJson(e as Map<String, dynamic>))
         .toList();
+    cachedMotsInterdits = mots;
+    return mots;
   }
 
   /// POST /admin/moderation/mots-interdits — 409 si le mot existe déjà,
@@ -132,13 +149,15 @@ class AdminService {
       '/admin/logements',
       queryParameters: {'statut': ?statut?.toJson(), 'page': page},
     );
-    return (
+    final result = (
       logements: (data['content'] as List? ?? [])
           .map((e) => Logement.fromJson(e as Map<String, dynamic>))
           .toList(),
       hasNext: data['hasNext'] as bool? ?? false,
       total: (data['totalElements'] as num? ?? 0).toInt(),
     );
+    if (statut == null && page == 0) cachedDefaultLogements = result;
+    return result;
   }
 
   /// PUT /admin/logements/{id}/suspendre — le motif est obligatoire (400
@@ -166,12 +185,14 @@ class AdminService {
       '/admin/moderation/logements',
       queryParameters: {'page': page},
     );
-    return (
+    final result = (
       signalements: (data['content'] as List? ?? [])
           .map((e) => LogementReport.fromJson(e as Map<String, dynamic>))
           .toList(),
       hasNext: data['hasNext'] as bool? ?? false,
       total: (data['totalElements'] as num? ?? 0).toInt(),
     );
+    if (page == 0) cachedAnnoncesSignalees = result;
+    return result;
   }
 }

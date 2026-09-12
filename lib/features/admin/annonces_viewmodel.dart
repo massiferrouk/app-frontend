@@ -25,9 +25,19 @@ class AnnoncesViewModel extends BaseViewModel {
 
   bool get peutChargerPlus => _hasNext && !isBusy;
 
+  /// Stale-while-revalidate (APP-122) : sans filtre (l'état au remontage), la
+  /// liste connue s'affiche tout de suite et se rafraîchit en fond.
   Future<void> load() async {
     _page = 0;
-    setBusy(true);
+    final cache = filtreStatut == null ? _admin.cachedDefaultLogements : null;
+    if (cache != null) {
+      annonces = cache.logements;
+      _hasNext = cache.hasNext;
+      total = cache.total;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       final result = await _admin.logements(statut: filtreStatut);
       annonces = result.logements;
@@ -35,9 +45,10 @@ class AnnoncesViewModel extends BaseViewModel {
       total = result.total;
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (annonces.isEmpty) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
   }
 

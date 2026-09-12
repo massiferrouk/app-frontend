@@ -26,15 +26,24 @@ class MonCalendrierViewModel extends BaseViewModel {
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
   ];
 
+  /// Stale-while-revalidate (APP-122) : le calendrier connu s'affiche tout de
+  /// suite et se rafraîchit en fond, plus de spinner à chaque ouverture.
   Future<void> load() async {
-    setBusy(true);
+    final cache = _calendrier.cachedMesSemaines;
+    if (cache != null) {
+      data = cache;
+      notifyListeners();
+    } else {
+      setBusy(true);
+    }
     try {
       data = await _calendrier.getMesSemaines();
       errorMessage = null;
     } on ApiException catch (e) {
-      errorMessage = e.message;
+      if (data == null) errorMessage = e.message;
     } finally {
       setBusy(false);
+      notifyListeners();
     }
   }
 

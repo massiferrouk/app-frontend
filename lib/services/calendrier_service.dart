@@ -10,11 +10,17 @@ class CalendrierService {
   CalendrierService({ApiClient? apiClient})
       : _api = apiClient ?? locator<ApiClient>();
 
+  /// Dernier calendrier récupéré (APP-122) — stale-while-revalidate de l'écran
+  /// « Mon calendrier » (affichage immédiat + rafraîchissement en fond).
+  MesSemaines? cachedMesSemaines;
+
   /// GET /calendrier/mes-semaines — calendrier complet de l'utilisateur
   Future<MesSemaines> getMesSemaines() async {
     final data =
         await _api.get<Map<String, dynamic>>('/calendrier/mes-semaines');
-    return MesSemaines.fromJson(data);
+    final semaines = MesSemaines.fromJson(data);
+    cachedMesSemaines = semaines;
+    return semaines;
   }
 
   /// PATCH /calendrier/{profileId}/semaines/{semaine}
