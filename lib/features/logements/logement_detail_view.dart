@@ -336,6 +336,11 @@ class _PhotoCarouselState extends State<_PhotoCarousel> {
                 label: 'Photo ${index + 1} sur ${urls.length} du logement',
                 child: CachedNetworkImage(
                   imageUrl: urls[index],
+                  // Clé de cache STABLE : le chemin sans la signature (APP-122).
+                  // Les URLs MinIO sont signées et changent à chaque chargement ;
+                  // sans ça, un rafraîchissement en fond re-téléchargeait la même
+                  // photo (image qui disparaît → spinner → réapparaît).
+                  cacheKey: urls[index].split('?').first,
                   fit: BoxFit.cover,
                   width: double.infinity,
                   placeholder: (_, _) => Container(
@@ -441,6 +446,9 @@ class _FullScreenGallery extends StatelessWidget {
               label: 'Photo ${index + 1} sur ${photoUrls.length}, plein écran',
               child: CachedNetworkImage(
                 imageUrl: photoUrls[index],
+                // Même clé stable que le carrousel : réutilise l'image déjà
+                // téléchargée au lieu de la reprendre (URLs signées, APP-122).
+                cacheKey: photoUrls[index].split('?').first,
                 fit: BoxFit.contain,
               ),
             ),
