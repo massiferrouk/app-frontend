@@ -11,13 +11,22 @@ class MessageService {
   MessageService({ApiClient? apiClient})
       : _api = apiClient ?? locator<ApiClient>();
 
+  /// Dernière liste de conversations récupérée (APP-122).
+  /// Le service est un singleton, donc ce cache survit au remontage de l'écran
+  /// Messages : la liste peut être réaffichée instantanément pendant qu'un
+  /// rafraîchissement se fait en arrière-plan (stale-while-revalidate), au lieu
+  /// de repartir d'un écran vide + spinner à chaque entrée sur l'onglet.
+  List<ConversationSummary>? cachedConversations;
+
   /// GET /messages/conversations — mes conversations, triées par activité
   Future<List<ConversationSummary>> getConversations() async {
     final data =
         await _api.get<List<dynamic>>('/messages/conversations');
-    return data
+    final conversations = data
         .map((e) => ConversationSummary.fromJson(e as Map<String, dynamic>))
         .toList();
+    cachedConversations = conversations;
+    return conversations;
   }
 
   /// GET /messages/{conversationId} — historique paginé
