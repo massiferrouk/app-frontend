@@ -73,6 +73,12 @@ class HomeAlternantViewModel extends BaseViewModel {
     final cache = _dashboard.cachedAlternantDashboard;
     if (cache != null) {
       dashboard = cache;
+      // On préaffiche aussi les enrichissements en cache (calendrier + aperçu
+      // logements) pour éviter qu'ils clignotent à vide à la ré-entrée (APP-122).
+      final cacheSemaines = _calendrier.cachedMesSemaines;
+      final cacheLogements = _logements.cachedMesLogements;
+      if (cacheSemaines != null) semaines = cacheSemaines;
+      if (cacheLogements != null) logements = cacheLogements;
       notifyListeners();
     } else {
       setBusy(true);

@@ -81,11 +81,21 @@ class LogementService {
     return result;
   }
 
+  /// Détails complets déjà chargés, par id (APP-122) — stale-while-revalidate
+  /// de la fiche d'annonce : rouvrir une annonce déjà consultée l'affiche tout
+  /// de suite (photos comprises) et rafraîchit en fond, au lieu d'un loader à
+  /// chaque ouverture.
+  final Map<String, Logement> _logementCache = {};
+
+  Logement? cachedLogement(String logementId) => _logementCache[logementId];
+
   /// GET /logements/{id} — détail complet d'un logement
   Future<Logement> getLogement(String logementId) async {
     final data =
         await _api.get<Map<String, dynamic>>('/logements/$logementId');
-    return Logement.fromJson(data);
+    final logement = Logement.fromJson(data);
+    _logementCache[logementId] = logement;
+    return logement;
   }
 
   /// GET /logements/{id}/disponibilites — plages de disponibilité

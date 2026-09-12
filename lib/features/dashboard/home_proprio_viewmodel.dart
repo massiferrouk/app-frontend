@@ -31,9 +31,15 @@ class HomeProprioViewModel extends BaseViewModel {
   /// Stale-while-revalidate (APP-122) : l'accueil connu s'affiche tout de suite
   /// et se rafraîchit en fond, plus de spinner à chaque retour sur l'onglet.
   Future<void> load() async {
-    final cache = _dashboard.cachedProprietaireDashboard;
-    if (cache != null) {
-      dashboard = cache;
+    // On préaffiche à la fois le dashboard ET la liste des logements depuis le
+    // cache (APP-122). Sans la liste, la ré-entrée montrait un bref « Aucun
+    // logement » le temps que getMesLogements réponde, alors que le proprio a
+    // bien des annonces.
+    final cacheDashboard = _dashboard.cachedProprietaireDashboard;
+    final cacheLogements = _logements.cachedMesLogements;
+    if (cacheDashboard != null || cacheLogements != null) {
+      if (cacheDashboard != null) dashboard = cacheDashboard;
+      if (cacheLogements != null) logements = cacheLogements;
       notifyListeners();
     } else {
       setBusy(true);
@@ -50,8 +56,11 @@ class HomeProprioViewModel extends BaseViewModel {
     }
   }
 
-  /// Alertes dérivées des données : logements en brouillon jamais publiés,
-  /// logements actifs sans locataire.
+  /// Alertes dérivées des données : logements en brouillon jamais publiés.
+  ///
+  /// APP-122 : on ne signale plus « logement actif sans locataire ». Ce n'est
+  /// pas une anomalie — c'est l'état normal d'une annonce publiée et disponible
+  /// —, donc c'était une fausse alerte sans action possible pour le proprio.
   List<String> get alertes {
     final d = dashboard;
     if (d == null) return [];
@@ -62,14 +71,6 @@ class HomeProprioViewModel extends BaseViewModel {
       result.add(brouillons > 1
           ? '$brouillons logements en brouillon — pense à les publier'
           : '1 logement en brouillon — pense à le publier');
-    }
-    final vacants = d.logements
-        .where((l) => !l.isOccupe && l.statut.name == 'ACTIF')
-        .length;
-    if (vacants > 0) {
-      result.add(vacants > 1
-          ? '$vacants logements actifs sans locataire'
-          : '1 logement actif sans locataire');
     }
     return result;
   }

@@ -206,18 +206,31 @@ class ChatViewModel extends BaseViewModel {
   /// exactement l'anomalie remontée en recette.
   Future<void> _resolveExistingConversation() async {
     if (_conversationId.isNotEmpty || conversation.partnerId == null) return;
+    // D'abord la liste en cache (souvent chaude : onglet Messages / badge) →
+    // résolution instantanée, sans appel réseau ni spinner (APP-122). Sans ça,
+    // « Contacter » refaisait un aller-retour serveur à CHAQUE ouverture, même
+    // quand l'historique était déjà en cache. Repli sur le réseau seulement si
+    // le cache ne contient pas (encore) la conversation.
+    final cached = _messages.cachedConversations;
+    if (cached != null && _trouverConversation(cached)) return;
     try {
-      final convs = await _messages.getConversations();
-      for (final c in convs) {
-        if (c.partnerId == conversation.partnerId &&
-            c.logementId == conversation.logementId) {
-          _conversationId = c.conversationId;
-          break;
-        }
-      }
+      _trouverConversation(await _messages.getConversations());
     } on ApiException {
       // silencieux : on démarre alors une nouvelle conversation
     }
+  }
+
+  /// Cherche la conversation existante (même partenaire + même annonce) dans la
+  /// liste donnée et mémorise son id. Retourne true si trouvée.
+  bool _trouverConversation(List<ConversationSummary> convs) {
+    for (final c in convs) {
+      if (c.partnerId == conversation.partnerId &&
+          c.logementId == conversation.logementId) {
+        _conversationId = c.conversationId;
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Abonnement temps réel — dès qu'on connaît l'id de la conversation
