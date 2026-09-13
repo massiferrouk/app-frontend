@@ -80,8 +80,6 @@ void main() {
           userId: 'u1',
           villeA: 'Bordeaux',
           villeB: 'Paris',
-          ecole: 'YNOV',
-          entreprise: 'ACME',
           dateDebut: DateTime(2026, 9, 1),
           dateFin: DateTime(2027, 8, 31),
           rythme: RythmeAlternance.SEMAINE_3_1,

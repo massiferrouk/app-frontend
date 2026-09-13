@@ -9,7 +9,7 @@ import '../../../shared/models/enums.dart';
 import 'profil_creation_viewmodel.dart';
 
 /// Formulaire de création — ou de modification (APP-117 · A-04) — du profil
-/// alternant : villes, école, entreprise, rythme, période d'alternance.
+/// alternant : villes (école / entreprise), rythme, période d'alternance.
 class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
   /// Profil à modifier — null pour une création (parcours d'inscription).
   final AlternantProfile? profile;
@@ -74,19 +74,6 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
                 textCapitalization: TextCapitalization.words,
                 decoration:
                     const InputDecoration(hintText: 'Ville de ton entreprise'),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // ─── École / entreprise ─────────────────────────
-              TextField(
-                controller: viewModel.ecoleController,
-                decoration: const InputDecoration(hintText: 'Nom de l\'école'),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: viewModel.entrepriseController,
-                decoration:
-                    const InputDecoration(hintText: 'Nom de l\'entreprise'),
               ),
               const SizedBox(height: AppSpacing.lg),
 

@@ -62,8 +62,6 @@ class ProfileService {
   Future<AlternantProfile> createAlternantProfile({
     required String villeA,
     required String villeB,
-    required String ecole,
-    required String entreprise,
     required DateTime dateDebut,
     required DateTime dateFin,
     required RythmeAlternance rythme,
@@ -74,8 +72,6 @@ class ProfileService {
       data: {
         'villeA': villeA,
         'villeB': villeB,
-        'ecole': ecole,
-        'entreprise': entreprise,
         'dateDebut': AlternantProfile.toIsoDate(dateDebut),
         'dateFin': AlternantProfile.toIsoDate(dateFin),
         'rythme': rythme.toJson(),
@@ -91,8 +87,6 @@ class ProfileService {
   Future<AlternantProfile> updateAlternantProfile({
     required String villeA,
     required String villeB,
-    required String ecole,
-    required String entreprise,
     required DateTime dateDebut,
     required DateTime dateFin,
     required RythmeAlternance rythme,
@@ -103,8 +97,6 @@ class ProfileService {
       data: {
         'villeA': villeA,
         'villeB': villeB,
-        'ecole': ecole,
-        'entreprise': entreprise,
         'dateDebut': AlternantProfile.toIsoDate(dateDebut),
         'dateFin': AlternantProfile.toIsoDate(dateFin),
         'rythme': rythme.toJson(),

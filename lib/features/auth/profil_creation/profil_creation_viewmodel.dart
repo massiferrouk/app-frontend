@@ -45,8 +45,6 @@ class ProfilCreationViewModel extends BaseViewModel {
     if (p != null) {
       villeAController.text = p.villeA;
       villeBController.text = p.villeB;
-      ecoleController.text = p.ecole;
-      entrepriseController.text = p.entreprise;
       selectedRythme = p.rythme;
       selectedPremiereSemaine = p.premiereSemaine;
       dateDebut = p.dateDebut;
@@ -85,8 +83,6 @@ class ProfilCreationViewModel extends BaseViewModel {
 
   final villeAController = TextEditingController();
   final villeBController = TextEditingController();
-  final ecoleController = TextEditingController();
-  final entrepriseController = TextEditingController();
 
   RythmeAlternance selectedRythme = RythmeAlternance.SEMAINE_1_1;
 
@@ -132,10 +128,7 @@ class ProfilCreationViewModel extends BaseViewModel {
     final requiredError = Validators.requiredField(
             villeAController.text, 'Le nom de la ville de l\'école') ??
         Validators.requiredField(
-            villeBController.text, 'Le nom de la ville de l\'entreprise') ??
-        Validators.requiredField(ecoleController.text, 'Le nom de l\'école') ??
-        Validators.requiredField(
-            entrepriseController.text, 'Le nom de l\'entreprise');
+            villeBController.text, 'Le nom de la ville de l\'entreprise');
     if (requiredError != null) return requiredError;
 
     // Les deux villes doivent être différentes, sinon il n'y a rien à
@@ -168,8 +161,6 @@ class ProfilCreationViewModel extends BaseViewModel {
         await _profile.updateAlternantProfile(
           villeA: villeAController.text.trim(),
           villeB: villeBController.text.trim(),
-          ecole: ecoleController.text.trim(),
-          entreprise: entrepriseController.text.trim(),
           dateDebut: dateDebut!,
           dateFin: dateFin!,
           rythme: selectedRythme,
@@ -182,8 +173,6 @@ class ProfilCreationViewModel extends BaseViewModel {
         await _profile.createAlternantProfile(
           villeA: villeAController.text.trim(),
           villeB: villeBController.text.trim(),
-          ecole: ecoleController.text.trim(),
-          entreprise: entrepriseController.text.trim(),
           dateDebut: dateDebut!,
           dateFin: dateFin!,
           rythme: selectedRythme,
@@ -203,8 +192,6 @@ class ProfilCreationViewModel extends BaseViewModel {
   void dispose() {
     villeAController.dispose();
     villeBController.dispose();
-    ecoleController.dispose();
-    entrepriseController.dispose();
     super.dispose();
   }
 }

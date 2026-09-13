@@ -27,8 +27,6 @@ void main() {
     userId: 'user-1',
     villeA: 'Paris',
     villeB: 'Lyon',
-    ecole: 'YNOV Paris',
-    entreprise: 'ACME Lyon',
     dateDebut: DateTime(2026, 9, 1),
     dateFin: DateTime(2027, 8, 31),
     rythme: RythmeAlternance.SEMAINE_3_1,
@@ -56,8 +54,6 @@ void main() {
   void fillValidForm() {
     viewModel.villeAController.text = 'Paris';
     viewModel.villeBController.text = 'Lyon';
-    viewModel.ecoleController.text = 'YNOV Paris';
-    viewModel.entrepriseController.text = 'ACME Lyon';
     viewModel.setDateDebut(DateTime(2026, 9, 1));
     viewModel.setDateFin(DateTime(2027, 8, 31));
   }
@@ -80,8 +76,6 @@ void main() {
       verifyNever(() => profile.createAlternantProfile(
             villeA: any(named: 'villeA'),
             villeB: any(named: 'villeB'),
-            ecole: any(named: 'ecole'),
-            entreprise: any(named: 'entreprise'),
             dateDebut: any(named: 'dateDebut'),
             dateFin: any(named: 'dateFin'),
             rythme: any(named: 'rythme'),
@@ -103,8 +97,6 @@ void main() {
     test('dates manquantes : erreur', () async {
       viewModel.villeAController.text = 'Paris';
       viewModel.villeBController.text = 'Lyon';
-      viewModel.ecoleController.text = 'YNOV';
-      viewModel.entrepriseController.text = 'ACME';
 
       await viewModel.submit();
 
@@ -131,8 +123,6 @@ void main() {
       when(() => profile.createAlternantProfile(
             villeA: any(named: 'villeA'),
             villeB: any(named: 'villeB'),
-            ecole: any(named: 'ecole'),
-            entreprise: any(named: 'entreprise'),
             dateDebut: any(named: 'dateDebut'),
             dateFin: any(named: 'dateFin'),
             rythme: any(named: 'rythme'),
@@ -146,8 +136,6 @@ void main() {
       verify(() => profile.createAlternantProfile(
             villeA: 'Paris',
             villeB: 'Lyon',
-            ecole: 'YNOV Paris',
-            entreprise: 'ACME Lyon',
             dateDebut: DateTime(2026, 9, 1),
             dateFin: DateTime(2027, 8, 31),
             rythme: RythmeAlternance.SEMAINE_1_1,
@@ -165,8 +153,6 @@ void main() {
       when(() => profile.createAlternantProfile(
             villeA: any(named: 'villeA'),
             villeB: any(named: 'villeB'),
-            ecole: any(named: 'ecole'),
-            entreprise: any(named: 'entreprise'),
             dateDebut: any(named: 'dateDebut'),
             dateFin: any(named: 'dateFin'),
             rythme: any(named: 'rythme'),
@@ -179,8 +165,6 @@ void main() {
       verify(() => profile.createAlternantProfile(
             villeA: any(named: 'villeA'),
             villeB: any(named: 'villeB'),
-            ecole: any(named: 'ecole'),
-            entreprise: any(named: 'entreprise'),
             dateDebut: any(named: 'dateDebut'),
             dateFin: any(named: 'dateFin'),
             rythme: any(named: 'rythme'),
@@ -207,8 +191,6 @@ void main() {
       when(() => profile.createAlternantProfile(
             villeA: any(named: 'villeA'),
             villeB: any(named: 'villeB'),
-            ecole: any(named: 'ecole'),
-            entreprise: any(named: 'entreprise'),
             dateDebut: any(named: 'dateDebut'),
             dateFin: any(named: 'dateFin'),
             rythme: any(named: 'rythme'),
@@ -241,8 +223,6 @@ void main() {
       expect(vm.isEdition, isTrue);
       expect(vm.villeAController.text, 'Paris');
       expect(vm.villeBController.text, 'Lyon');
-      expect(vm.ecoleController.text, 'YNOV Paris');
-      expect(vm.entrepriseController.text, 'ACME Lyon');
       expect(vm.selectedRythme, RythmeAlternance.SEMAINE_3_1);
       expect(vm.selectedPremiereSemaine, PremiereSemaine.ENTREPRISE);
       expect(vm.dateDebut, DateTime(2026, 9, 1));
@@ -258,8 +238,6 @@ void main() {
       when(() => profile.updateAlternantProfile(
             villeA: any(named: 'villeA'),
             villeB: any(named: 'villeB'),
-            ecole: any(named: 'ecole'),
-            entreprise: any(named: 'entreprise'),
             dateDebut: any(named: 'dateDebut'),
             dateFin: any(named: 'dateFin'),
             rythme: any(named: 'rythme'),
@@ -273,8 +251,6 @@ void main() {
       verify(() => profile.updateAlternantProfile(
             villeA: 'Bordeaux',
             villeB: 'Lyon',
-            ecole: 'YNOV Paris',
-            entreprise: 'ACME Lyon',
             dateDebut: DateTime(2026, 9, 1),
             dateFin: DateTime(2027, 8, 31),
             rythme: RythmeAlternance.SEMAINE_3_1,
@@ -292,8 +268,6 @@ void main() {
       when(() => profile.updateAlternantProfile(
             villeA: any(named: 'villeA'),
             villeB: any(named: 'villeB'),
-            ecole: any(named: 'ecole'),
-            entreprise: any(named: 'entreprise'),
             dateDebut: any(named: 'dateDebut'),
             dateFin: any(named: 'dateFin'),
             rythme: any(named: 'rythme'),
