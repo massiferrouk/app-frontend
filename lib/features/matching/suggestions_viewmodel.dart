@@ -24,7 +24,22 @@ class SuggestionsViewModel extends BaseViewModel {
       NavigationService? navigationService})
       : _matching = matchingService ?? locator<MatchingService>(),
         _logements = logementService ?? locator<LogementService>(),
-        _nav = navigationService ?? locator<NavigationService>();
+        _nav = navigationService ?? locator<NavigationService>() {
+    // Temps réel (APP-122) : l'onglet Matches reste monté dans l'IndexedStack,
+    // donc son load() ne retourne jamais tout seul. Quand une notification
+    // « nouveau match » déclenche un rafraîchissement en fond du service, on
+    // met à jour la liste en place depuis le cache — sans setBusy, donc sans
+    // ré-afficher le skeleton (fix conservé).
+    _matching.revision.addListener(_onMatchingRevision);
+  }
+
+  void _onMatchingRevision() {
+    final cache = _matching.cachedSuggestions;
+    if (cache != null) {
+      _all = cache;
+      notifyListeners();
+    }
+  }
 
   /// Ouvre le détail du logement de l'autre alternant (match actif).
   /// La suggestion ne porte que l'id du logement : on le charge avant
@@ -161,4 +176,10 @@ class SuggestionsViewModel extends BaseViewModel {
 
   int get nbActifs => _all.where((s) => s.isMatchActif).length;
   int get nbPotentiels => _all.where((s) => !s.isMatchActif).length;
+
+  @override
+  void dispose() {
+    _matching.revision.removeListener(_onMatchingRevision);
+    super.dispose();
+  }
 }

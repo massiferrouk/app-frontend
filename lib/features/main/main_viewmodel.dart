@@ -5,6 +5,7 @@ import '../../app/app.locator.dart';
 import '../../app/app.router.dart';
 import '../../core/api/api_exception.dart';
 import '../../services/chat_socket_service.dart';
+import '../../services/matching_service.dart';
 import '../../services/message_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/profile_service.dart';
@@ -19,6 +20,7 @@ class MainViewModel extends BaseViewModel {
   final MessageService _messages;
   final NotificationService _notifications;
   final ChatSocketService _socket;
+  final MatchingService _matching;
   final NavigationService _nav;
 
   MainViewModel(
@@ -26,11 +28,13 @@ class MainViewModel extends BaseViewModel {
       MessageService? messageService,
       NotificationService? notificationService,
       ChatSocketService? chatSocketService,
+      MatchingService? matchingService,
       NavigationService? navigationService})
       : _profile = profileService ?? locator<ProfileService>(),
         _messages = messageService ?? locator<MessageService>(),
         _notifications = notificationService ?? locator<NotificationService>(),
         _socket = chatSocketService ?? locator<ChatSocketService>(),
+        _matching = matchingService ?? locator<MatchingService>(),
         _nav = navigationService ?? locator<NavigationService>();
 
   /// Rôle par défaut le temps de lire le token (évite un écran vide)
@@ -121,6 +125,13 @@ class MainViewModel extends BaseViewModel {
   void _onNotificationRecue(AppNotification notif) {
     notificationsNonLues++;
     notifyListeners();
+    // Nouveau match : on rafraîchit les suggestions en fond pour que l'onglet
+    // Matches (resté monté) affiche le nouveau match sans pull-to-refresh
+    // manuel (APP-122). Seul l'alternant a cet onglet et reçoit ce type.
+    if (role == UserRole.ALTERNANT &&
+        notif.type == NotificationType.NOUVEAU_MATCH) {
+      _matching.refreshEnFond();
+    }
     TopNotificationBanner.show(
       title: notif.title,
       body: notif.body,
