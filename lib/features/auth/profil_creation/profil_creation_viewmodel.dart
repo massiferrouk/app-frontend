@@ -8,6 +8,7 @@ import '../../../core/api/api_exception.dart';
 import '../../../core/utils/validators.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/profile_service.dart';
+import '../../../services/ville_service.dart';
 import '../../../shared/models/alternant_profile.dart';
 import '../../../shared/models/enums.dart';
 
@@ -18,6 +19,7 @@ class ProfilCreationViewModel extends BaseViewModel {
   final ProfileService _profile;
   final AuthService _auth;
   final NavigationService _nav;
+  final VilleService _villes;
 
   /// Profil déjà existant à modifier — null en création.
   final AlternantProfile? existingProfile;
@@ -36,9 +38,11 @@ class ProfilCreationViewModel extends BaseViewModel {
     ProfileService? profileService,
     AuthService? authService,
     NavigationService? navigationService,
+    VilleService? villeService,
   })  : _profile = profileService ?? locator<ProfileService>(),
         _auth = authService ?? locator<AuthService>(),
-        _nav = navigationService ?? locator<NavigationService>() {
+        _nav = navigationService ?? locator<NavigationService>(),
+        _villes = villeService ?? locator<VilleService>() {
     // Pré-remplissage en mode édition (les controllers sont déjà initialisés
     // car ce sont des champs, donc évalués avant ce corps de constructeur).
     final p = existingProfile;
@@ -83,6 +87,15 @@ class ProfilCreationViewModel extends BaseViewModel {
 
   final villeAController = TextEditingController();
   final villeBController = TextEditingController();
+
+  // FocusNodes requis par RawAutocomplete (il pilote l'ouverture du menu).
+  final villeAFocus = FocusNode();
+  final villeBFocus = FocusNode();
+
+  /// Communes proposées pour [query] — délègue au service (asset local).
+  /// Utilisé par l'autocomplétion des deux champs ville (APP-122).
+  Future<Iterable<String>> rechercherVilles(String query) =>
+      _villes.rechercher(query);
 
   RythmeAlternance selectedRythme = RythmeAlternance.SEMAINE_1_1;
 
@@ -192,6 +205,8 @@ class ProfilCreationViewModel extends BaseViewModel {
   void dispose() {
     villeAController.dispose();
     villeBController.dispose();
+    villeAFocus.dispose();
+    villeBFocus.dispose();
     super.dispose();
   }
 }

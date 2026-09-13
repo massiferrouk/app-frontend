@@ -31,6 +31,7 @@ import '../services/notification_service.dart';
 import '../services/onboarding_service.dart';
 import '../services/profile_service.dart';
 import '../services/token_storage_service.dart';
+import '../services/ville_service.dart';
 
 /// Point de vérité unique de l'application.
 /// Chaque écran (route) et chaque service (dependency) est déclaré ici,
@@ -78,6 +79,7 @@ import '../services/token_storage_service.dart';
     LazySingleton(classType: MessageService),
     LazySingleton(classType: ChatSocketService),
     LazySingleton(classType: OnboardingService),
+    LazySingleton(classType: VilleService),
     // Les services métier seront ajoutés ici (AuthService, MatchingService...)
   ],
 )

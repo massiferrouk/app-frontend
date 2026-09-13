@@ -6,6 +6,7 @@ import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/auth/profil_creation/profil_creation_viewmodel.dart';
 import 'package:studup_app/services/auth_service.dart';
 import 'package:studup_app/services/profile_service.dart';
+import 'package:studup_app/services/ville_service.dart';
 import 'package:studup_app/shared/models/alternant_profile.dart';
 import 'package:studup_app/shared/models/enums.dart';
 import 'package:studup_app/shared/models/user.dart';
@@ -16,10 +17,13 @@ class MockNavigationService extends Mock implements NavigationService {}
 
 class MockAuthService extends Mock implements AuthService {}
 
+class MockVilleService extends Mock implements VilleService {}
+
 void main() {
   late MockProfileService profile;
   late MockNavigationService nav;
   late MockAuthService auth;
+  late MockVilleService villes;
   late ProfilCreationViewModel viewModel;
 
   final fakeProfile = AlternantProfile(
@@ -44,10 +48,12 @@ void main() {
     profile = MockProfileService();
     nav = MockNavigationService();
     auth = MockAuthService();
+    villes = MockVilleService();
     viewModel = ProfilCreationViewModel(
       profileService: profile,
       navigationService: nav,
       authService: auth,
+      villeService: villes,
     );
   });
 
@@ -214,7 +220,8 @@ void main() {
           existingProfile: fakeProfile,
           profileService: profile,
           navigationService: nav,
-      authService: auth,
+          authService: auth,
+          villeService: villes,
         );
 
     test('pré-remplit le formulaire depuis le profil existant', () {
@@ -291,6 +298,7 @@ void main() {
           profileService: profile,
           navigationService: nav,
           authService: auth,
+          villeService: villes,
         );
 
     test('peutAnnuler : uniquement à l\'ouverture via « Changer de mode »',

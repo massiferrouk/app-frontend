@@ -26,6 +26,7 @@ import '../services/notification_service.dart';
 import '../services/onboarding_service.dart';
 import '../services/profile_service.dart';
 import '../services/token_storage_service.dart';
+import '../services/ville_service.dart';
 
 final locator = StackedLocator.instance;
 
@@ -57,4 +58,5 @@ Future<void> setupLocator({
   locator.registerLazySingleton(() => MessageService());
   locator.registerLazySingleton(() => ChatSocketService());
   locator.registerLazySingleton(() => OnboardingService());
+  locator.registerLazySingleton(() => VilleService());
 }
