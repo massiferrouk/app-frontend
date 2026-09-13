@@ -102,6 +102,14 @@ class ChatViewModel extends BaseViewModel {
     if (conversation.logementId != null) return;
     final partnerId = conversation.partnerId;
     if (partnerId == null) return;
+    // Cache d'abord (chaud si l'onglet Matches a été ouvert) → la carte du match
+    // s'affiche tout de suite au lieu d'apparaître après coup (APP-122).
+    final cache = _matching.cachedSuggestions;
+    if (cache != null) {
+      final t = cache.where((s) => s.userId == partnerId);
+      matchPartenaire = t.isEmpty ? null : t.first;
+      notifyListeners();
+    }
     try {
       final suggestions = await _matching.getSuggestions();
       final trouve = suggestions.where((s) => s.userId == partnerId);
@@ -149,6 +157,12 @@ class ChatViewModel extends BaseViewModel {
   /// résolu depuis le partenaire si une conversation existe déjà (A-02).
   String _conversationId = '';
 
+  /// Annonce EFFECTIVE du fil, utilisée à l'envoi (APP-122). Part de l'annonce
+  /// reçue en argument, mais si on résout un fil « par personne » existant avec
+  /// ce partenaire, elle repasse à null — sinon l'envoi créait un second fil
+  /// (par annonce) au lieu d'écrire dans le fil du match déjà ouvert.
+  String? _logementIdEffectif;
+
   final inputController = TextEditingController();
 
   /// Vrai tant que `init()` n'a pas fini (résolution + chargement historique).
@@ -185,6 +199,7 @@ class ChatViewModel extends BaseViewModel {
   Future<void> init() async {
     currentUserId = await _profile.currentUserId();
     _conversationId = conversation.conversationId;
+    _logementIdEffectif = conversation.logementId;
     // Le contexte (annonce OU match) se charge en parallèle : il n'est pas
     // requis pour discuter. Les deux s'excluent — voir _loadMatch.
     unawaited(_loadLogement());
@@ -231,10 +246,24 @@ class ChatViewModel extends BaseViewModel {
   /// Cherche la conversation existante (même partenaire + même annonce) dans la
   /// liste donnée et mémorise son id. Retourne true si trouvée.
   bool _trouverConversation(List<ConversationSummary> convs) {
+    // 1. Correspondance exacte : même partenaire ET même annonce.
     for (final c in convs) {
       if (c.partnerId == conversation.partnerId &&
           c.logementId == conversation.logementId) {
         _conversationId = c.conversationId;
+        _logementIdEffectif = c.logementId;
+        return true;
+      }
+    }
+    // 2. Repli (APP-122) : un fil « par personne » (sans annonce) existe déjà
+    // avec ce partenaire → on le réutilise, même si on arrive depuis une
+    // annonce. Deux alternants n'ont qu'un seul fil, qu'on vienne de Matches ou
+    // de l'annonce de l'autre — évite d'ouvrir un chat vide en double, et
+    // l'envoi (via _logementIdEffectif) écrit bien dans CE fil.
+    for (final c in convs) {
+      if (c.partnerId == conversation.partnerId && c.logementId == null) {
+        _conversationId = c.conversationId;
+        _logementIdEffectif = null;
         return true;
       }
     }
@@ -304,7 +333,7 @@ class ChatViewModel extends BaseViewModel {
       final sent = await _messages.sendMessage(
         conversation.partnerId!,
         content,
-        logementId: conversation.logementId,
+        logementId: _logementIdEffectif,
       );
       // Le broadcast WebSocket arrive souvent AVANT cette réponse REST :
       // le message est alors déjà dans la liste (via onMessageReceived).

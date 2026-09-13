@@ -189,6 +189,49 @@ void main() {
       verifyNever(() => messageService.getConversations());
     });
 
+    // APP-122 — anti-doublon : contacter depuis une ANNONCE alors qu'un fil
+    // « par personne » (sans annonce) existe déjà avec ce partenaire → on
+    // réutilise ce fil, et l'envoi y va aussi (logementId null), au lieu de
+    // créer un second fil par annonce.
+    test('Contacter depuis une annonce : réutilise le fil par personne', () async {
+      const viaAnnonce = ConversationSummary(
+        conversationId: '',
+        partnerId: 'lui',
+        partnerName: 'Thomas D.',
+        lastMessage: '',
+        unreadCount: 0,
+        logementId: 'log-1', // on arrive depuis l'annonce
+      );
+      when(() => messageService.getConversations()).thenAnswer((_) async => [
+            const ConversationSummary(
+              conversationId: 'fil-match',
+              partnerId: 'lui',
+              partnerName: 'Thomas D.',
+              lastMessage: 'coucou',
+              unreadCount: 0,
+              // logementId null → fil par personne (match)
+            ),
+          ]);
+      when(() => messageService.getHistory('fil-match'))
+          .thenAnswer((_) async => [buildMessage(id: 'ancien')]);
+      when(() => messageService.sendMessage(any(), any(),
+              logementId: any(named: 'logementId')))
+          .thenAnswer((_) async => buildMessage(id: 'nouveau'));
+
+      final viewModel = makeViewModel(viaAnnonce);
+      await viewModel.init();
+
+      // On a rejoint le fil du match (pas un chat vide en double)
+      expect(viewModel.messages.map((m) => m.id), ['ancien']);
+      verify(() => messageService.getHistory('fil-match')).called(1);
+
+      // …et l'envoi va dans CE fil (logementId null), pas dans un fil annonce
+      viewModel.inputController.text = 'salut';
+      await viewModel.send();
+      verify(() => messageService.sendMessage('lui', 'salut', logementId: null))
+          .called(1);
+    });
+
     test(
         'ouverture via "Contacter" (id vide) mais conversation existante : '
         'charge l\'historique (A-02)', () async {

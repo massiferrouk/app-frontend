@@ -199,6 +199,14 @@ class LogementDetailViewModel extends BaseViewModel {
     if (currentUserId == null || currentUserId == logement.ownerId) return;
     try {
       if (await _profile.currentRole() != UserRole.ALTERNANT) return;
+      // Cache d'abord (chaud si l'onglet Matches a été ouvert) → le bloc
+      // compatibilité s'affiche tout de suite en ré-ouverture (APP-122).
+      final cache = _matching.cachedSuggestions;
+      if (cache != null) {
+        final m = cache.where((s) => s.userId == logement.ownerId);
+        matchAnnonceur = m.isEmpty ? null : m.first;
+        notifyListeners();
+      }
       final suggestions = await _matching.getSuggestions();
       final matches =
           suggestions.where((s) => s.userId == logement.ownerId);
