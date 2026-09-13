@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studup_app/shared/models/auth_response.dart';
 import 'package:studup_app/shared/models/enums.dart';
+import 'package:studup_app/shared/models/matching_suggestion.dart';
 import 'package:studup_app/shared/models/user.dart';
 
 void main() {
@@ -86,6 +87,52 @@ void main() {
 
       expect(response.accessToken, 'access-123');
       expect(response.refreshToken, 'refresh-456');
+    });
+  });
+
+  group('MatchingSuggestion', () {
+    // JSON minimal d'une suggestion, champ typePropose paramétrable.
+    Map<String, dynamic> json(Object? typePropose) => {
+          'profileId': 'p1',
+          'userId': 'u1',
+          'prenom': 'Ines',
+          'nom': 'Rousseau',
+          'villeA': 'Paris',
+          'villeB': 'Lyon',
+          'score': 0.0,
+          'scorePercent': 0,
+          'typePropose': typePropose,
+          'isMatchActif': true,
+          'scenarios': [
+            {
+              'type': 'RELAIS',
+              'message': 'Un seul logement pour vous deux…',
+              'economieMensuelle': 375,
+              'action': 'CONTACTER',
+            },
+          ],
+        };
+
+    test('fromJson accepte typePropose null (match par scénario) sans planter',
+        () {
+      // Régression APP-122 : le back renvoie typePropose=null pour un match
+      // gardé via ses scénarios (relais, rééquilibrage). Avant, le cast
+      // `as String` levait une TypeError et faisait planter TOUTE la liste —
+      // l'écran Matches affichait « Aucun match » alors qu'il y en avait.
+      final s = MatchingSuggestion.fromJson(json(null));
+
+      expect(s.typePropose, isNull);
+      expect(s.scenarios, hasLength(1));
+      // Les libellés qui dépendaient de typePropose ont un repli, pas un crash.
+      expect(s.typeLabel, 'Arrangement possible');
+      expect(s.arrangementLabel, 'Arrangement possible');
+    });
+
+    test('fromJson parse un typePropose renseigné normalement', () {
+      final s = MatchingSuggestion.fromJson(json('COLOCATION_TOURNANTE'));
+
+      expect(s.typePropose, AccordType.COLOCATION_TOURNANTE);
+      expect(s.typeLabel, 'Colocation tournante');
     });
   });
 }

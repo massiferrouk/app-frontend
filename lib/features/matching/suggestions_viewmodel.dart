@@ -92,6 +92,11 @@ class SuggestionsViewModel extends BaseViewModel {
       errorMessage = null;
     } on ApiException catch (e) {
       errorMessage = e.message;
+    } catch (_) {
+      // Filet de sécurité : une réponse inattendue (ex. champ mal typé au
+      // parsing) ne doit pas retomber sur l'état « Aucun match » — qui laisse
+      // croire qu'il n'y a pas de match. On affiche l'erreur honnête + Réessayer.
+      errorMessage = 'Impossible de charger tes matches pour le moment.';
     } finally {
       setBusy(false);
     }

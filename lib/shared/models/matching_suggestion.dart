@@ -13,7 +13,13 @@ class MatchingSuggestion {
   final String villeB;
   final double score;
   final int scorePercent;
-  final AccordType typePropose;
+
+  /// Type d'arrangement principal. null quand le match passe par un scénario
+  /// (relais, rééquilibrage) plutôt qu'un échange/coloc direct : le backend
+  /// renvoie alors typePropose=null mais garde la suggestion via ses scénarios
+  /// (APP-122). Un seul de ces matchs faisait planter tout le parsing de la
+  /// liste — d'où « Aucun match » alors que le back renvoyait bien des matchs.
+  final AccordType? typePropose;
 
   /// true = les logements nécessaires sont publiés, accord signable.
   /// false = match potentiel : profils compatibles, logement(s) manquant(s).
@@ -56,7 +62,7 @@ class MatchingSuggestion {
     required this.villeB,
     required this.score,
     required this.scorePercent,
-    required this.typePropose,
+    this.typePropose,
     required this.isMatchActif,
     this.messageMatchPotentiel,
     required this.nbSemainesEchange,
@@ -82,7 +88,9 @@ class MatchingSuggestion {
       villeB: json['villeB'] as String,
       score: (json['score'] as num).toDouble(),
       scorePercent: (json['scorePercent'] as num).toInt(),
-      typePropose: AccordType.fromJson(json['typePropose'] as String),
+      typePropose: json['typePropose'] == null
+          ? null
+          : AccordType.fromJson(json['typePropose'] as String),
       isMatchActif: json['isMatchActif'] as bool? ?? false,
       messageMatchPotentiel: json['messageMatchPotentiel'] as String?,
       nbSemainesEchange: (json['nbSemainesEchange'] as num? ?? 0).toInt(),
@@ -117,6 +125,10 @@ class MatchingSuggestion {
   Scenario? get scenarioPrincipal =>
       scenarios.isEmpty ? null : scenarios.first;
 
+  /// Libellé du type d'arrangement, avec repli pour les matchs par scénario
+  /// (typePropose null) — « Arrangement possible » plutôt qu'un plantage.
+  String get typeLabel => typePropose?.label ?? 'Arrangement possible';
+
   /// true si une économie chiffrée peut être affichée
   bool get hasEconomie => economieMensuelle > 0;
 
@@ -137,8 +149,8 @@ class MatchingSuggestion {
   /// pastille de type + résumé des semaines sur les cartes (APP-122).
   String get arrangementLabel {
     final sem = nbSemainesEchange + nbSemainesColocation;
-    if (sem <= 0) return typePropose.label;
-    return '${typePropose.label} · $sem semaine${sem > 1 ? 's' : ''}';
+    if (sem <= 0) return typeLabel;
+    return '$typeLabel · $sem semaine${sem > 1 ? 's' : ''}';
   }
 
   /// Nom affiché : "Thomas D."
