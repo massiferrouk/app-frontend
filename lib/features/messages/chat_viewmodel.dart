@@ -102,6 +102,14 @@ class ChatViewModel extends BaseViewModel {
     if (conversation.logementId != null) return;
     final partnerId = conversation.partnerId;
     if (partnerId == null) return;
+    // Cache d'abord (chaud si l'onglet Matches a été ouvert) → la carte du match
+    // s'affiche tout de suite au lieu d'apparaître après coup (APP-122).
+    final cache = _matching.cachedSuggestions;
+    if (cache != null) {
+      final t = cache.where((s) => s.userId == partnerId);
+      matchPartenaire = t.isEmpty ? null : t.first;
+      notifyListeners();
+    }
     try {
       final suggestions = await _matching.getSuggestions();
       final trouve = suggestions.where((s) => s.userId == partnerId);
