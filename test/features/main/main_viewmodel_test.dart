@@ -4,6 +4,7 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:studup_app/core/api/api_exception.dart';
 import 'package:studup_app/features/main/main_viewmodel.dart';
 import 'package:studup_app/services/chat_socket_service.dart';
+import 'package:studup_app/services/matching_service.dart';
 import 'package:studup_app/services/message_service.dart';
 import 'package:studup_app/services/notification_service.dart';
 import 'package:studup_app/services/profile_service.dart';
@@ -20,6 +21,8 @@ class MockChatSocketService extends Mock implements ChatSocketService {}
 
 class MockNotificationService extends Mock implements NotificationService {}
 
+class MockMatchingService extends Mock implements MatchingService {}
+
 class MockNavigationService extends Mock implements NavigationService {}
 
 void main() {
@@ -27,6 +30,7 @@ void main() {
   late MockMessageService messages;
   late MockChatSocketService socket;
   late MockNotificationService notifications;
+  late MockMatchingService matching;
   late MockNavigationService navigation;
   late MainViewModel viewModel;
 
@@ -52,6 +56,7 @@ void main() {
     messages = MockMessageService();
     socket = MockChatSocketService();
     notifications = MockNotificationService();
+    matching = MockMatchingService();
     navigation = MockNavigationService();
     // Par défaut : aucune conversation ni notification (badges à 0)
     when(() => messages.getConversations()).thenAnswer((_) async => []);
@@ -61,11 +66,13 @@ void main() {
         .thenAnswer((_) {});
     when(() => socket.subscribeToUserNotifications(any(), any()))
         .thenAnswer((_) {});
+    when(() => matching.refreshEnFond()).thenAnswer((_) async {});
     viewModel = MainViewModel(
       profileService: profile,
       messageService: messages,
       notificationService: notifications,
       chatSocketService: socket,
+      matchingService: matching,
       navigationService: navigation,
     );
   });
@@ -266,6 +273,57 @@ void main() {
 
       // Badge mis à jour instantanément, sans changement d'onglet
       expect(viewModel.notificationsNonLues, 1);
+    });
+
+    test('alternant : une notif NOUVEAU_MATCH rafraîchit les suggestions en fond',
+        () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+      void Function(AppNotification)? onNotif;
+      when(() => socket.subscribeToUserNotifications(any(), any()))
+          .thenAnswer((invocation) {
+        onNotif = invocation.positionalArguments[1]
+            as void Function(AppNotification);
+      });
+
+      await viewModel.init();
+
+      onNotif!(AppNotification(
+        id: 'n1',
+        type: NotificationType.NOUVEAU_MATCH,
+        title: 'Nouveau match !',
+        body: 'Un profil compatible',
+        isRead: false,
+        createdAt: DateTime.now(),
+      ));
+
+      // L'onglet Matches (resté monté) doit se recharger sans pull-to-refresh.
+      verify(() => matching.refreshEnFond()).called(1);
+    });
+
+    test('un autre type de notif ne déclenche pas de refresh matching',
+        () async {
+      when(() => profile.currentRole())
+          .thenAnswer((_) async => UserRole.ALTERNANT);
+      void Function(AppNotification)? onNotif;
+      when(() => socket.subscribeToUserNotifications(any(), any()))
+          .thenAnswer((invocation) {
+        onNotif = invocation.positionalArguments[1]
+            as void Function(AppNotification);
+      });
+
+      await viewModel.init();
+
+      onNotif!(AppNotification(
+        id: 'n2',
+        type: NotificationType.NOUVEAU_MESSAGE,
+        title: 'Nouveau message',
+        body: 'Coucou',
+        isRead: false,
+        createdAt: DateTime.now(),
+      ));
+
+      verifyNever(() => matching.refreshEnFond());
     });
   });
 }

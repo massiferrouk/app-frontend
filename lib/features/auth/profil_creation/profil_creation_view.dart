@@ -9,7 +9,7 @@ import '../../../shared/models/enums.dart';
 import 'profil_creation_viewmodel.dart';
 
 /// Formulaire de création — ou de modification (APP-117 · A-04) — du profil
-/// alternant : villes, école, entreprise, rythme, période d'alternance.
+/// alternant : villes (école / entreprise), rythme, période d'alternance.
 class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
   /// Profil à modifier — null pour une création (parcours d'inscription).
   final AlternantProfile? profile;
@@ -62,31 +62,21 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
               const SizedBox(height: AppSpacing.lg),
 
               // ─── Villes ─────────────────────────────────────
-              TextField(
+              // Autocomplétion sur la liste des communes (APP-122) : on
+              // sélectionne une ville canonique au lieu de la taper librement,
+              // pour ne pas rater un match à cause d'une faute de frappe.
+              _VilleField(
                 controller: viewModel.villeAController,
-                textCapitalization: TextCapitalization.words,
-                decoration:
-                    const InputDecoration(hintText: 'Ville de ton école'),
+                focusNode: viewModel.villeAFocus,
+                hint: 'Ville de ton école',
+                rechercher: viewModel.rechercherVilles,
               ),
               const SizedBox(height: AppSpacing.md),
-              TextField(
+              _VilleField(
                 controller: viewModel.villeBController,
-                textCapitalization: TextCapitalization.words,
-                decoration:
-                    const InputDecoration(hintText: 'Ville de ton entreprise'),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // ─── École / entreprise ─────────────────────────
-              TextField(
-                controller: viewModel.ecoleController,
-                decoration: const InputDecoration(hintText: 'Nom de l\'école'),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: viewModel.entrepriseController,
-                decoration:
-                    const InputDecoration(hintText: 'Nom de l\'entreprise'),
+                focusNode: viewModel.villeBFocus,
+                hint: 'Ville de ton entreprise',
+                rechercher: viewModel.rechercherVilles,
               ),
               const SizedBox(height: AppSpacing.lg),
 
@@ -207,6 +197,74 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
   ProfilCreationViewModel viewModelBuilder(BuildContext context) =>
       ProfilCreationViewModel(
           existingProfile: profile, roleAnnulation: roleAnnulation);
+}
+
+/// Champ ville avec autocomplétion sur la liste des communes (APP-122).
+/// L'utilisateur tape le début du nom et choisit dans la liste filtrée — ou
+/// sélectionne directement. Le controller reçoit le nom canonique choisi.
+class _VilleField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hint;
+  final Future<Iterable<String>> Function(String) rechercher;
+
+  const _VilleField({
+    required this.controller,
+    required this.focusNode,
+    required this.hint,
+    required this.rechercher,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return RawAutocomplete<String>(
+      textEditingController: controller,
+      focusNode: focusNode,
+      optionsBuilder: (value) => rechercher(value.text),
+      fieldViewBuilder:
+          (context, textController, node, onFieldSubmitted) {
+        return TextField(
+          controller: textController,
+          focusNode: node,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            hintText: hint,
+            suffixIcon: const Icon(Icons.search, size: 20),
+          ),
+          onSubmitted: (_) => onFieldSubmitted(),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 420),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, i) {
+                  final ville = options.elementAt(i);
+                  return InkWell(
+                    onTap: () => onSelected(ville),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      child: Text(ville,
+                          style: Theme.of(context).textTheme.bodyMedium),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// Champ date cliquable affichant la valeur choisie

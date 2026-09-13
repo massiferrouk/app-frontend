@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -52,6 +53,9 @@ void main() {
   setUp(() {
     matchingService = MockMatchingService();
     navigationService = MockNavigationService();
+    // Le VM écoute matching.revision (rafraîchissement temps réel APP-122).
+    when(() => matchingService.revision)
+        .thenReturn(ValueNotifier<int>(0));
     viewModel = SuggestionsViewModel(
       matchingService: matchingService,
       logementService: MockLogementService(),

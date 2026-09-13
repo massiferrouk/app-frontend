@@ -31,8 +31,6 @@ void main() {
     'userId': 'user-1',
     'villeA': 'Paris',
     'villeB': 'Lyon',
-    'ecole': 'YNOV Paris',
-    'entreprise': 'ACME Lyon',
     'dateDebut': '2026-09-01',
     'dateFin': '2027-08-31',
     'rythme': 'SEMAINE_3_1',
@@ -90,8 +88,6 @@ void main() {
       final profile = await service.createAlternantProfile(
         villeA: 'Paris',
         villeB: 'Lyon',
-        ecole: 'YNOV Paris',
-        entreprise: 'ACME Lyon',
         dateDebut: DateTime(2026, 9, 1),
         dateFin: DateTime(2027, 8, 31),
         rythme: RythmeAlternance.SEMAINE_3_1,
@@ -124,8 +120,6 @@ void main() {
       final profile = await service.updateAlternantProfile(
         villeA: 'Bordeaux',
         villeB: 'Lyon',
-        ecole: 'YNOV Bordeaux',
-        entreprise: 'ACME Lyon',
         dateDebut: DateTime(2026, 9, 1),
         dateFin: DateTime(2027, 8, 31),
         rythme: RythmeAlternance.SEMAINE_3_1,
@@ -155,7 +149,7 @@ void main() {
       final profile = await service.getMyAlternantProfile();
 
       expect(profile, isNotNull);
-      expect(profile!.ecole, 'YNOV Paris');
+      expect(profile!.villeA, 'Paris');
     });
 
     test('retourne null sur 404 (pas encore de profil)', () async {
