@@ -22,6 +22,22 @@ class VilleService {
     return _villes!;
   }
 
+  /// Résout une saisie libre vers le nom OFFICIEL de la commune correspondante
+  /// (comparaison insensible à la casse, aux accents et aux séparateurs), ou
+  /// null si aucune commune ne correspond exactement (APP-122).
+  ///
+  /// C'est ce qui empêche une faute de frappe de passer : « marseille » →
+  /// « Marseille » (accepté et canonicalisé), mais « marseile » → null (rejeté).
+  Future<String?> resoudre(String saisie) async {
+    final cible = _normaliser(saisie);
+    if (cible.isEmpty) return null;
+    final villes = await _chargerVilles();
+    for (final v in villes) {
+      if (_normaliser(v) == cible) return v; // orthographe officielle
+    }
+    return null;
+  }
+
   /// Communes dont le nom CONTIENT [query] (insensible à la casse, aux accents
   /// et aux séparateurs « - / ' »). Query vide → début de liste. Résultats
   /// plafonnés à [limite] pour garder le menu déroulant réactif.

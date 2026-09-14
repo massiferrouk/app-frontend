@@ -49,11 +49,22 @@ class ProfilCreationViewModel extends BaseViewModel {
     if (p != null) {
       villeAController.text = p.villeA;
       villeBController.text = p.villeB;
+      // Villes existantes (déjà enregistrées) réputées valides → ✓ direct.
+      villeAValide = true;
+      villeBValide = true;
       selectedRythme = p.rythme;
       selectedPremiereSemaine = p.premiereSemaine;
       dateDebut = p.dateDebut;
       dateFin = p.dateFin;
     }
+    // Validation « en direct » (APP-122) : dès qu'un champ ville perd le focus,
+    // on vérifie qu'il correspond à une vraie commune.
+    villeAFocus.addListener(() {
+      if (!villeAFocus.hasFocus) verifierVilleA();
+    });
+    villeBFocus.addListener(() {
+      if (!villeBFocus.hasFocus) verifierVilleB();
+    });
   }
 
   bool get isEdition => existingProfile != null;
@@ -84,6 +95,25 @@ class ProfilCreationViewModel extends BaseViewModel {
     }
   }
 
+  /// Bascule le compte en mode étudiant depuis le blocage « même ville »
+  /// (APP-122) : l'alternant mono-ville n'a pas besoin d'un profil d'alternance,
+  /// il lui faut juste chercher un logement. On change le rôle côté serveur,
+  /// on rafraîchit la session (le token doit porter le nouveau rôle), puis on
+  /// va à l'accueil — qui affichera le shell étudiant.
+  Future<void> passerEnModeEtudiant() async {
+    if (isBusy) return;
+    setBusy(true);
+    try {
+      await _profile.changeMode(UserRole.ETUDIANT);
+      await _auth.refreshSession();
+      await _nav.clearStackAndShow(Routes.mainView);
+    } on ApiException catch (e) {
+      errorMessage = e.message;
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   final villeAController = TextEditingController();
   final villeBController = TextEditingController();
@@ -97,6 +127,48 @@ class ProfilCreationViewModel extends BaseViewModel {
   Future<Iterable<String>> rechercherVilles(String query) =>
       _villes.rechercher(query);
 
+  // Retour « en direct » sur chaque ville (APP-122) : erreur = message rouge
+  // sous le champ ; valide = ville reconnue (✓ vert). La liste guide, mais elle
+  // n'empêchait pas une faute de frappe (« marseile ») de passer : on la bloque.
+  String? villeAErreur;
+  String? villeBErreur;
+  bool villeAValide = false;
+  bool villeBValide = false;
+
+  Future<void> verifierVilleA() =>
+      _verifierVille(villeAController, (err, ok) {
+        villeAErreur = err;
+        villeAValide = ok;
+      });
+
+  Future<void> verifierVilleB() =>
+      _verifierVille(villeBController, (err, ok) {
+        villeBErreur = err;
+        villeBValide = ok;
+      });
+
+  /// Résout la ville saisie contre la liste des communes. Si elle correspond,
+  /// on la réécrit à l'orthographe officielle (« marseille » → « Marseille »)
+  /// et on marque valide ; sinon on affiche l'erreur. Champ vide = pas d'erreur
+  /// ici (le « requis » est géré par la validation globale).
+  Future<void> _verifierVille(
+      TextEditingController c, void Function(String?, bool) setEtat) async {
+    final saisie = c.text.trim();
+    if (saisie.isEmpty) {
+      setEtat(null, false);
+      notifyListeners();
+      return;
+    }
+    final officiel = await _villes.resoudre(saisie);
+    if (officiel == null) {
+      setEtat('Choisis une ville dans la liste', false);
+    } else {
+      if (officiel != c.text) c.text = officiel; // canonicalisation
+      setEtat(null, true);
+    }
+    notifyListeners();
+  }
+
   RythmeAlternance selectedRythme = RythmeAlternance.SEMAINE_1_1;
 
   // Première semaine du cycle : école ou entreprise (APP-110).
@@ -108,6 +180,10 @@ class ProfilCreationViewModel extends BaseViewModel {
   DateTime? dateFin;
 
   String? errorMessage;
+
+  /// true quand l'échec vient d'une même ville deux fois : on affiche alors un
+  /// bouton « Passer en mode étudiant » sous le message (APP-122).
+  bool proposerModeEtudiant = false;
 
   void selectRythme(RythmeAlternance? rythme) {
     if (rythme == null) return;
@@ -144,12 +220,18 @@ class ProfilCreationViewModel extends BaseViewModel {
             villeBController.text, 'Le nom de la ville de l\'entreprise');
     if (requiredError != null) return requiredError;
 
-    // Les deux villes doivent être différentes, sinon il n'y a rien à
-    // échanger (même contrainte CHECK côté BDD)
+    // Les deux villes doivent être différentes (même contrainte CHECK en BDD).
+    // Cas fréquent et mal accompagné (APP-122) : un alternant dont l'école et
+    // l'entreprise sont dans LA MÊME ville n'a pas le problème des deux
+    // loyers → le mode alternant ne lui sert à rien. On l'oriente vers le mode
+    // étudiant (message + bouton) au lieu d'un « villes différentes » sec.
     final villeA = villeAController.text.trim().toLowerCase();
     final villeB = villeBController.text.trim().toLowerCase();
     if (villeA == villeB) {
-      return 'Les deux villes doivent être différentes';
+      proposerModeEtudiant = true;
+      return 'École et entreprise dans la même ville ? Le mode alternant sert à '
+          'échanger un logement entre deux villes. Pour chercher un logement '
+          'dans ta ville, passe en mode étudiant.';
     }
 
     if (dateDebut == null || dateFin == null) {
@@ -162,7 +244,17 @@ class ProfilCreationViewModel extends BaseViewModel {
   }
 
   Future<void> submit() async {
+    proposerModeEtudiant = false;
+    // Filet de sécurité (APP-122) : on résout/canonicalise les deux villes.
+    // Bloque une faute de frappe non corrigée en quittant le champ.
+    await verifierVilleA();
+    await verifierVilleB();
+
     errorMessage = _validate();
+    if (errorMessage == null &&
+        (villeAErreur != null || villeBErreur != null)) {
+      errorMessage = 'Choisis des villes valides dans la liste';
+    }
     if (errorMessage != null) {
       notifyListeners();
       return;

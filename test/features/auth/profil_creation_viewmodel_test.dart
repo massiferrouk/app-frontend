@@ -49,6 +49,10 @@ void main() {
     nav = MockNavigationService();
     auth = MockAuthService();
     villes = MockVilleService();
+    // Par défaut : toute ville saisie est reconnue et renvoyée telle quelle
+    // (les cas d'erreur sont stubés spécifiquement dans leurs tests).
+    when(() => villes.resoudre(any()))
+        .thenAnswer((inv) async => inv.positionalArguments[0] as String);
     viewModel = ProfilCreationViewModel(
       profileService: profile,
       navigationService: nav,
@@ -96,8 +100,9 @@ void main() {
 
       await viewModel.submit();
 
-      expect(
-          viewModel.errorMessage, 'Les deux villes doivent être différentes');
+      // Même ville → on oriente vers le mode étudiant (message + bouton)
+      expect(viewModel.errorMessage, contains('passe en mode étudiant'));
+      expect(viewModel.proposerModeEtudiant, isTrue);
     });
 
     test('dates manquantes : erreur', () async {
@@ -119,6 +124,42 @@ void main() {
 
       expect(viewModel.errorMessage,
           'La date de début doit être avant la date de fin');
+    });
+
+    test('ville inexistante : bloque, erreur sous le champ, aucun appel API',
+        () async {
+      when(() => villes.resoudre('Marseile')).thenAnswer((_) async => null);
+      viewModel.villeAController.text = 'Marseile';
+      viewModel.villeBController.text = 'Lyon';
+      viewModel.setDateDebut(DateTime(2026, 9, 1));
+      viewModel.setDateFin(DateTime(2027, 8, 31));
+
+      await viewModel.submit();
+
+      expect(viewModel.villeAErreur, 'Choisis une ville dans la liste');
+      expect(viewModel.villeAValide, isFalse);
+      expect(viewModel.errorMessage, isNotNull);
+      verifyNever(() => profile.createAlternantProfile(
+            villeA: any(named: 'villeA'),
+            villeB: any(named: 'villeB'),
+            dateDebut: any(named: 'dateDebut'),
+            dateFin: any(named: 'dateFin'),
+            rythme: any(named: 'rythme'),
+            premiereSemaine: any(named: 'premiereSemaine'),
+          ));
+    });
+
+    test('ville en minuscules : canonicalisée à l\'orthographe officielle',
+        () async {
+      when(() => villes.resoudre('marseille'))
+          .thenAnswer((_) async => 'Marseille');
+      viewModel.villeAController.text = 'marseille';
+
+      await viewModel.verifierVilleA();
+
+      expect(viewModel.villeAController.text, 'Marseille');
+      expect(viewModel.villeAValide, isTrue);
+      expect(viewModel.villeAErreur, isNull);
     });
   });
 
@@ -354,6 +395,29 @@ void main() {
 
       verifyNever(() => profile.changeMode(any()));
       verifyNever(() => nav.back());
+    });
+  });
+
+  group('même ville → passer en mode étudiant (APP-122)', () {
+    test('change le rôle, rafraîchit la session, va à l\'accueil', () async {
+      when(() => profile.changeMode(UserRole.ETUDIANT))
+          .thenAnswer((_) async => User.fromJson(const {
+                'id': 'u1',
+                'email': 'x@studup.fr',
+                'firstName': 'X',
+                'lastName': 'Y',
+                'role': 'ETUDIANT',
+              }));
+      when(() => auth.refreshSession()).thenAnswer((_) async {});
+      when(() => nav.clearStackAndShow(any())).thenAnswer((_) async => null);
+
+      await viewModel.passerEnModeEtudiant();
+
+      verifyInOrder([
+        () => profile.changeMode(UserRole.ETUDIANT),
+        () => auth.refreshSession(),
+        () => nav.clearStackAndShow(Routes.mainView),
+      ]);
     });
   });
 }
