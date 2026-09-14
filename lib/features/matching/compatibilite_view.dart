@@ -11,7 +11,7 @@ import '../../shared/models/semaine_compatibilite.dart';
 import 'compatibilite_viewmodel.dart';
 
 /// Calendrier de compatibilité (refonte APP-100).
-/// Lecture en deux colonnes « Toi | {prénom} » : une pastille ville par
+/// Lecture en deux colonnes « Moi | {prénom} » : une pastille ville par
 /// personne et par semaine. Le texte explicatif vit dans une légende fixe
 /// et une bottom sheet au tap — plus jamais répété sur les cartes.
 class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
@@ -88,7 +88,7 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
           children: [
             _EnTete(viewModel: viewModel),
 
-            // ─── En-tête de colonnes Toi | Lui ──────────────────
+            // ─── En-tête de colonnes Moi | Lui ──────────────────
             Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.screenPadding),
@@ -984,7 +984,7 @@ class _MoisHeaderDelegate extends SliverPersistentHeaderDelegate {
       oldDelegate.label != label;
 }
 
-/// En-tête des colonnes : Semaine | Toi | {prénom}
+/// En-tête des colonnes : Semaine | Moi | {prénom}
 class _ColonnesHeader extends StatelessWidget {
   final String autreNom;
 
@@ -1003,7 +1003,7 @@ class _ColonnesHeader extends StatelessWidget {
               style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
         ),
         const Expanded(
-            child: Center(child: Text('Toi', style: _styleNom))),
+            child: Center(child: Text('Moi', style: _styleNom))),
         Expanded(
           child: Center(
             child: Text(autreNom,
@@ -1237,7 +1237,7 @@ class _SemaineDetailSheet extends StatelessWidget {
               children: [
                 Expanded(
                   child: _PositionCard(
-                      nom: 'Toi', ville: semaine.villeAlternantA),
+                      nom: 'Moi', ville: semaine.villeAlternantA),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
