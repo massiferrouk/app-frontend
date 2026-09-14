@@ -365,12 +365,21 @@ class _CompactMatchCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                // Score en neutre : lisible par sa taille, pas par sa couleur
-                Text('${suggestion.scorePercent}%',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: neutre)),
+                // Score en neutre : lisible par sa taille, pas par sa couleur.
+                // Légende « compatibilité » pour dire ce que le % mesure (APP-122).
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('${suggestion.scorePercent}%',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: neutre)),
+                    const Text('compatibilité',
+                        style: TextStyle(
+                            fontSize: 9, color: AppColors.textTertiary)),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),

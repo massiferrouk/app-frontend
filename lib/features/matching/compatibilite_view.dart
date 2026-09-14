@@ -299,6 +299,31 @@ class _EnTete extends StatelessWidget {
         ),
       ),
 
+        // ─── Ce que mesure le score affiché en haut (APP-122) ──
+        // Le pourcentage = COMPATIBILITÉ des rythmes, pas un échange déjà
+        // signé : part des semaines où un échange ou une coloc est possible.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+              AppSpacing.screenPadding, AppSpacing.sm),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline,
+                  size: 14, color: AppColors.textTertiary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${s.scorePercent}% de compatibilité : part des semaines '
+                  'où un échange ou une coloc est possible.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppColors.textTertiary),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // ─── Barre de synthèse : économie + accès aux options ──
         if (s.scenarios.isNotEmpty || s.hasEconomie)
           Padding(
