@@ -408,7 +408,7 @@ class _BarreOptions extends StatelessWidget {
                           color: accent),
                     ),
                     if (meilleurGain > 0)
-                      Text('jusqu\'à $meilleurGain €/mois',
+                      Text('jusqu\'à $meilleurGain €/mois · estimation',
                           style: const TextStyle(
                               fontSize: 12, color: AppColors.textSecondary)),
                   ],
