@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#27AE60",
-    "description": "La plateforme d'échange de logement entre alternants : trouve un alternant au rythme complémentaire et divise tes loyers.",
+    "description": "L'application de logement pour étudiants et alternants. Trouve ton logement ; et pour les alternants partagés entre deux villes, échange ton logement avec un profil au rythme complémentaire et divise tes loyers.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
