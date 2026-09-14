@@ -170,8 +170,10 @@ class _RegisterForm extends StatelessWidget {
 /// Une ligne d'explication du rôle sélectionné (englobe tous les cas).
 String _roleHelper(UserRole role) => switch (role) {
       UserRole.ALTERNANT =>
-        'Deux villes ? Échange ou partage ton logement pour payer moins.',
-      UserRole.ETUDIANT => 'Trouve un logement à louer, près de ton école.',
+        'Tu vis entre DEUX villes différentes : échange ou partage ton '
+            'logement pour payer moins.',
+      UserRole.ETUDIANT =>
+        'Une seule ville : trouve un logement à louer près de ton école.',
       UserRole.PROPRIETAIRE => 'Loue ton logement à des étudiants vérifiés.',
       UserRole.ADMIN => '',
     };

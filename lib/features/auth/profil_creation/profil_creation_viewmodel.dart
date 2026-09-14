@@ -95,6 +95,25 @@ class ProfilCreationViewModel extends BaseViewModel {
     }
   }
 
+  /// Bascule le compte en mode étudiant depuis le blocage « même ville »
+  /// (APP-122) : l'alternant mono-ville n'a pas besoin d'un profil d'alternance,
+  /// il lui faut juste chercher un logement. On change le rôle côté serveur,
+  /// on rafraîchit la session (le token doit porter le nouveau rôle), puis on
+  /// va à l'accueil — qui affichera le shell étudiant.
+  Future<void> passerEnModeEtudiant() async {
+    if (isBusy) return;
+    setBusy(true);
+    try {
+      await _profile.changeMode(UserRole.ETUDIANT);
+      await _auth.refreshSession();
+      await _nav.clearStackAndShow(Routes.mainView);
+    } on ApiException catch (e) {
+      errorMessage = e.message;
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   final villeAController = TextEditingController();
   final villeBController = TextEditingController();
@@ -162,6 +181,10 @@ class ProfilCreationViewModel extends BaseViewModel {
 
   String? errorMessage;
 
+  /// true quand l'échec vient d'une même ville deux fois : on affiche alors un
+  /// bouton « Passer en mode étudiant » sous le message (APP-122).
+  bool proposerModeEtudiant = false;
+
   void selectRythme(RythmeAlternance? rythme) {
     if (rythme == null) return;
     selectedRythme = rythme;
@@ -197,12 +220,18 @@ class ProfilCreationViewModel extends BaseViewModel {
             villeBController.text, 'Le nom de la ville de l\'entreprise');
     if (requiredError != null) return requiredError;
 
-    // Les deux villes doivent être différentes, sinon il n'y a rien à
-    // échanger (même contrainte CHECK côté BDD)
+    // Les deux villes doivent être différentes (même contrainte CHECK en BDD).
+    // Cas fréquent et mal accompagné (APP-122) : un alternant dont l'école et
+    // l'entreprise sont dans LA MÊME ville n'a pas le problème des deux
+    // loyers → le mode alternant ne lui sert à rien. On l'oriente vers le mode
+    // étudiant (message + bouton) au lieu d'un « villes différentes » sec.
     final villeA = villeAController.text.trim().toLowerCase();
     final villeB = villeBController.text.trim().toLowerCase();
     if (villeA == villeB) {
-      return 'Les deux villes doivent être différentes';
+      proposerModeEtudiant = true;
+      return 'École et entreprise dans la même ville ? Le mode alternant sert à '
+          'échanger un logement entre deux villes. Pour chercher un logement '
+          'dans ta ville, passe en mode étudiant.';
     }
 
     if (dateDebut == null || dateFin == null) {
@@ -215,6 +244,7 @@ class ProfilCreationViewModel extends BaseViewModel {
   }
 
   Future<void> submit() async {
+    proposerModeEtudiant = false;
     // Filet de sécurité (APP-122) : on résout/canonicalise les deux villes.
     // Bloque une faute de frappe non corrigée en quittant le champ.
     await verifierVilleA();

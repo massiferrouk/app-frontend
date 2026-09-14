@@ -161,6 +161,18 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
                   viewModel.errorMessage!,
                   style: const TextStyle(color: AppColors.error, fontSize: 13),
                 ),
+                // Cas « même ville » : on donne une porte de sortie actionnable
+                // vers le mode étudiant (APP-122).
+                if (viewModel.proposerModeEtudiant) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  OutlinedButton.icon(
+                    onPressed: viewModel.isBusy
+                        ? null
+                        : viewModel.passerEnModeEtudiant,
+                    icon: const Icon(Icons.school_outlined, size: 18),
+                    label: const Text('Passer en mode étudiant'),
+                  ),
+                ],
               ],
 
               const SizedBox(height: AppSpacing.xl),

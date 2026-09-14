@@ -100,8 +100,9 @@ void main() {
 
       await viewModel.submit();
 
-      expect(
-          viewModel.errorMessage, 'Les deux villes doivent être différentes');
+      // Même ville → on oriente vers le mode étudiant (message + bouton)
+      expect(viewModel.errorMessage, contains('passe en mode étudiant'));
+      expect(viewModel.proposerModeEtudiant, isTrue);
     });
 
     test('dates manquantes : erreur', () async {
@@ -394,6 +395,29 @@ void main() {
 
       verifyNever(() => profile.changeMode(any()));
       verifyNever(() => nav.back());
+    });
+  });
+
+  group('même ville → passer en mode étudiant (APP-122)', () {
+    test('change le rôle, rafraîchit la session, va à l\'accueil', () async {
+      when(() => profile.changeMode(UserRole.ETUDIANT))
+          .thenAnswer((_) async => User.fromJson(const {
+                'id': 'u1',
+                'email': 'x@studup.fr',
+                'firstName': 'X',
+                'lastName': 'Y',
+                'role': 'ETUDIANT',
+              }));
+      when(() => auth.refreshSession()).thenAnswer((_) async {});
+      when(() => nav.clearStackAndShow(any())).thenAnswer((_) async => null);
+
+      await viewModel.passerEnModeEtudiant();
+
+      verifyInOrder([
+        () => profile.changeMode(UserRole.ETUDIANT),
+        () => auth.refreshSession(),
+        () => nav.clearStackAndShow(Routes.mainView),
+      ]);
     });
   });
 }
