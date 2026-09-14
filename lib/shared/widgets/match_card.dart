@@ -99,10 +99,21 @@ class MatchCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(
-                  '${suggestion.scorePercent}%',
-                  style: TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.w700, color: neutre),
+                // Score + légende de ce qu'il mesure (APP-122)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${suggestion.scorePercent}%',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: neutre),
+                    ),
+                    const Text('compatibilité',
+                        style: TextStyle(
+                            fontSize: 9, color: AppColors.textTertiary)),
+                  ],
                 ),
               ],
             ),

@@ -99,11 +99,15 @@ class HomeAlternantView extends StackedView<HomeAlternantViewModel> {
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: _StatCard(
-                value: '${dash.economiePossibleMax.toStringAsFixed(0)} €',
+                // Pas de match chiffré → « — » plutôt qu'un « 0 € » démotivant
+                // (APP-122). On n'invente pas d'économie sans logement réel.
+                value: dash.economiePossibleMax > 0
+                    ? '${dash.economiePossibleMax.toStringAsFixed(0)} €'
+                    : '—',
                 label: 'économies possibles',
                 valueColor: dash.economiePossibleMax > 0
                     ? AppColors.echange
-                    : AppColors.textPrimary,
+                    : AppColors.textTertiary,
               ),
             ),
           ],

@@ -132,17 +132,19 @@ class MatchingSuggestion {
   /// true si une économie chiffrée peut être affichée
   bool get hasEconomie => economieMensuelle > 0;
 
-  /// Phrase d'économie selon le type d'accord (APP-103)
+  /// Phrase d'économie selon le type d'accord (APP-103). Le montant est une
+  /// ESTIMATION indicative (APP-122) : le vrai gain se décide entre les deux
+  /// alternants dans la messagerie — on le dit explicitement.
   String get economieLabel => typePropose == AccordType.COLOCATION_TOURNANTE
-      ? 'Divisez vos loyers : ≈ $economieMensuelle €/mois économisés chacun'
-      : 'Économise ≈ $economieMensuelle €/mois';
+      ? 'Divisez vos loyers : ≈ $economieMensuelle €/mois économisés chacun (estimation)'
+      : 'Économise ≈ $economieMensuelle €/mois (estimation)';
 
   /// Version courte pour les cartes de match, allégées (APP-122) — le vert de
   /// l'économie est le seul repère coloré, inutile de le noyer dans une phrase.
   String get economieLabelCourt =>
       typePropose == AccordType.COLOCATION_TOURNANTE
-          ? '≈ $economieMensuelle €/mois chacun'
-          : '≈ $economieMensuelle €/mois';
+          ? '≈ $economieMensuelle €/mois chacun · estimation'
+          : '≈ $economieMensuelle €/mois · estimation';
 
   /// Type d'arrangement + nombre de semaines exploitables, en une ligne
   /// (ex. « Colocation tournante · 22 semaines ») — remplace l'empilement

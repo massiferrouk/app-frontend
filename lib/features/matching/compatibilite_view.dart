@@ -11,7 +11,7 @@ import '../../shared/models/semaine_compatibilite.dart';
 import 'compatibilite_viewmodel.dart';
 
 /// Calendrier de compatibilité (refonte APP-100).
-/// Lecture en deux colonnes « Toi | {prénom} » : une pastille ville par
+/// Lecture en deux colonnes « Moi | {prénom} » : une pastille ville par
 /// personne et par semaine. Le texte explicatif vit dans une légende fixe
 /// et une bottom sheet au tap — plus jamais répété sur les cartes.
 class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
@@ -88,7 +88,7 @@ class CompatibiliteView extends StackedView<CompatibiliteViewModel> {
           children: [
             _EnTete(viewModel: viewModel),
 
-            // ─── En-tête de colonnes Toi | Lui ──────────────────
+            // ─── En-tête de colonnes Moi | Lui ──────────────────
             Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.screenPadding),
@@ -299,6 +299,31 @@ class _EnTete extends StatelessWidget {
         ),
       ),
 
+        // ─── Ce que mesure le score affiché en haut (APP-122) ──
+        // Le pourcentage = COMPATIBILITÉ des rythmes, pas un échange déjà
+        // signé : part des semaines où un échange ou une coloc est possible.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, 0,
+              AppSpacing.screenPadding, AppSpacing.sm),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline,
+                  size: 14, color: AppColors.textTertiary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${s.scorePercent}% de compatibilité : part des semaines '
+                  'où un échange ou une coloc est possible.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppColors.textTertiary),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // ─── Barre de synthèse : économie + accès aux options ──
         if (s.scenarios.isNotEmpty || s.hasEconomie)
           Padding(
@@ -383,7 +408,7 @@ class _BarreOptions extends StatelessWidget {
                           color: accent),
                     ),
                     if (meilleurGain > 0)
-                      Text('jusqu\'à $meilleurGain €/mois',
+                      Text('jusqu\'à $meilleurGain €/mois · estimation',
                           style: const TextStyle(
                               fontSize: 12, color: AppColors.textSecondary)),
                   ],
@@ -984,7 +1009,7 @@ class _MoisHeaderDelegate extends SliverPersistentHeaderDelegate {
       oldDelegate.label != label;
 }
 
-/// En-tête des colonnes : Semaine | Toi | {prénom}
+/// En-tête des colonnes : Semaine | Moi | {prénom}
 class _ColonnesHeader extends StatelessWidget {
   final String autreNom;
 
@@ -1003,7 +1028,7 @@ class _ColonnesHeader extends StatelessWidget {
               style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
         ),
         const Expanded(
-            child: Center(child: Text('Toi', style: _styleNom))),
+            child: Center(child: Text('Moi', style: _styleNom))),
         Expanded(
           child: Center(
             child: Text(autreNom,
@@ -1237,7 +1262,7 @@ class _SemaineDetailSheet extends StatelessWidget {
               children: [
                 Expanded(
                   child: _PositionCard(
-                      nom: 'Toi', ville: semaine.villeAlternantA),
+                      nom: 'Moi', ville: semaine.villeAlternantA),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(

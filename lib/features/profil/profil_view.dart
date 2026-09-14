@@ -140,7 +140,7 @@ class ProfilView extends StackedView<ProfilViewModel> {
           if (viewModel.canChangeMode)
             _ProfilTile(
               icon: Icons.swap_horiz,
-              title: 'Mon mode',
+              title: 'Mon statut',
               trailing: user.role.label,
               onTap: viewModel.isBusy
                   ? null

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 import 'app/app.locator.dart';
@@ -24,6 +25,15 @@ class StudUpApp extends StatelessWidget {
       title: 'StudUp',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      // App en français : le sélecteur de dates s'affiche en français et la
+      // semaine commence le lundi (convention de la locale fr) — APP-122.
+      locale: const Locale('fr'),
+      supportedLocales: const [Locale('fr'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       // Clé de navigation partagée avec le NavigationService de Stacked :
       // permet de naviguer depuis les ViewModels sans BuildContext
       navigatorKey: StackedService.navigatorKey,

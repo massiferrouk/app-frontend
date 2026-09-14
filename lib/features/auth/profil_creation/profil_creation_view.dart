@@ -184,11 +184,27 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
     required void Function(DateTime?) onPicked,
   }) async {
     final now = DateTime.now();
+
+    // Le sélecteur ne propose que des jours de semaine (APP-122). L'alternance
+    // se raisonne en semaines et le backend ramène toute date au lundi de sa
+    // semaine : griser samedi/dimanche évite qu'un dimanche choisi par erreur
+    // fasse « reculer » la date de début à la semaine d'avant.
+    bool estJourSemaine(DateTime d) =>
+        d.weekday != DateTime.saturday && d.weekday != DateTime.sunday;
+
+    // initialDate DOIT être sélectionnable : si on tombe un week-end, on avance
+    // au prochain jour de semaine.
+    DateTime base = initial ?? now;
+    while (!estJourSemaine(base)) {
+      base = base.add(const Duration(days: 1));
+    }
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: initial ?? now,
+      initialDate: base,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 3),
+      selectableDayPredicate: estJourSemaine,
     );
     onPicked(picked);
   }
