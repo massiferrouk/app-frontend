@@ -30,6 +30,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Localisation française des widgets Material (sélecteur de dates en français,
+  # semaine qui commence le lundi) — APP-122
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
   stacked: ^3.4.0
@@ -37,7 +41,7 @@ dependencies:
   dio: ^5.4.0
   flutter_secure_storage: ^9.0.0
   cached_network_image: ^3.3.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   image_picker: ^1.1.0
   stomp_dart_client: ^2.0.0
   shared_preferences: ^2.5.5
