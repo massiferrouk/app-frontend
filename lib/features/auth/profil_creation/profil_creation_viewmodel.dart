@@ -49,11 +49,22 @@ class ProfilCreationViewModel extends BaseViewModel {
     if (p != null) {
       villeAController.text = p.villeA;
       villeBController.text = p.villeB;
+      // Villes existantes (déjà enregistrées) réputées valides → ✓ direct.
+      villeAValide = true;
+      villeBValide = true;
       selectedRythme = p.rythme;
       selectedPremiereSemaine = p.premiereSemaine;
       dateDebut = p.dateDebut;
       dateFin = p.dateFin;
     }
+    // Validation « en direct » (APP-122) : dès qu'un champ ville perd le focus,
+    // on vérifie qu'il correspond à une vraie commune.
+    villeAFocus.addListener(() {
+      if (!villeAFocus.hasFocus) verifierVilleA();
+    });
+    villeBFocus.addListener(() {
+      if (!villeBFocus.hasFocus) verifierVilleB();
+    });
   }
 
   bool get isEdition => existingProfile != null;
@@ -96,6 +107,48 @@ class ProfilCreationViewModel extends BaseViewModel {
   /// Utilisé par l'autocomplétion des deux champs ville (APP-122).
   Future<Iterable<String>> rechercherVilles(String query) =>
       _villes.rechercher(query);
+
+  // Retour « en direct » sur chaque ville (APP-122) : erreur = message rouge
+  // sous le champ ; valide = ville reconnue (✓ vert). La liste guide, mais elle
+  // n'empêchait pas une faute de frappe (« marseile ») de passer : on la bloque.
+  String? villeAErreur;
+  String? villeBErreur;
+  bool villeAValide = false;
+  bool villeBValide = false;
+
+  Future<void> verifierVilleA() =>
+      _verifierVille(villeAController, (err, ok) {
+        villeAErreur = err;
+        villeAValide = ok;
+      });
+
+  Future<void> verifierVilleB() =>
+      _verifierVille(villeBController, (err, ok) {
+        villeBErreur = err;
+        villeBValide = ok;
+      });
+
+  /// Résout la ville saisie contre la liste des communes. Si elle correspond,
+  /// on la réécrit à l'orthographe officielle (« marseille » → « Marseille »)
+  /// et on marque valide ; sinon on affiche l'erreur. Champ vide = pas d'erreur
+  /// ici (le « requis » est géré par la validation globale).
+  Future<void> _verifierVille(
+      TextEditingController c, void Function(String?, bool) setEtat) async {
+    final saisie = c.text.trim();
+    if (saisie.isEmpty) {
+      setEtat(null, false);
+      notifyListeners();
+      return;
+    }
+    final officiel = await _villes.resoudre(saisie);
+    if (officiel == null) {
+      setEtat('Choisis une ville dans la liste', false);
+    } else {
+      if (officiel != c.text) c.text = officiel; // canonicalisation
+      setEtat(null, true);
+    }
+    notifyListeners();
+  }
 
   RythmeAlternance selectedRythme = RythmeAlternance.SEMAINE_1_1;
 
@@ -162,7 +215,16 @@ class ProfilCreationViewModel extends BaseViewModel {
   }
 
   Future<void> submit() async {
+    // Filet de sécurité (APP-122) : on résout/canonicalise les deux villes.
+    // Bloque une faute de frappe non corrigée en quittant le champ.
+    await verifierVilleA();
+    await verifierVilleB();
+
     errorMessage = _validate();
+    if (errorMessage == null &&
+        (villeAErreur != null || villeBErreur != null)) {
+      errorMessage = 'Choisis des villes valides dans la liste';
+    }
     if (errorMessage != null) {
       notifyListeners();
       return;

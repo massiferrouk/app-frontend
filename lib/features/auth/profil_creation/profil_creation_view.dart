@@ -70,6 +70,9 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
                 focusNode: viewModel.villeAFocus,
                 hint: 'Ville de ton école',
                 rechercher: viewModel.rechercherVilles,
+                errorText: viewModel.villeAErreur,
+                valide: viewModel.villeAValide,
+                onSelected: viewModel.verifierVilleA,
               ),
               const SizedBox(height: AppSpacing.md),
               _VilleField(
@@ -77,6 +80,9 @@ class ProfilCreationView extends StackedView<ProfilCreationViewModel> {
                 focusNode: viewModel.villeBFocus,
                 hint: 'Ville de ton entreprise',
                 rechercher: viewModel.rechercherVilles,
+                errorText: viewModel.villeBErreur,
+                valide: viewModel.villeBValide,
+                onSelected: viewModel.verifierVilleB,
               ),
               const SizedBox(height: AppSpacing.lg),
 
@@ -224,11 +230,23 @@ class _VilleField extends StatelessWidget {
   final String hint;
   final Future<Iterable<String>> Function(String) rechercher;
 
+  /// Message d'erreur sous le champ (null = pas d'erreur) — APP-122.
+  final String? errorText;
+
+  /// true = ville reconnue → ✓ vert à la place de la loupe.
+  final bool valide;
+
+  /// Appelé quand une ville est choisie dans la liste (revalide → ✓ direct).
+  final VoidCallback? onSelected;
+
   const _VilleField({
     required this.controller,
     required this.focusNode,
     required this.hint,
     required this.rechercher,
+    this.errorText,
+    this.valide = false,
+    this.onSelected,
   });
 
   @override
@@ -237,6 +255,7 @@ class _VilleField extends StatelessWidget {
       textEditingController: controller,
       focusNode: focusNode,
       optionsBuilder: (value) => rechercher(value.text),
+      onSelected: (_) => onSelected?.call(),
       fieldViewBuilder:
           (context, textController, node, onFieldSubmitted) {
         return TextField(
@@ -245,7 +264,11 @@ class _VilleField extends StatelessWidget {
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
             hintText: hint,
-            suffixIcon: const Icon(Icons.search, size: 20),
+            errorText: errorText,
+            suffixIcon: valide
+                ? const Icon(Icons.check_circle,
+                    size: 20, color: AppColors.echange)
+                : const Icon(Icons.search, size: 20),
           ),
           onSubmitted: (_) => onFieldSubmitted(),
         );

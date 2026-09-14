@@ -33,4 +33,19 @@ void main() {
       expect(r.length, lessThanOrEqualTo(10));
     });
   });
+
+  group('VilleService.resoudre', () {
+    test('reconnaît une ville malgré la casse et les accents', () async {
+      expect(await service.resoudre('marseille'), 'Marseille');
+      expect(await service.resoudre('MARSEILLE'), 'Marseille');
+    });
+
+    test('rejette une faute de frappe', () async {
+      expect(await service.resoudre('marseile'), isNull);
+    });
+
+    test('chaîne vide → null', () async {
+      expect(await service.resoudre('   '), isNull);
+    });
+  });
 }

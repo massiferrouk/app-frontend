@@ -49,6 +49,10 @@ void main() {
     nav = MockNavigationService();
     auth = MockAuthService();
     villes = MockVilleService();
+    // Par défaut : toute ville saisie est reconnue et renvoyée telle quelle
+    // (les cas d'erreur sont stubés spécifiquement dans leurs tests).
+    when(() => villes.resoudre(any()))
+        .thenAnswer((inv) async => inv.positionalArguments[0] as String);
     viewModel = ProfilCreationViewModel(
       profileService: profile,
       navigationService: nav,
@@ -119,6 +123,42 @@ void main() {
 
       expect(viewModel.errorMessage,
           'La date de début doit être avant la date de fin');
+    });
+
+    test('ville inexistante : bloque, erreur sous le champ, aucun appel API',
+        () async {
+      when(() => villes.resoudre('Marseile')).thenAnswer((_) async => null);
+      viewModel.villeAController.text = 'Marseile';
+      viewModel.villeBController.text = 'Lyon';
+      viewModel.setDateDebut(DateTime(2026, 9, 1));
+      viewModel.setDateFin(DateTime(2027, 8, 31));
+
+      await viewModel.submit();
+
+      expect(viewModel.villeAErreur, 'Choisis une ville dans la liste');
+      expect(viewModel.villeAValide, isFalse);
+      expect(viewModel.errorMessage, isNotNull);
+      verifyNever(() => profile.createAlternantProfile(
+            villeA: any(named: 'villeA'),
+            villeB: any(named: 'villeB'),
+            dateDebut: any(named: 'dateDebut'),
+            dateFin: any(named: 'dateFin'),
+            rythme: any(named: 'rythme'),
+            premiereSemaine: any(named: 'premiereSemaine'),
+          ));
+    });
+
+    test('ville en minuscules : canonicalisée à l\'orthographe officielle',
+        () async {
+      when(() => villes.resoudre('marseille'))
+          .thenAnswer((_) async => 'Marseille');
+      viewModel.villeAController.text = 'marseille';
+
+      await viewModel.verifierVilleA();
+
+      expect(viewModel.villeAController.text, 'Marseille');
+      expect(viewModel.villeAValide, isTrue);
+      expect(viewModel.villeAErreur, isNull);
     });
   });
 
