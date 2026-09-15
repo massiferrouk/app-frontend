@@ -37,6 +37,11 @@ class Logement {
   /// Prénom du propriétaire (pour le bouton « Contacter »). Nullable.
   final String? ownerPrenom;
 
+  /// Rôle de l'annonceur (APP-122) : distingue un vrai propriétaire (bailleur)
+  /// d'un pair (alternant/étudiant qui propose son propre logement). Nullable
+  /// si l'API est ancienne.
+  final UserRole? ownerRole;
+
   /// Motif de la suspension par un administrateur (APP-121).
   /// Null tant que l'annonce n'a pas été modérée, ou après republication.
   final String? moderationNote;
@@ -60,6 +65,7 @@ class Logement {
     this.villeAssociee,
     this.photoUrls = const [],
     this.ownerPrenom,
+    this.ownerRole,
     this.moderationNote,
   });
 
@@ -89,6 +95,9 @@ class Logement {
           .map((e) => e.toString())
           .toList(),
       ownerPrenom: json['ownerPrenom'] as String?,
+      ownerRole: json['ownerRole'] == null
+          ? null
+          : UserRole.fromJson(json['ownerRole'] as String),
       moderationNote: json['moderationNote'] as String?,
     );
   }

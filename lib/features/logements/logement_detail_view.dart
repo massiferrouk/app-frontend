@@ -6,6 +6,7 @@ import 'package:stacked/stacked.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../shared/models/enums.dart';
 import '../../shared/models/logement.dart';
 import '../../shared/models/matching_suggestion.dart';
 import 'logement_detail_viewmodel.dart';
@@ -141,9 +142,10 @@ class LogementDetailView extends StackedView<LogementDetailViewModel> {
                     ),
                   ],
 
-                  // ─── Propriétaire ───────────────────────────
+                  // ─── Annonceur ──────────────────────────────
+                  // Titre neutre : ce n'est pas toujours un bailleur (APP-122).
                   const SizedBox(height: AppSpacing.lg),
-                  Text('Propriétaire',
+                  Text('Annonceur',
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: AppSpacing.sm),
                   _OwnerCard(viewModel: viewModel),
@@ -560,20 +562,81 @@ class _OwnerCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 22,
             backgroundColor: AppColors.surfaceDark,
-            child: Icon(Icons.person_outline, color: AppColors.textSecondary),
+            child: Icon(_icone, color: AppColors.textSecondary),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: Text(viewModel.logement.ownerPrenom ?? 'Propriétaire',
-                style: Theme.of(context).textTheme.bodyMedium),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        viewModel.logement.ownerPrenom ?? _label,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    // Badge de rôle : distingue bailleur / pair (APP-122)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceDark,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(_label,
+                          style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary)),
+                    ),
+                  ],
+                ),
+                if (_sousTitre.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(_sousTitre,
+                      style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+
+  /// Libellé du rôle de l'annonceur (APP-122).
+  String get _label => switch (viewModel.logement.ownerRole) {
+        UserRole.PROPRIETAIRE => 'Propriétaire',
+        UserRole.ALTERNANT => 'Alternant',
+        UserRole.ETUDIANT => 'Étudiant',
+        _ => 'Annonceur',
+      };
+
+  /// Ligne de contexte selon le rôle : bailleur vs pair.
+  String get _sousTitre => switch (viewModel.logement.ownerRole) {
+        UserRole.PROPRIETAIRE => 'Loue son logement à des étudiants',
+        UserRole.ALTERNANT => 'Propose son logement (échange ou coloc)',
+        UserRole.ETUDIANT => 'Propose son logement',
+        _ => '',
+      };
+
+  IconData get _icone => switch (viewModel.logement.ownerRole) {
+        UserRole.PROPRIETAIRE => Icons.apartment_outlined,
+        UserRole.ALTERNANT => Icons.swap_horiz,
+        UserRole.ETUDIANT => Icons.school_outlined,
+        _ => Icons.person_outline,
+      };
 }
 
 // ─── Saisie du motif de signalement (APP-121) ─────────────────────
